@@ -7,16 +7,23 @@ import {
   updateAddress,
   deleteAddress,
   updateMe,
+  deleteMe,
+  requestDeletion,
   getMyCompany,
   listCompanyMembers,
 } from '../controllers/customer.controller.js';
 
 const router = Router();
 
-// All routes here operate on the currently-authenticated customer
+// Unauthenticated: public account-deletion request form (Play Store's
+// required deletion URL posts here). Covered by the global rate limiter.
+router.post('/deletion-request', requestDeletion);
+
+// All routes below operate on the currently-authenticated customer
 // (req.user.type === 'customer'). Staff hitting these gets 401.
 
 router.patch('/me', authenticate, updateMe);
+router.delete('/me', authenticate, deleteMe);
 router.patch('/me/preferences', authenticate, updatePreferences);
 
 router.get('/me/addresses', authenticate, listAddresses);

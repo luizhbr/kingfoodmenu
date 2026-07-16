@@ -1,6 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { Request, Response } from 'express';
+import { Prisma } from '@prisma/client';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
+import { sendEmail } from '../lib/email.js';
 
 // ---------- shared helpers ----------
 
@@ -256,6 +259,82 @@ export async function listCompanyMembers(req: Request, res: Response): Promise<v
   });
 
   res.json({ success: true, data: members });
+}
+
+// ---------- account deletion (GDPR Art. 17 / store policies) ----------
+
+/**
+ * Deletes the authenticated customer's account. Orders, payments and
+ * loyalty rows must be retained for tax law (§ 147 AO), and Reservation/
+ * Review/LoyaltyTransaction FKs are Restrict anyway — so the customer row
+ * is anonymised in place rather than hard-deleted: all PII is wiped, the
+ * email is scrambled to keep the unique constraint, and login becomes
+ * impossible (no password, unknown email). Addresses are true PII with a
+ * Cascade FK and are deleted outright.
+ */
+export async function deleteMe(req: Request, res: Response): Promise<void> {
+  const customerId = requireCustomer(req, res);
+  if (!customerId) return;
+
+  const existing = await prisma.customer.findUnique({ where: { id: customerId } });
+  if (!existing || existing.deletedAt) {
+    res.status(404).json({ success: false, error: 'Account not found' });
+    return;
+  }
+
+  await prisma.$transaction([
+    prisma.address.deleteMany({ where: { customerId } }),
+    prisma.customer.update({
+      where: { id: customerId },
+      data: {
+        email: `deleted-${randomUUID()}@anonymised.invalid`,
+        password: null,
+        name: 'Deleted account',
+        phone: null,
+        expoPushToken: null,
+        preferences: Prisma.DbNull,
+        loyaltyPoints: 0,
+        groupId: null,
+        companyId: null,
+        officeId: null,
+        deletedAt: new Date(),
+      },
+    }),
+  ]);
+
+  res.json({ success: true, data: { deleted: true } });
+}
+
+const deletionRequestSchema = z.object({
+  email: z.string().email(),
+  message: z.string().max(2000).optional(),
+});
+
+/**
+ * Unauthenticated deletion request — backs the public deletion URL that
+ * Google Play's Data safety form requires. Never reveals whether the
+ * email belongs to an account; the operator handles the request manually
+ * (identity check via the registered email) within the GDPR deadline.
+ */
+export async function requestDeletion(req: Request, res: Response): Promise<void> {
+  const parsed = deletionRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'A valid email address is required' });
+    return;
+  }
+
+  const operatorInbox = process.env.DELETION_NOTIFY_EMAIL || process.env.EMAIL_FROM;
+  if (operatorInbox) {
+    await sendEmail({
+      to: operatorInbox,
+      subject: 'Account deletion request (public form)',
+      html: `<p>A deletion of the account associated with <b>${parsed.data.email}</b> was requested via the public form.</p>` +
+        (parsed.data.message ? `<p>Message: ${parsed.data.message.replace(/</g, '&lt;')}</p>` : '') +
+        '<p>Verify the requester controls this email, then delete the account (Admin → Customers) within 30 days.</p>',
+    });
+  }
+
+  res.json({ success: true, data: { received: true } });
 }
 
 export async function deleteAddress(req: Request<{ id: string }>, res: Response): Promise<void> {

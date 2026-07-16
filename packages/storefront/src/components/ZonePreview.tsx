@@ -52,13 +52,11 @@ type State =
 
 /**
  * Address-aware delivery preview. Watches the checkout address fields, calls
- * Nominatim to geocode (debounced), then hits the public zone-check endpoint
+ * the server's geocode proxy (debounced) — which caches and throttles the
+ * upstream Nominatim calls — then hits the public zone-check endpoint
  * to find the matching polygon. When matched, renders a "stamp" with the
  * zone's fee/ETA/cutoff and a mini OSM map showing the customer's pin
  * sitting inside the saffron-coloured polygon.
- *
- * Nominatim is free and key-less, with a soft 1 req/sec rate limit. Demo
- * usage is well within that.
  */
 export default function ZonePreview({ address, onLatLng, onMatch }: Props) {
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -93,7 +91,7 @@ export default function ZonePreview({ address, onLatLng, onMatch }: Props) {
     const timer = setTimeout(async () => {
       setState({ kind: 'geocoding' });
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`;
+        const url = `/api/geocode/search?limit=1&q=${encodeURIComponent(query)}`;
         const res = await fetch(url, {
           signal: ctrl.signal,
           headers: { Accept: 'application/json' },

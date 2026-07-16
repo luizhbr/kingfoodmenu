@@ -56,6 +56,10 @@ model Customer {
   // without a migration each time):
   //   { diet: string[], avoidAllergenIds: string[], spice: "mild"|"medium"|"hot" }
   preferences    Json?
+  // GDPR deletion: the row is anonymised in place (orders/loyalty rows
+  // must survive for tax retention) and stamped here. A deleted customer
+  // can never log in again — email is scrambled and password nulled.
+  deletedAt      DateTime?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

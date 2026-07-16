@@ -401,7 +401,13 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   // recoverable from couponId + loyaltyPointsRedeem.
   const effectiveDeliveryFee = couponZeroesDelivery ? 0 : deliveryFee;
   const discountTotal = loyaltyDiscount + couponDiscount;
-  const total = subtotal + tax + effectiveDeliveryFee - discountTotal - companyAllowance;
+  // Clamp at zero (stacked coupon + loyalty + allowance can exceed the
+  // order value) and round to cents so a fully-discounted order is an
+  // exact 0 the payment layer can special-case, not float dust.
+  const total = Math.max(
+    0,
+    Math.round((subtotal + tax + effectiveDeliveryFee - discountTotal - companyAllowance) * 100) / 100,
+  );
 
   const order = await prisma.order.create({
     data: {

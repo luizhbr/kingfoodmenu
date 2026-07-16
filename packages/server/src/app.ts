@@ -24,6 +24,7 @@ import staffRoutes from './routes/staff.routes.js';
 import developerRoutes from './routes/developer.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import geocodeRoutes from './routes/geocode.routes.js';
 import { openApiSpec } from './lib/openapi.js';
 import { initPassport } from './lib/passport.js';
 import passport from 'passport';
@@ -125,6 +126,7 @@ export function createApp() {
   app.use('/api/developer', developerRoutes);
   app.use('/api/gallery', galleryRoutes);
   app.use('/api/media', mediaRoutes);
+  app.use('/api/geocode', geocodeRoutes);
 
   // 404 handler
   app.use((_req, res) => {

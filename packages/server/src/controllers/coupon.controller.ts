@@ -153,7 +153,9 @@ export async function resolveCoupon(rawCode: string, subtotal: number) {
     discount = subtotal * (coupon.value / 100);
     if (coupon.maxDiscount !== null) discount = Math.min(discount, coupon.maxDiscount);
   } else if (coupon.type === 'FIXED') {
-    discount = coupon.value;
+    // Never discount more than the goods cost — a €50 coupon on a €12
+    // order is a €12 discount, not a negative total.
+    discount = Math.min(coupon.value, subtotal);
   }
   // FREE_DELIVERY: discount stays 0 here; the order pipeline zeroes the
   // delivery fee instead so the breakdown reads cleanly.

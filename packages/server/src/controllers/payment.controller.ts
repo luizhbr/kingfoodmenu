@@ -29,6 +29,21 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
     return;
   }
 
+  // Fully-discounted orders (100% coupon — e.g. the App-Store review
+  // account) owe nothing: Stripe rejects zero-amount intents, so mark
+  // the order paid + confirmed directly and tell the client to skip
+  // the payment sheet.
+  if (order.total <= 0) {
+    await prisma.$transaction([
+      prisma.payment.create({
+        data: { orderId: order.id, method: 'STRIPE', status: 'COMPLETED', amount: 0 },
+      }),
+      prisma.order.update({ where: { id: order.id }, data: { status: 'CONFIRMED' } }),
+    ]);
+    res.json({ success: true, data: { clientSecret: null, free: true } });
+    return;
+  }
+
   // Use the registered customer's email when present, fall back to the
   // guest-checkout email — both produce Stripe receipt emails + show up
   // attached to the PaymentIntent in the dashboard.
@@ -108,6 +123,20 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
 
   const publicUrl = process.env.PUBLIC_URL || 'https://inka.kitchenasty.com';
   const customerEmail = order.customer?.email ?? order.guestEmail ?? undefined;
+
+  // Same zero-total short-circuit as createPaymentIntent: nothing to
+  // charge, so confirm directly and send the browser straight to the
+  // success page instead of a Stripe session.
+  if (order.total <= 0) {
+    await prisma.$transaction([
+      prisma.payment.create({
+        data: { orderId: order.id, method: 'STRIPE', status: 'COMPLETED', amount: 0 },
+      }),
+      prisma.order.update({ where: { id: order.id }, data: { status: 'CONFIRMED' } }),
+    ]);
+    res.json({ success: true, data: { url: `${publicUrl}/order/${order.id}?paid=true`, free: true } });
+    return;
+  }
 
   try {
     const stripe = await getStripe();
