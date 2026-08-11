@@ -1,7 +1,7 @@
 # MILESTONE 1 — King Food Foundation
 
 **Branch:** `feature/king-food-foundation`  
-**Base:** `research/kitchenasty-audit` (`c2055fb07059484e47ee4e5acbea730a0d6a84b0`)  
+**Base:** `research/kitchenasty-audit`  
 **Started:** 2026-08-11  
 **Status:** IN PROGRESS
 
@@ -48,11 +48,11 @@ It does **not** include:
 
 ## Execution Plan
 
-### Step 1 — Identity & Branding (current)
+### Step 1 — Identity & Branding
 - [ ] Update root README with King Food context (keep KitchenAsty attribution)
-- [ ] Update default SiteSettings values in seed (siteName, colors)
-- [ ] Update package.json descriptions
-- [ ] Add `docs/king-food/` foundation docs
+- [x] Update default SiteSettings values in seed (siteName, colors, location)
+- [x] Update package.json descriptions
+- [x] Add `docs/king-food/` foundation docs
 
 ### Step 2 — Configuration Foundation
 - [ ] Create `.env.example` notes for King Food
@@ -78,6 +78,7 @@ It does **not** include:
 | Primary Color | `#FFD100` (King yellow) |
 | Secondary / Accent | `#E31818` (King red) |
 | Tagline | Açaí BR da saudade · Columbus, OH |
+| Location | King Food Columbus (slug: `columbus`) |
 | Default Currency | USD |
 
 ---
@@ -92,14 +93,21 @@ It does **not** include:
 **Tradeoff:** Some unused features will remain temporarily  
 **Date:** 2026-08-11
 
+### DECISION 002
+**Context:** Seed data  
+**Options:** Replace full demo menu with King Food products now vs keep demo menu  
+**Chosen:** Keep demo menu; only rebrand SiteSettings + Location  
+**Reason:** Product catalog belongs to a later milestone; keep M1 focused and low-risk  
+**Date:** 2026-08-11
+
 ---
 
 ## Success Criteria for Milestone 1
 
-- [ ] Branch `feature/king-food-foundation` exists
-- [ ] Project clearly identified as King Food foundation
-- [ ] Default branding points to King Food
-- [ ] Original KitchenAsty license/attribution preserved
-- [ ] No broken core flows introduced
-- [ ] Documentation updated
+- [x] Branch `feature/king-food-foundation` exists
+- [x] Project clearly identified as King Food foundation
+- [x] Default branding points to King Food
+- [x] Original KitchenAsty license/attribution preserved
+- [ ] No broken core flows introduced (pending user-side smoke test)
+- [x] Documentation updated
 - [ ] Ready for Milestone 2 (Storefront focus) after approval
