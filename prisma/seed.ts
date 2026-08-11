@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding database...');
+  console.log('Seeding database (King Food foundation)...');
 
   // Create admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -47,23 +47,23 @@ async function main() {
     create: { name: 'Regular' },
   });
 
-  // Create location
+  // Create location — King Food Columbus
   const location = await prisma.location.upsert({
-    where: { slug: 'downtown' },
+    where: { slug: 'columbus' },
     update: {},
     create: {
-      name: 'Saffron & Sage Downtown',
-      slug: 'downtown',
-      description: 'Our flagship location in the heart of downtown San Francisco — seasonal Mediterranean cuisine in a warm, inviting setting',
-      phone: '(555) 123-4567',
-      email: 'downtown@saffronandsage.com',
-      address: '123 Main Street',
-      city: 'San Francisco',
-      state: 'CA',
-      postalCode: '94102',
+      name: 'King Food Columbus',
+      slug: 'columbus',
+      description: 'Açaí BR da saudade — Brazilian bowls, burgers and combos delivered in Columbus, OH',
+      phone: '(380) 269-5741',
+      email: 'orders@kingfood.local',
+      address: 'Columbus Metro',
+      city: 'Columbus',
+      state: 'OH',
+      postalCode: '43035',
       country: 'US',
-      lat: 37.7749,
-      lng: -122.4194,
+      lat: 40.1755,
+      lng: -82.9993,
       deliveryEnabled: true,
       pickupEnabled: true,
       minOrderDelivery: 15,
@@ -130,7 +130,7 @@ async function main() {
     },
   });
 
-  // Categories
+  // Categories (demo menu kept for foundation; real King Food catalog in later milestone)
   const appetizers = await prisma.category.upsert({
     where: { slug: 'appetizers' },
     update: {},
@@ -193,7 +193,7 @@ async function main() {
   });
 
   // Caesar salad size option
-  const sizeOption = await prisma.menuOption.create({
+  await prisma.menuOption.create({
     data: {
       menuItemId: caesarSalad.id,
       name: 'Size',
@@ -202,7 +202,7 @@ async function main() {
       values: {
         create: [
           { name: 'Regular', priceModifier: 0, isDefault: true, sortOrder: 1 },
-          { name: 'Large', priceModifier: 3.00, sortOrder: 2 },
+          { name: 'Large', priceModifier: 3.0, sortOrder: 2 },
         ],
       },
     },
@@ -218,9 +218,9 @@ async function main() {
       maxSelect: 3,
       values: {
         create: [
-          { name: 'Grilled Chicken', priceModifier: 4.00, sortOrder: 1 },
-          { name: 'Shrimp', priceModifier: 6.00, sortOrder: 2 },
-          { name: 'Salmon', priceModifier: 7.00, sortOrder: 3 },
+          { name: 'Grilled Chicken', priceModifier: 4.0, sortOrder: 1 },
+          { name: 'Shrimp', priceModifier: 6.0, sortOrder: 2 },
+          { name: 'Salmon', priceModifier: 7.0, sortOrder: 3 },
         ],
       },
     },
@@ -325,9 +325,9 @@ async function main() {
       isRequired: true,
       values: {
         create: [
-          { name: '10" Small', priceModifier: 0, isDefault: true, sortOrder: 1 },
-          { name: '12" Medium', priceModifier: 3.00, sortOrder: 2 },
-          { name: '14" Large', priceModifier: 6.00, sortOrder: 3 },
+          { name: '10\" Small', priceModifier: 0, isDefault: true, sortOrder: 1 },
+          { name: '12\" Medium', priceModifier: 3.0, sortOrder: 2 },
+          { name: '14\" Large', priceModifier: 6.0, sortOrder: 3 },
         ],
       },
     },
@@ -343,11 +343,11 @@ async function main() {
       maxSelect: 5,
       values: {
         create: [
-          { name: 'Mushrooms', priceModifier: 1.50, sortOrder: 1 },
-          { name: 'Olives', priceModifier: 1.50, sortOrder: 2 },
-          { name: 'Peppers', priceModifier: 1.50, sortOrder: 3 },
-          { name: 'Pepperoni', priceModifier: 2.00, sortOrder: 4 },
-          { name: 'Extra Cheese', priceModifier: 2.00, sortOrder: 5 },
+          { name: 'Mushrooms', priceModifier: 1.5, sortOrder: 1 },
+          { name: 'Olives', priceModifier: 1.5, sortOrder: 2 },
+          { name: 'Peppers', priceModifier: 1.5, sortOrder: 3 },
+          { name: 'Pepperoni', priceModifier: 2.0, sortOrder: 4 },
+          { name: 'Extra Cheese', priceModifier: 2.0, sortOrder: 5 },
         ],
       },
     },
@@ -414,7 +414,7 @@ async function main() {
   });
 
   // Allergen associations
-  const allergenMap = Object.fromEntries(allergens.map(a => [a.name, a.id]));
+  const allergenMap = Object.fromEntries(allergens.map((a) => [a.name, a.id]));
   await prisma.menuItemAllergen.createMany({
     data: [
       { menuItemId: bruschetta.id, allergenId: allergenMap['Gluten'] },
@@ -526,7 +526,7 @@ async function main() {
 
     await prisma.order.create({
       data: {
-        orderNumber: `KA-SEED-${String(i + 1).padStart(3, '0')}`,
+        orderNumber: `KF-SEED-${String(i + 1).padStart(3, '0')}`,
         customerId: customer.id,
         locationId: location.id,
         orderType,
@@ -545,13 +545,17 @@ async function main() {
               unitPrice: 14.99,
               subtotal: 14.99 * (1 + (i % 3)),
             },
-            ...(i % 2 === 0 ? [{
-              menuItemId: lemonade.id,
-              name: 'Fresh Lemonade',
-              quantity: 2,
-              unitPrice: 4.99,
-              subtotal: 9.98,
-            }] : []),
+            ...(i % 2 === 0
+              ? [
+                  {
+                    menuItemId: lemonade.id,
+                    name: 'Fresh Lemonade',
+                    quantity: 2,
+                    unitPrice: 4.99,
+                    subtotal: 9.98,
+                  },
+                ]
+              : []),
           ],
         },
       },
@@ -561,9 +565,30 @@ async function main() {
   // Sample reviews
   await prisma.review.createMany({
     data: [
-      { customerId: customer.id, locationId: location.id, orderId: undefined, rating: 5, comment: 'Excellent food and fast delivery!', isApproved: true },
-      { customerId: customer.id, locationId: location.id, orderId: undefined, rating: 4, comment: 'Great pizza, will order again.', isApproved: true },
-      { customerId: customer.id, locationId: location.id, orderId: undefined, rating: 5, comment: 'Best restaurant in town!', isApproved: false },
+      {
+        customerId: customer.id,
+        locationId: location.id,
+        orderId: undefined,
+        rating: 5,
+        comment: 'Excellent food and fast delivery!',
+        isApproved: true,
+      },
+      {
+        customerId: customer.id,
+        locationId: location.id,
+        orderId: undefined,
+        rating: 4,
+        comment: 'Great pizza, will order again.',
+        isApproved: true,
+      },
+      {
+        customerId: customer.id,
+        locationId: location.id,
+        orderId: undefined,
+        rating: 5,
+        comment: 'Best restaurant in town!',
+        isApproved: false,
+      },
     ],
     skipDuplicates: true,
   });
@@ -582,36 +607,87 @@ async function main() {
     },
   });
 
-  // Site settings
+  // Site settings — King Food branding
   await prisma.siteSettings.upsert({
     where: { id: 'default' },
-    update: {},
-    create: {
-      id: 'default',
-      siteName: 'Saffron & Sage',
-      siteTitle: 'Saffron & Sage — Modern Mediterranean Dining',
-      storefrontTemplate: 'elegant',
-      colorPrimary: '#d97706',
-      colorSecondary: '#65a30d',
+    update: {
+      siteName: 'King Food',
+      siteTitle: 'King Food — Açaí BR da saudade · Columbus, OH',
+      storefrontTemplate: 'modern',
+      colorPrimary: '#FFD100',
+      colorSecondary: '#E31818',
       darkMode: 'light',
       heroSection: {
-        title: 'Modern Mediterranean, Rooted in Tradition',
-        subtitle: 'Seasonal ingredients, bold flavors, and the warmth of the Mediterranean — brought to your table or your door.',
-        backgroundImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1600&h=900&fit=crop',
-        ctaPrimaryText: 'Explore Our Menu',
+        title: 'Açaí BR da saudade',
+        subtitle: 'Bowls, burgers e combos brasileiros — delivery em Columbus, OH.',
+        backgroundImage: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1600&h=900&fit=crop',
+        ctaPrimaryText: 'Ver Cardápio',
         ctaPrimaryLink: '/menu',
-        ctaSecondaryText: 'Reserve a Table',
-        ctaSecondaryLink: '/reservations',
+        ctaSecondaryText: 'Pedir agora',
+        ctaSecondaryLink: '/menu',
       },
       featuresSection: [
-        { icon: '🌿', title: 'Farm-to-Table', description: 'We partner with local farms for the freshest seasonal ingredients' },
-        { icon: '🍂', title: 'Seasonal Specials', description: 'Our menu evolves with the seasons — there\'s always something new to discover' },
-        { icon: '🚗', title: 'Dine In or Deliver', description: 'Enjoy our cuisine at the restaurant or have it delivered straight to your door' },
+        {
+          icon: '🥤',
+          title: 'Açaí autêntico',
+          description: 'Sabor brasileiro de verdade, montado do seu jeito',
+        },
+        {
+          icon: '🍔',
+          title: 'Combos e burgers',
+          description: 'Opções completas para matar a fome',
+        },
+        {
+          icon: '🚗',
+          title: 'Delivery Columbus',
+          description: 'Rápido e direto na sua porta',
+        },
       ],
       ctaSection: {
-        title: 'Ready to Experience Saffron & Sage?',
-        description: 'Join us for an unforgettable Mediterranean dining experience — reserve a table or order online today.',
-        buttonText: 'Order Now',
+        title: 'Com fome de BR?',
+        description: 'Peça King Food e receba em casa — açaí, burgers e combos.',
+        buttonText: 'Fazer pedido',
+        buttonLink: '/menu',
+      },
+    },
+    create: {
+      id: 'default',
+      siteName: 'King Food',
+      siteTitle: 'King Food — Açaí BR da saudade · Columbus, OH',
+      storefrontTemplate: 'modern',
+      colorPrimary: '#FFD100',
+      colorSecondary: '#E31818',
+      darkMode: 'light',
+      heroSection: {
+        title: 'Açaí BR da saudade',
+        subtitle: 'Bowls, burgers e combos brasileiros — delivery em Columbus, OH.',
+        backgroundImage: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1600&h=900&fit=crop',
+        ctaPrimaryText: 'Ver Cardápio',
+        ctaPrimaryLink: '/menu',
+        ctaSecondaryText: 'Pedir agora',
+        ctaSecondaryLink: '/menu',
+      },
+      featuresSection: [
+        {
+          icon: '🥤',
+          title: 'Açaí autêntico',
+          description: 'Sabor brasileiro de verdade, montado do seu jeito',
+        },
+        {
+          icon: '🍔',
+          title: 'Combos e burgers',
+          description: 'Opções completas para matar a fome',
+        },
+        {
+          icon: '🚗',
+          title: 'Delivery Columbus',
+          description: 'Rápido e direto na sua porta',
+        },
+      ],
+      ctaSection: {
+        title: 'Com fome de BR?',
+        description: 'Peça King Food e receba em casa — açaí, burgers e combos.',
+        buttonText: 'Fazer pedido',
         buttonLink: '/menu',
       },
     },
@@ -624,27 +700,7 @@ async function main() {
     create: {
       slug: 'privacy-policy',
       title: 'Privacy Policy',
-      content: `# Privacy Policy
-
-We value your privacy. This policy explains how KitchenAsty collects, uses, and protects your personal information.
-
-## Information We Collect
-
-- **Account information**: name, email address, phone number
-- **Order information**: delivery addresses, order history, payment details
-- **Usage data**: cookies, browsing behavior, device information
-
-## How We Use Your Information
-
-We use your information to process orders, improve our services, and communicate with you about promotions and updates.
-
-## Your Rights
-
-You have the right to access, correct, or delete your personal data at any time by contacting us.
-
-## Contact
-
-If you have questions about this policy, please email us at privacy@kitchenasty.com.`,
+      content: `# Privacy Policy\n\nWe value your privacy. This policy explains how King Food collects, uses, and protects your personal information.\n\n## Information We Collect\n\n- **Account information**: name, email address, phone number\n- **Order information**: delivery addresses, order history, payment details\n- **Usage data**: cookies, browsing behavior, device information\n\n## How We Use Your Information\n\nWe use your information to process orders, improve our services, and communicate with you about promotions and updates.\n\n## Your Rights\n\nYou have the right to access, correct, or delete your personal data at any time by contacting us.\n\n## Contact\n\nIf you have questions about this policy, please email us at privacy@kingfood.local.`,
     },
   });
 
@@ -654,29 +710,33 @@ If you have questions about this policy, please email us at privacy@kitchenasty.
     create: {
       slug: 'impressum',
       title: 'Impressum',
-      content: `# Impressum
-
-## Company Information
-
-**KitchenAsty**
-123 Main Street
-San Francisco, CA 94102
-United States
-
-**Email:** info@kitchenasty.com
-**Phone:** (555) 123-4567
-
-## Responsible for Content
-
-KitchenAsty Management Team`,
+      content: `# Impressum\n\n## Company Information\n\n**King Food**\nColumbus, OH\nUnited States\n\n**Email:** orders@kingfood.local\n**Phone:** (380) 269-5741\n\n## Responsible for Content\n\nKing Food Management\n\nBuilt on KitchenAsty (MIT).`,
     },
   });
 
   // Cookie categories
   const cookieCategories = [
-    { name: 'essential', label: 'Essential Cookies', description: 'Required for the website to function properly. These cannot be disabled.', isRequired: true, sortOrder: 0 },
-    { name: 'analytics', label: 'Analytics Cookies', description: 'Help us understand how visitors interact with our website.', isRequired: false, sortOrder: 1 },
-    { name: 'marketing', label: 'Marketing Cookies', description: 'Used to deliver personalized advertisements and track campaigns.', isRequired: false, sortOrder: 2 },
+    {
+      name: 'essential',
+      label: 'Essential Cookies',
+      description: 'Required for the website to function properly. These cannot be disabled.',
+      isRequired: true,
+      sortOrder: 0,
+    },
+    {
+      name: 'analytics',
+      label: 'Analytics Cookies',
+      description: 'Help us understand how visitors interact with our website.',
+      isRequired: false,
+      sortOrder: 1,
+    },
+    {
+      name: 'marketing',
+      label: 'Marketing Cookies',
+      description: 'Used to deliver personalized advertisements and track campaigns.',
+      isRequired: false,
+      sortOrder: 2,
+    },
   ];
 
   for (const cat of cookieCategories) {
@@ -687,25 +747,26 @@ KitchenAsty Management Team`,
     });
   }
 
-  // Gallery images
+  // Gallery images (placeholder)
   const galleryImages = [
-    // FOOD
-    { url: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?w=1200&q=80&auto=format&fit=crop', alt: 'Butter chicken with naan', category: 'FOOD', sortOrder: 0 },
-    { url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=1200&q=80&auto=format&fit=crop', alt: 'Aromatic biryani platter', category: 'FOOD', sortOrder: 1 },
-    { url: 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=1200&q=80&auto=format&fit=crop', alt: 'Traditional Indian curry', category: 'FOOD', sortOrder: 2 },
-    { url: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=1200&q=80&auto=format&fit=crop', alt: 'Tandoori starters platter', category: 'FOOD', sortOrder: 3 },
-    // INTERIOR
-    { url: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200&q=80&auto=format&fit=crop', alt: 'Warm dining room', category: 'INTERIOR', sortOrder: 0 },
-    { url: 'https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1200&q=80&auto=format&fit=crop', alt: 'Cocktail bar at dusk', category: 'INTERIOR', sortOrder: 1 },
-    { url: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1200&q=80&auto=format&fit=crop', alt: 'Candlelit table for two', category: 'INTERIOR', sortOrder: 2 },
-    // GARDEN
-    { url: 'https://images.unsplash.com/photo-1499028344343-cd173ffc68a9?w=1200&q=80&auto=format&fit=crop', alt: 'Lush garden seating', category: 'GARDEN', sortOrder: 0 },
-    { url: 'https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=1200&q=80&auto=format&fit=crop', alt: 'Outdoor terrace at golden hour', category: 'GARDEN', sortOrder: 1 },
-    { url: 'https://images.unsplash.com/photo-1533777324565-a040eb52facd?w=1200&q=80&auto=format&fit=crop', alt: 'Garden patio with string lights', category: 'GARDEN', sortOrder: 2 },
-    // EVENTS
-    { url: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=1200&q=80&auto=format&fit=crop', alt: 'Private dining setup', category: 'EVENTS', sortOrder: 0 },
-    { url: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?w=1200&q=80&auto=format&fit=crop', alt: 'Celebration dinner table', category: 'EVENTS', sortOrder: 1 },
-    { url: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=1200&q=80&auto=format&fit=crop', alt: 'Group toast at the bar', category: 'EVENTS', sortOrder: 2 },
+    {
+      url: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1200&q=80&auto=format&fit=crop',
+      alt: 'Açaí bowl',
+      category: 'FOOD',
+      sortOrder: 0,
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200&q=80&auto=format&fit=crop',
+      alt: 'Burger',
+      category: 'FOOD',
+      sortOrder: 1,
+    },
+    {
+      url: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1200&q=80&auto=format&fit=crop',
+      alt: 'Combo meal',
+      category: 'FOOD',
+      sortOrder: 2,
+    },
   ] as const;
 
   for (const img of galleryImages) {
@@ -723,10 +784,11 @@ KitchenAsty Management Team`,
     });
   }
 
-  console.log('Seed completed successfully!');
+  console.log('Seed completed successfully (King Food foundation)!');
   console.log('');
   console.log('Admin login: admin@kitchenasty.com / admin123');
   console.log('Customer login: customer@example.com / customer123');
+  console.log('Location: King Food Columbus');
 }
 
 main()
