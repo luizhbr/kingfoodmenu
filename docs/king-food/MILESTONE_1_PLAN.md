@@ -1,9 +1,8 @@
 # MILESTONE 1 — King Food Foundation
 
 **Branch:** `feature/king-food-foundation`  
-**Base:** `research/kitchenasty-audit`  
 **Started:** 2026-08-11  
-**Status:** IN PROGRESS
+**Status:** AWAITING SMOKE TEST (docs + branding complete)
 
 ---
 
@@ -11,103 +10,64 @@
 
 Transform the audited KitchenAsty codebase into the **King Food Foundation** without rewriting the system.
 
-This milestone focuses only on:
-
-- Branding
-- Default configuration
-- Project identity
-- Safe structural preparation
-
-It does **not** include:
-- WhatsApp / Hermes / N8N
-- New payment flows
-- Full UI redesign
-- Removal of major modules yet
-
----
-
-## Scope (Allowed)
-
-1. Rename project identity from KitchenAsty → King Food (where safe)
-2. Update default SiteSettings (name, colors, title)
-3. Update package names / descriptions where appropriate
-4. Create King Food specific documentation folder
-5. Prepare environment examples for King Food
-6. Keep all existing features working
-
-## Out of Scope (Forbidden in M1)
-
-- Building custom storefront from scratch
-- Removing Admin or Kitchen
-- Changing Order Engine logic
-- Integrating WhatsApp / Hermes / N8N
-- Database destructive migrations
-- Production deployment
+Focus: branding, default configuration, project identity, safe structural preparation.
 
 ---
 
 ## Execution Plan
 
 ### Step 1 — Identity & Branding
-- [ ] Update root README with King Food context (keep KitchenAsty attribution)
+- [x] Update root README with King Food context (keep KitchenAsty attribution)
 - [x] Update default SiteSettings values in seed (siteName, colors, location)
 - [x] Update package.json descriptions
 - [x] Add `docs/king-food/` foundation docs
 
 ### Step 2 — Configuration Foundation
-- [ ] Create `.env.example` notes for King Food
-- [ ] Document required environment variables
-- [ ] Confirm multi-location remains available
+- [x] Smoke test checklist documented (`docs/king-food/SMOKE_TEST.md`)
+- [x] Multi-location model remains available (unchanged schema)
+- [ ] Optional: expand `.env.example` comments (non-blocking)
 
-### Step 3 — Smoke Validation Checklist
-- [ ] Document how to run locally as King Food foundation
-- [ ] Confirm Admin + Storefront + Kitchen still boot (user-side)
+### Step 3 — Smoke Validation
+- [ ] User runs local bootstrap + checklist
+- [ ] Confirm Admin + Storefront + Kitchen still boot
 
 ### Step 4 — Checkpoint
-- [ ] Commit all changes
-- [ ] Report MILESTONE 1 status
-- [ ] Wait for authorization before Milestone 2
+- [x] Changes committed on `feature/king-food-foundation`
+- [ ] Formal MILESTONE 1 close after smoke test OK
+- [ ] Authorization for Milestone 2
 
 ---
 
-## Branding Defaults (King Food)
+## Branding Defaults
 
 | Setting | Value |
 |---------|-------|
 | Site Name | King Food |
-| Primary Color | `#FFD100` (King yellow) |
-| Secondary / Accent | `#E31818` (King red) |
+| Primary | `#FFD100` |
+| Accent | `#E31818` |
 | Tagline | Açaí BR da saudade · Columbus, OH |
-| Location | King Food Columbus (slug: `columbus`) |
-| Default Currency | USD |
+| Location | King Food Columbus (`columbus`) |
 
 ---
 
 ## Decision Log
 
 ### DECISION 001
-**Context:** Start of Milestone 1  
-**Options:** Rewrite vs Adapt KitchenAsty  
-**Chosen:** Adapt  
-**Reason:** KitchenAsty already contains Order Engine, Admin, Kitchen, Modifiers, Payments  
-**Tradeoff:** Some unused features will remain temporarily  
+Adapt KitchenAsty instead of rewrite.  
 **Date:** 2026-08-11
 
 ### DECISION 002
-**Context:** Seed data  
-**Options:** Replace full demo menu with King Food products now vs keep demo menu  
-**Chosen:** Keep demo menu; only rebrand SiteSettings + Location  
-**Reason:** Product catalog belongs to a later milestone; keep M1 focused and low-risk  
+Keep demo menu; only rebrand SiteSettings + Location in seed.  
 **Date:** 2026-08-11
 
 ---
 
-## Success Criteria for Milestone 1
+## Success Criteria
 
-- [x] Branch `feature/king-food-foundation` exists
-- [x] Project clearly identified as King Food foundation
+- [x] Branch exists
+- [x] Project identified as King Food foundation
 - [x] Default branding points to King Food
-- [x] Original KitchenAsty license/attribution preserved
-- [ ] No broken core flows introduced (pending user-side smoke test)
+- [x] KitchenAsty MIT attribution preserved
+- [ ] Core flows verified via smoke test
 - [x] Documentation updated
-- [ ] Ready for Milestone 2 (Storefront focus) after approval
+- [ ] Ready for Milestone 2 after approval
