@@ -1,7 +1,8 @@
 {
-  "name": "kitchenasty",
-  "version": "0.3.0",
+  "name": "king-food",
+  "version": "0.1.0-foundation",
   "private": true,
+  "description": "King Food private ordering platform — foundation based on KitchenAsty (MIT)",
   "workspaces": [
     "packages/*"
   ],
