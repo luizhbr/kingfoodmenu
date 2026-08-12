@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install --include=dev",
-  "buildCommand": "npx prisma generate && npm run build -w packages/server && npm run build -w packages/storefront",
+  "buildCommand": "npx prisma generate && npm run build -w packages/server && npm run build -w packages/storefront && MSYS_NO_PATHCONV=1 VITE_BASE_PATH=/admin/ npm run build -w packages/admin && cp -r packages/admin/dist packages/storefront/dist/admin",
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
@@ -8,7 +8,11 @@
       "destination": "/api"
     },
     {
-      "source": "/((?!assets/|sw\\.js|manifest\\.json|api/).*)",
+      "source": "/admin/:path*",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/((?!assets/|admin/|sw\\.js|manifest\\.json|api/).*)",
       "destination": "/index.html"
     }
   ],
@@ -33,6 +37,15 @@
     },
     {
       "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store, max-age=0"
+        }
+      ]
+    },
+    {
+      "source": "/admin/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

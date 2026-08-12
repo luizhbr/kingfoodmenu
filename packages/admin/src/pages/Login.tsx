@@ -1,4 +1,5 @@
 import { useState, FormEvent } from 'react';
+import { withCsrf } from '../lib/csrf.js';
 
 interface Props {
   onLogin: (token: string) => void;
@@ -16,9 +17,11 @@ export default function Login({ onLogin }: Props) {
     setLoading(true);
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      await withCsrf(headers);
       const res = await fetch('/api/auth/staff/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
