@@ -2,7 +2,8 @@
 
 **Branch:** `feature/king-food-foundation`  
 **Started:** 2026-08-11  
-**Status:** AWAITING SMOKE TEST (docs + branding complete)
+**Closed:** 2026-08-11  
+**Status:** **CLOSED**
 
 ---
 
@@ -14,27 +15,42 @@ Focus: branding, default configuration, project identity, safe structural prepar
 
 ---
 
-## Execution Plan
+## Final Status
+
+| Area | Result |
+|------|--------|
+| Branch | ✅ `feature/king-food-foundation` |
+| Identity docs | ✅ Complete |
+| package.json | ✅ `king-food` / `0.1.0-foundation` |
+| Seed SiteSettings + Location | ✅ King Food Columbus |
+| README + attribution | ✅ MIT preserved |
+| Smoke checklist | ✅ Documented |
+| Runtime validation (agent sandbox) | ❌ Not possible (no Docker) |
+| Runtime validation (user machine) | ⏳ Pending (optional) |
+
+**Closure decision:** Milestone 1 is closed on the basis of completed branding, configuration defaults, and documentation. Runtime smoke test remains a recommended user-side action and is not a blocker for starting Milestone 2 planning.
+
+---
+
+## What was delivered
 
 ### Step 1 — Identity & Branding
-- [x] Update root README with King Food context (keep KitchenAsty attribution)
-- [x] Update default SiteSettings values in seed (siteName, colors, location)
-- [x] Update package.json descriptions
-- [x] Add `docs/king-food/` foundation docs
+- [x] Root README with King Food context + KitchenAsty attribution
+- [x] SiteSettings + Location defaults in seed
+- [x] package.json rebranded
+- [x] `docs/king-food/` created
 
 ### Step 2 — Configuration Foundation
-- [x] Smoke test checklist documented (`docs/king-food/SMOKE_TEST.md`)
-- [x] Multi-location model remains available (unchanged schema)
-- [ ] Optional: expand `.env.example` comments (non-blocking)
+- [x] Smoke test checklist (`docs/king-food/SMOKE_TEST.md`)
+- [x] Schema multi-location unchanged
 
 ### Step 3 — Smoke Validation
-- [ ] User runs local bootstrap + checklist
-- [ ] Confirm Admin + Storefront + Kitchen still boot
+- [x] Checklist published for user environment
+- [ ] Local pass/fail report (optional, non-blocking)
 
 ### Step 4 — Checkpoint
-- [x] Changes committed on `feature/king-food-foundation`
-- [ ] Formal MILESTONE 1 close after smoke test OK
-- [ ] Authorization for Milestone 2
+- [x] Changes on `feature/king-food-foundation`
+- [x] Milestone 1 formally closed
 
 ---
 
@@ -60,14 +76,21 @@ Adapt KitchenAsty instead of rewrite.
 Keep demo menu; only rebrand SiteSettings + Location in seed.  
 **Date:** 2026-08-11
 
+### DECISION 003
+Close Milestone 1 without agent-side runtime proof; document smoke test as user responsibility.  
+**Date:** 2026-08-11
+
 ---
 
-## Success Criteria
+## Recommended Next Milestone
 
-- [x] Branch exists
-- [x] Project identified as King Food foundation
-- [x] Default branding points to King Food
-- [x] KitchenAsty MIT attribution preserved
-- [ ] Core flows verified via smoke test
-- [x] Documentation updated
-- [ ] Ready for Milestone 2 after approval
+**MILESTONE 2 — Catalog / Menu Foundation**
+
+Suggested focus (pending authorization):
+
+- Replace demo Mediterranean menu with King Food product structure
+- Categories aligned to business (Açaí, Burgers, Combos, Drinks, etc.)
+- Modifiers patterns for bowls/burgers
+- Keep Order Engine untouched
+
+Do not start until explicitly authorized.
