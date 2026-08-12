@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { api } from '../lib/api.js';
 
 interface OrderItem {
@@ -40,7 +39,6 @@ const NEXT_ACTION: Record<string, string> = {
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
@@ -60,39 +58,19 @@ export default function KitchenDisplay() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Socket.IO connection for real-time updates
+  // Serverless polling: Socket.IO is not available on Vercel serverless
+  // functions, so the kitchen refreshes active orders on a fixed interval.
+  // The interval is cleared on unmount and never duplicated (single effect).
   useEffect(() => {
-    const s = io({ path: '/socket.io', transports: ['websocket', 'polling'] });
-    setSocket(s);
-
-    s.emit('join:kitchen');
-
-    s.on('order:new', () => {
-      fetchOrders();
-    });
-
-    s.on('order:statusUpdate', (data: { id: string; status: string }) => {
-      setOrders((prev) => {
-        // Remove completed/cancelled orders from display
-        if (!KITCHEN_STATUSES.includes(data.status)) {
-          return prev.filter((o) => o.id !== data.id);
-        }
-        // Update status of existing order
-        return prev.map((o) => o.id === data.id ? { ...o, status: data.status } : o);
-      });
-    });
-
-    return () => {
-      s.emit('leave:kitchen');
-      s.disconnect();
-    };
+    const timer = setInterval(fetchOrders, 15000);
+    return () => clearInterval(timer);
   }, [fetchOrders]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     setUpdating(orderId);
     try {
       await api.patch(`/orders/${orderId}/status`, { status: newStatus });
-      // Optimistic update — socket will also fire
+      // Optimistic update; polling will reconcile with the server
       setOrders((prev) => {
         if (!KITCHEN_STATUSES.includes(newStatus)) {
           return prev.filter((o) => o.id !== orderId);
@@ -148,10 +126,8 @@ export default function KitchenDisplay() {
         <div className="flex items-center gap-4">
           <h1 className="text-lg font-bold text-primary-400">Kitchen Display</h1>
           <div className="flex items-center gap-2" role="status">
-            <div className={`w-2 h-2 rounded-full ${socket?.connected ? 'bg-green-400' : 'bg-red-400'}`} />
-            <span className="text-xs text-gray-400">
-              {socket?.connected ? 'Live' : 'Disconnected'}
-            </span>
+            <div className="w-2 h-2 rounded-full bg-green-400" />
+            <span className="text-xs text-gray-400">Auto-refresh 15s</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
