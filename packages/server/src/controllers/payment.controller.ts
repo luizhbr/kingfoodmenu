@@ -1,10 +1,38 @@
 import { Request, Response } from 'express';
+import { z } from 'zod';
 import { getStripe } from '../lib/stripe.js';
 import prisma from '../lib/db.js';
 import { createPayPalOrder, capturePayPalOrder } from '../lib/paypal.js';
 
+// ── Validation schemas ────────────────────────────────────────────────
+const createPaymentIntentSchema = z.object({
+  orderId: z.string().min(1),
+});
+
+const createCheckoutSessionSchema = z.object({
+  orderId: z.string().min(1),
+});
+
+const markCashPaymentSchema = z.object({
+  orderId: z.string().min(1),
+});
+
+const createPayPalPaymentSchema = z.object({
+  orderId: z.string().min(1),
+});
+
+const capturePayPalPaymentSchema = z.object({
+  paypalOrderId: z.string().min(1),
+  orderId: z.string().min(1),
+});
+
 export async function createPaymentIntent(req: Request, res: Response): Promise<void> {
-  const { orderId } = req.body;
+  const parsed = createPaymentIntentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const { orderId } = parsed.data;
 
   if (!orderId) {
     res.status(400).json({ success: false, error: 'orderId is required' });
@@ -80,7 +108,12 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
 /// path still flips Order.status — the new `checkout.session.completed`
 /// case below is just a belt-and-braces.
 export async function createCheckoutSession(req: Request, res: Response): Promise<void> {
-  const { orderId } = req.body;
+  const parsed = createCheckoutSessionSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const { orderId } = parsed.data;
   if (!orderId) {
     res.status(400).json({ success: false, error: 'orderId is required' });
     return;
@@ -243,7 +276,12 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
 }
 
 export async function markCashPayment(req: Request, res: Response): Promise<void> {
-  const { orderId } = req.body;
+  const parsed = markCashPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const { orderId } = parsed.data;
 
   if (!orderId) {
     res.status(400).json({ success: false, error: 'orderId is required' });
@@ -269,7 +307,12 @@ export async function markCashPayment(req: Request, res: Response): Promise<void
 }
 
 export async function createPayPalPayment(req: Request, res: Response): Promise<void> {
-  const { orderId } = req.body;
+  const parsed = createPayPalPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const { orderId } = parsed.data;
 
   if (!orderId) {
     res.status(400).json({ success: false, error: 'orderId is required' });
@@ -313,7 +356,12 @@ export async function createPayPalPayment(req: Request, res: Response): Promise<
 }
 
 export async function capturePayPalPayment(req: Request, res: Response): Promise<void> {
-  const { paypalOrderId, orderId } = req.body;
+  const parsed = capturePayPalPaymentSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const { paypalOrderId, orderId } = parsed.data;
 
   if (!paypalOrderId || !orderId) {
     res.status(400).json({ success: false, error: 'paypalOrderId and orderId are required' });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate, requireStaff, requireRole } from '../middleware/auth.js';
+import { requireOwnership } from '../middleware/idor.js';
 import {
   createReview,
   listReviews,

@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import { getBalance, redeemPoints, adjustPoints } from '../controllers/loyalty.controller.js';
 import { authenticate, requireStaff, requireRole } from '../middleware/auth.js';
+import { getBalance, redeemPoints, adjustPoints } from '../controllers/loyalty.controller.js';
 
 const router = Router();
 
-// Customer endpoints
+// Customer endpoints — authenticate ensures they can only access their own
 router.get('/balance', authenticate, getBalance);
 router.post('/redeem', authenticate, redeemPoints);
 

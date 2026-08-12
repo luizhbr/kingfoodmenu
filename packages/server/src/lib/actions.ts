@@ -1,5 +1,6 @@
 import { sendEmail } from './email.js';
 import { automationLogger } from './logger.js';
+import { signWebhookPayload } from '../middleware/webhookSignature.js';
 
 interface Action {
   type: string;
@@ -46,13 +47,25 @@ async function handleWebhookAction(
   if (!url) return;
 
   try {
+    const payload = JSON.stringify(data);
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+
+    // Sign outbound webhook payload with HMAC-SHA256
+    const signature = signWebhookPayload(payload);
+    if (signature) {
+      headers['X-Webhook-Signature'] = signature;
+    }
+
     await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      headers,
+      body: payload,
     });
   } catch (err) {
-    automationLogger.error({ err, url }, 'Webhook action failed');
+    // Sanitized error log — no data payload leaked
+    automationLogger.error({ actionType: 'webhook', url: '[REDACTED]' }, 'Webhook action failed');
   }
 }
 
@@ -68,7 +81,7 @@ async function handleSmsAction(
     const body = interpolateTemplate(action.body as string || '', data);
     await sendSMS(to, body);
   } catch (err) {
-    automationLogger.error({ err }, 'SMS action failed');
+    automationLogger.error({ err: err instanceof Error ? err.message : String(err) }, 'SMS action failed');
   }
 }
 
@@ -81,7 +94,7 @@ function resolveRecipient(to: string | undefined, data: Record<string, unknown>)
       const customer = order.customer as Record<string, unknown> | undefined;
       if (customer?.email) return customer.email as string;
       if (order.guestEmail) return order.guestEmail as string;
-      if (customer?.phone) return customer.phone as string;
+      // Don't fall back to phone number for email actions
     }
     return null;
   }

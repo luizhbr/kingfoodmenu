@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
@@ -23,40 +24,67 @@ import staffRoutes from './routes/staff.routes.js';
 import developerRoutes from './routes/developer.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import mediaRoutes from './routes/media.routes.js';
-import attributionRoutes from './routes/attribution.routes.js';
-import campaignRoutes from './routes/campaign.routes.js';
-import qrCodeRoutes from './routes/qrcode.routes.js';
-import referralRoutes from './routes/referral.routes.js';
-import trackingRoutes from './routes/tracking.routes.js';
-import webhookRoutes from './routes/webhook.routes.js';
 import { openApiSpec } from './lib/openapi.js';
 import { initPassport } from './lib/passport.js';
 import passport from 'passport';
 import logger from './lib/logger.js';
 import { requestId } from './middleware/requestId.js';
 import { httpLogger } from './middleware/httpLogger.js';
+import { sanitizeRequestBody } from './middleware/logSanitizer.js';
 import { metricsCollector } from './middleware/metricsCollector.js';
+import { csrfProtection, csrfTokenHandler } from './middleware/csrf.js';
+import { verifyWebhookSignature } from './middleware/webhookSignature.js';
 
 // Initialize automation event listeners
 import './lib/events.js';
+
+// Start metric cleanup cron
+import './lib/metricCleanup.js';
 
 dotenv.config();
 
 export function createApp() {
   const app = express();
 
-  // Middleware
-  app.use(requestId);
-  app.use(helmet());
+  // ── Security headers (enhanced Helmet) ────────────────────────────────
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'https:'],
+        connectSrc: ["'self'", 'https://api.stripe.com'],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+    hsts: process.env.NODE_ENV === 'production'
+      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+      : false,
+  }));
+
+  // ── CORS ──────────────────────────────────────────────────────────────
   app.use(cors({
     origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:5174'],
     credentials: true,
   }));
+
+  // ── Request ID & HTTP logging ─────────────────────────────────────────
+  app.use(requestId);
+  // Sanitize request bodies before logging (prevents sensitive data in logs)
+  app.use(sanitizeRequestBody);
+
   if (process.env.NODE_ENV !== 'test') {
     app.use(httpLogger);
   }
 
-  // Health check (before rate limiter so monitoring/readiness probes always work)
+  // ── Health check (before rate limiter so probes always work) ───────────
   app.get('/api/health', (_req, res) => {
     res.json({
       success: true,
@@ -68,47 +96,83 @@ export function createApp() {
     });
   });
 
-  // Rate limiting
+  // ── Rate limiting (tiered) ────────────────────────────────────────────
   if (process.env.NODE_ENV !== 'test') {
-    const limiter = rateLimit({
-      windowMs: 15 * 60 * 1000, // 15 minutes
-      max: 100, // limit each IP to 100 requests per windowMs
+    // General API: 300 requests per minute
+    const apiLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      max: 300,
       standardHeaders: true,
       legacyHeaders: false,
       message: { success: false, error: 'Too many requests, please try again later.' },
     });
-    app.use('/api/', limiter);
+    app.use('/api/', apiLimiter);
+
+    // Auth routes: 100 requests per 15 minutes
+    const authLimiter = rateLimit({
+      windowMs: 15 * 60 * 1000,
+      max: 100,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { success: false, error: 'Too many authentication attempts. Please try again later.' },
+    });
+    app.use('/api/auth/', authLimiter);
+
+    // Password reset / staff registration: 10 requests per minute
+    const strictLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      max: 10,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { success: false, error: 'Too many attempts. Please try again later.' },
+    });
+    app.use('/api/auth/staff/register', strictLimiter);
+    app.use('/api/auth/staff/login', strictLimiter);
   }
 
-  // Stripe webhook needs raw body — register before JSON parser
+  // ── Webhook signature verification ────────────────────────────────────
+  // Stripe webhook uses its own signature verification (raw body)
   app.use('/api/payments/webhook', express.raw({ type: 'application/json' }));
+
+  // WhatsApp webhook signature verification
+  app.use('/api/automation-rules/webhook', verifyWebhookSignature);
+
+  // ── Body parsing ──────────────────────────────────────────────────────
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // Initialize passport for social login
+  // ── Cookie parser (needed for CSRF double-submit pattern) ────────────
+  app.use(cookieParser());
+
+  // ── CSRF protection (skip for API-only routes using Bearer auth) ──────
+  // CSRF token endpoint for browser-based forms
+  app.get('/api/csrf-token', csrfTokenHandler);
+  // Apply CSRF to state-changing methods; skip if Authorization: Bearer header present
+  app.use(csrfProtection);
+
+  // ── Passport (social login) ───────────────────────────────────────────
   initPassport();
   app.use(passport.initialize());
 
-  // Metrics collection (after passport so req.user is available)
+  // ── Metrics collection ────────────────────────────────────────────────
   if (process.env.NODE_ENV !== 'test') {
     app.use(metricsCollector);
   }
 
-  // Serve uploaded files
+  // ── Static files ──────────────────────────────────────────────────────
   app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
 
-  // API Documentation
+  // ── API Documentation ─────────────────────────────────────────────────
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
     customCss: '.swagger-ui .topbar { display: none }',
     customSiteTitle: 'KitchenAsty API Documentation',
   }));
 
-  // OpenAPI spec endpoint
   app.get('/api/openapi.json', (_req, res) => {
     res.json(openApiSpec);
   });
 
-  // Routes
+  // ── Routes ────────────────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
   app.use('/api/locations', locationRoutes);
   app.use('/api/menu', menuRoutes);
@@ -127,14 +191,8 @@ export function createApp() {
   app.use('/api/developer', developerRoutes);
   app.use('/api/gallery', galleryRoutes);
   app.use('/api/media', mediaRoutes);
-  app.use('/api/attribution', attributionRoutes);
-  app.use('/api/campaigns', campaignRoutes);
-  app.use('/api/qrcodes', qrCodeRoutes);
-  app.use('/api/referrals', referralRoutes);
-  app.use('/api/tracking', trackingRoutes);
-  app.use('/api/webhooks', webhookRoutes);
 
-  // 404 handler
+  // ── 404 handler ───────────────────────────────────────────────────────
   app.use((_req, res) => {
     res.status(404).json({
       success: false,
@@ -142,7 +200,7 @@ export function createApp() {
     });
   });
 
-  // Error handler
+  // ── Error handler ─────────────────────────────────────────────────────
   app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error({ err }, 'Unhandled error');
     res.status(500).json({

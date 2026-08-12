@@ -12,11 +12,17 @@
  *   WHATSAPP_WEBHOOK_URL=https://...
  *   TWILIO_ACCOUNT_SID=
  *   TWILIO_AUTH_TOKEN=
- *   TWILIO_WHATSAPP_FROM=whatsapp:+14155238886
+ *   TWILIO_WHATSAPP_FROM=whatsapp:+141****8886
  *
  * Legacy aliases still accepted:
  *   WHATSAPP_STUB_ENABLED, WHATSAPP_STUB_WEBHOOK_URL
+ *
+ * Security:
+ *   - Outbound webhook calls include X-Webhook-Signature header (HMAC-SHA256)
+ *   - Logs are sanitized — no phone numbers, auth tokens, or payment data
  */
+
+import { signWebhookPayload } from '../middleware/webhookSignature.js';
 
 export interface WhatsAppOrderPayload {
   orderNumber: string;
@@ -39,7 +45,7 @@ export function formatOrderWhatsAppMessage(order: WhatsAppOrderPayload): string 
     order.customerName || order.guestName
       ? `Cliente: ${order.customerName || order.guestName}`
       : null,
-    order.guestPhone ? `Tel: ${order.guestPhone}` : null,
+    ``, // removed phone from message for PII protection
     ``,
     `*Itens:*`,
     ...order.items.map((i) => `• ${i.quantity}x ${i.name} ($${i.subtotal.toFixed(2)})`),
@@ -69,10 +75,11 @@ function webhookUrl(): string {
 }
 
 async function sendStub(message: string, order: WhatsAppOrderPayload): Promise<void> {
+  // Sanitized log — no phone numbers
   console.info('[whatsapp:stub]', {
     orderNumber: order.orderNumber,
-    to: notifyNumber() || '(not set)',
-    preview: message.slice(0, 240),
+    to: notifyNumber() ? '(number set)' : '(not set)', // redacted
+    preview: message.slice(0, 100), // reduced from 240
   });
 }
 
@@ -84,17 +91,29 @@ async function sendWebhook(message: string, order: WhatsAppOrderPayload): Promis
     return;
   }
 
+  const payload = JSON.stringify({
+    source: 'king-food',
+    channel: 'whatsapp',
+    provider: 'webhook',
+    to: notifyNumber(),
+    message,
+    order,
+  });
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  // Sign the payload with HMAC-SHA256 for webhook verification
+  const signature = signWebhookPayload(payload);
+  if (signature) {
+    headers['X-Webhook-Signature'] = signature;
+  }
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      source: 'king-food',
-      channel: 'whatsapp',
-      provider: 'webhook',
-      to: notifyNumber(),
-      message,
-      order,
-    }),
+    headers,
+    body: payload,
   });
 
   if (!res.ok) {
@@ -117,7 +136,7 @@ async function sendTwilio(message: string, order: WhatsAppOrderPayload): Promise
 
   if (!sid || !token || !from || !toRaw) {
     console.warn(
-      '[whatsapp:twilio] missing TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_WHATSAPP_FROM / WHATSAPP_NOTIFY_NUMBER — stub log only'
+      '[whatsapp:twilio] missing credentials — stub log only'
     );
     await sendStub(message, order);
     return;
@@ -143,7 +162,7 @@ async function sendTwilio(message: string, order: WhatsAppOrderPayload): Promise
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    console.warn('[whatsapp:twilio] failed', res.status, text.slice(0, 300));
+    console.warn('[whatsapp:twilio] failed', res.status); // removed response body from log
   } else {
     console.info('[whatsapp:twilio] sent', order.orderNumber);
   }
@@ -164,6 +183,6 @@ export async function notifyOrderWhatsApp(order: WhatsAppOrderPayload): Promise<
       await sendStub(message, order);
     }
   } catch (err) {
-    console.warn('[whatsapp] provider error', provider, err);
+    console.warn('[whatsapp] provider error', provider); // removed err details that could leak data
   }
 }
