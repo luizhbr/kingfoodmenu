@@ -12,12 +12,13 @@
 | P12 Sales Attribution | ✅ commit b43e166 + produção |
 | P13 Customer Journey | ✅ commit 86a0570 + produção + Neon |
 | P14 Documentation | ✅ esta documentação |
+| P15 Final Smoke Test | ✅ 2026-08-12 (1 bug corrigido: OrderAttribution) |
 
 ## IN PROGRESS
 
 | Item | Status |
 |------|--------|
-| P15 Final Smoke Test | ⚠️ próximo |
+| P15 Final Smoke Test | ✅ concluído |
 
 ## NEXT
 

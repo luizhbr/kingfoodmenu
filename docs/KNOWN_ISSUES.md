@@ -31,6 +31,13 @@
 | Bash do terminal quebrado | Efeito de matar processos na limpeza do Buzz. Contornado com Python subprocess. Reiniciar o PC restaura. |
 | Hermes Desktop | Backend local (porta 50000/42017) não sobe — gateway do Telegram segue vivo. |
 
+
+## Menor (não bloqueante)
+
+| Issue | Detalhe |
+|-------|---------|
+| SESSION_STARTED duplicado | O hook useTracking envia SESSION_STARTED a cada mount; remontagem na mesma sessão gera 2 eventos com mesma sessionId. Não afeta pedidos. |
+
 ## Resolvidos (não são issues atuais)
 
 - ~~FUNCTION_INVOCATION_FAILED~~ — resolvido (import dist, não src)
