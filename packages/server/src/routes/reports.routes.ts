@@ -7,6 +7,7 @@ import {
   getReportsLoyalty,
   getReportsDelivery,
   getReportsSales,
+  exportReportsExcel,
 } from '../controllers/reports.controller.js';
 
 const router = Router();
@@ -19,5 +20,6 @@ router.get('/products', authenticate, requireRole('MANAGER', 'SUPER_ADMIN'), get
 router.get('/marketing', authenticate, requireRole('MANAGER', 'SUPER_ADMIN'), getReportsMarketing);
 router.get('/loyalty', authenticate, requireRole('MANAGER', 'SUPER_ADMIN'), getReportsLoyalty);
 router.get('/delivery', authenticate, requireRole('MANAGER', 'SUPER_ADMIN'), getReportsDelivery);
+router.get('/export', authenticate, requireRole('MANAGER', 'SUPER_ADMIN'), exportReportsExcel);
 
 export default router;

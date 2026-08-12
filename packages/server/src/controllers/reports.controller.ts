@@ -15,6 +15,7 @@ import {
   getDailyTrend,
   PeriodKey,
 } from '../lib/reports-service.js';
+import { buildReportWorkbook, workbookToBuffer } from '../lib/excel-service.js';
 
 // ── Reports controller ───────────────────────────────────────────────────────
 // Manager/Admin only (requireRole). The period filter is validated with zod;
@@ -90,4 +91,32 @@ export async function getReportsSales(req: Request, res: Response): Promise<void
   if (!range) return;
   const overview = await getOverview(range);
   res.json({ success: true, data: overview });
+}
+
+export async function exportReportsExcel(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+
+  try {
+    const period = (req.query.period as PeriodKey) || '30d';
+    const tzParam = req.query.tz as string | undefined;
+    const startParam = req.query.start as string | undefined;
+    const endParam = req.query.end as string | undefined;
+    const workbook = await buildReportWorkbook(period, tzParam, startParam, endParam);
+    const buffer = await workbookToBuffer(workbook);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    );
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="king-food-report-${dateStr}.xlsx"`,
+    );
+    res.setHeader('Content-Length', buffer.length);
+    res.send(buffer);
+  } catch (err) {
+    console.error('[reports] export failed', err);
+    res.status(500).json({ success: false, error: 'Export failed' });
+  }
 }

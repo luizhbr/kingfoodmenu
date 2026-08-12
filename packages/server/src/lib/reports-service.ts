@@ -408,3 +408,48 @@ export async function getDailyTrend(range: DateRange) {
     revenue: round2(Number(r.revenue)),
   }));
 }
+
+// ── Orders list (raw rows for the Orders sheet) ─────────────────────────────
+
+export async function getOrdersList(range: DateRange, limit = 2000) {
+  const orders = await prisma.order.findMany({
+    where: { createdAt: { gte: range.start, lt: range.end } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      id: true,
+      orderNumber: true,
+      createdAt: true,
+      status: true,
+      orderType: true,
+      subtotal: true,
+      discount: true,
+      deliveryFee: true,
+      tax: true,
+      total: true,
+      couponId: true,
+      guestName: true,
+      customer: { select: { name: true, email: true } },
+      assignedTo: { select: { name: true } },
+      coupon: { select: { code: true } },
+      orderAttribution: { select: { source: true } },
+    },
+  });
+  return orders.map((o) => ({
+    id: o.id,
+    orderNumber: o.orderNumber,
+    createdAt: o.createdAt,
+    status: o.status,
+    orderType: o.orderType,
+    subtotal: o.subtotal,
+    discount: o.discount,
+    deliveryFee: o.deliveryFee,
+    tax: o.tax,
+    total: o.total,
+    couponCode: o.coupon?.code ?? null,
+    customerName: o.customer?.name ?? o.guestName ?? null,
+    customerEmail: o.customer?.email ?? null,
+    driverName: o.assignedTo?.name ?? null,
+    attributionSource: o.orderAttribution?.source ?? null,
+  }));
+}
