@@ -67,7 +67,19 @@ const navItems: NavItem[] = [
       { path: '/legal/consent', label: 'Consent Log' },
     ],
   },
-  { path: '/settings', label: 'Settings', icon: '\u2699', roles: ['SUPER_ADMIN', 'MANAGER'] },
+  {
+    path: '/settings',
+    label: 'Settings',
+    icon: '\u2699',
+    roles: ['SUPER_ADMIN', 'MANAGER'],
+    children: [
+      { path: '/settings', label: 'All Settings' },
+      { path: '/settings/general', label: 'General' },
+      { path: '/settings/order', label: 'Order' },
+      { path: '/settings/print', label: 'Printing / Receipt Templates' },
+      { path: '/settings/review', label: 'Reviews' },
+    ],
+  },
   {
     path: '/developer',
     label: 'Developer',

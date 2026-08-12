@@ -174,10 +174,21 @@ export default function SettingsPrint() {
             setSelectedId(res.data[0].id);
             setT(res.data[0]);
             refreshPreview(res.data[0]);
+          } else {
+            // No saved templates yet — show the default (legacy) design so the
+            // preview is never blank and the user sees what they are editing.
+            setT(EMPTY);
+            refreshPreview(EMPTY);
           }
+        } else {
+          setT(EMPTY);
+          refreshPreview(EMPTY);
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        setT(EMPTY);
+        refreshPreview(EMPTY);
+      })
       .finally(() => setLoading(false));
   }, [api, refreshPreview]);
 
@@ -227,7 +238,7 @@ export default function SettingsPrint() {
   async function handleTestPrint() {
     setError(''); setSuccess('');
     try {
-      const res = await api('/api/admin/print/test', { method: 'POST', body: JSON.stringify({ templateId: selectedId || undefined }) });
+      const res = await api('/api/admin/print/templates/test', { method: 'POST', body: JSON.stringify({ templateId: selectedId || undefined }) });
       if (res.success) setSuccess('Teste renderizado — envie pelo agente para imprimir');
       else setError(res.error || 'Erro no teste');
     } catch {
