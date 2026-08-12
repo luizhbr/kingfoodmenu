@@ -47,6 +47,5 @@ export const httpLogger = pinoHttp({
   },
   // Don't log request body for certain paths
   autoLogging: {
-    ignorePaths: ['/api/health'],
   },
 });

@@ -1,14 +1,15 @@
 "use strict";
 
 import { Router } from "express";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, requireRole } from "../middleware/auth.js";
+import prisma from '../lib/db.js';
 
 const router = Router();
 
 // GET /api/referrals — List referrals (MANAGER+)
-router.get("/", authenticate, authorize("MANAGER"), async (req, res) => {
+router.get("/", authenticate, requireRole("MANAGER"), async (req, res) => {
   try {
-    const referrals = await req.prisma.referral.findMany({
+    const referrals = await prisma.referral.findMany({
       include: { referrer: true, campaign: true },
       orderBy: { createdAt: "desc" },
     });
@@ -19,9 +20,9 @@ router.get("/", authenticate, authorize("MANAGER"), async (req, res) => {
 });
 
 // POST /api/referrals — Create referral code
-router.post("/", authenticate, authorize("MANAGER"), async (req, res) => {
+router.post("/", authenticate, requireRole("MANAGER"), async (req, res) => {
   try {
-    const referral = await req.prisma.referral.create({ data: req.body });
+    const referral = await prisma.referral.create({ data: req.body });
     res.status(201).json({ data: referral });
   } catch (err) {
     res.status(500).json({ error: "Failed to create referral" });
@@ -31,7 +32,7 @@ router.post("/", authenticate, authorize("MANAGER"), async (req, res) => {
 // GET /api/referrals/:code — Track referral click (public)
 router.get("/:code", async (req, res) => {
   try {
-    const referral = await req.prisma.referral.update({
+    const referral = await prisma.referral.update({
       where: { code: req.params.code },
       data: { clickCount: { increment: 1 } },
     });

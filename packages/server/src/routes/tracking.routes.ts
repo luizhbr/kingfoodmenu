@@ -1,6 +1,7 @@
 "use strict";
 
 import { Router } from "express";
+import prisma from '../lib/db.js';
 
 const router = Router();
 
@@ -28,7 +29,7 @@ router.post("/events", async (req, res) => {
     // Resolve attribution source
     const attributionSource = source || "UNKNOWN";
 
-    const event = await req.prisma.trackingEvent.create({
+    const event = await prisma.trackingEvent.create({
       data: {
         eventType,
         sessionId: sessionId || "unknown",
@@ -52,13 +53,13 @@ router.post("/events", async (req, res) => {
 
     // Update customer attribution (first/last touch)
     if (customerId && attributionSource !== "UNKNOWN") {
-      const existing = await req.prisma.attribution.findUnique({
+      const existing = await prisma.attribution.findUnique({
         where: { customerId },
       });
 
       if (!existing) {
         // First touch — create
-        await req.prisma.attribution.create({
+        await prisma.attribution.create({
           data: {
             customerId,
             firstSource: attributionSource,
@@ -83,7 +84,7 @@ router.post("/events", async (req, res) => {
         });
       } else {
         // Update last touch (never overwrite first touch)
-        await req.prisma.attribution.update({
+        await prisma.attribution.update({
           where: { customerId },
           data: {
             lastSource: attributionSource,

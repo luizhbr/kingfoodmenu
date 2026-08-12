@@ -1,7 +1,8 @@
 "use strict";
 
 import { Router } from "express";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, requireRole } from "../middleware/auth.js";
+import prisma from '../lib/db.js';
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.use(authenticate);
 router.get("/customer/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const attribution = await req.prisma.attribution.findUnique({
+    const attribution = await prisma.attribution.findUnique({
       where: { customerId: id },
       include: { campaign: true },
     });
@@ -29,7 +30,7 @@ router.get("/customer/:id", async (req, res) => {
 router.get("/order/:orderId", async (req, res) => {
   try {
     const { orderId } = req.params;
-    const attribution = await req.prisma.orderAttribution.findUnique({
+    const attribution = await prisma.orderAttribution.findUnique({
       where: { orderId },
     });
     if (!attribution) {
@@ -42,7 +43,7 @@ router.get("/order/:orderId", async (req, res) => {
 });
 
 // GET /api/attribution/summary — Attribution summary (MANAGER+ only)
-router.get("/summary", authorize("MANAGER"), async (req, res) => {
+router.get("/summary", requireRole("MANAGER"), async (req, res) => {
   try {
     const [
       totalOrders,
@@ -52,22 +53,20 @@ router.get("/summary", authorize("MANAGER"), async (req, res) => {
       unknownRevenue,
       bySource,
     ] = await Promise.all([
-      req.prisma.order.count(),
-      req.prisma.orderAttribution.count({
+      prisma.order.count(),
+      prisma.orderAttribution.count({
         where: { source: { not: "UNKNOWN" } },
       }),
-      req.prisma.orderAttribution.count({
+      prisma.orderAttribution.count({
         where: { source: "UNKNOWN" },
       }),
-      req.prisma.order.aggregate({ _sum: { total: true } }),
-      req.prisma.orderAttribution.aggregate({
-        _sum: { _count: true },
+      prisma.order.aggregate({ _sum: { total: true } }),
+      prisma.orderAttribution.count({
         where: { source: "UNKNOWN" },
       }),
-      req.prisma.orderAttribution.groupBy({
+      prisma.orderAttribution.groupBy({
         by: ["source"],
         _count: { id: true },
-        _sum: {},
       }),
     ]);
 
@@ -94,7 +93,7 @@ router.get("/summary", authorize("MANAGER"), async (req, res) => {
 });
 
 // GET /api/attribution/by-source — Revenue by source (MANAGER+ only)
-router.get("/by-source", authorize("MANAGER"), async (req, res) => {
+router.get("/by-source", requireRole("MANAGER"), async (req, res) => {
   try {
     const { from, to } = req.query;
     const where: any = {};
@@ -104,7 +103,7 @@ router.get("/by-source", authorize("MANAGER"), async (req, res) => {
       if (to) where.createdAt.lte = new Date(to as string);
     }
 
-    const bySource = await req.prisma.orderAttribution.groupBy({
+    const bySource = await prisma.orderAttribution.groupBy({
       by: ["source"],
       _count: { id: true },
       where,

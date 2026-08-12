@@ -1,14 +1,15 @@
 "use strict";
 
 import { Router } from "express";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, requireRole } from "../middleware/auth.js";
+import prisma from '../lib/db.js';
 
 const router = Router();
 
 // GET /api/qrcodes — List QR codes (MANAGER+)
-router.get("/", authenticate, authorize("MANAGER"), async (req, res) => {
+router.get("/", authenticate, requireRole("MANAGER"), async (req, res) => {
   try {
-    const qrCodes = await req.prisma.qRCode.findMany({
+    const qrCodes = await prisma.qRCode.findMany({
       include: { campaign: true },
       orderBy: { createdAt: "desc" },
     });
@@ -19,9 +20,9 @@ router.get("/", authenticate, authorize("MANAGER"), async (req, res) => {
 });
 
 // POST /api/qrcodes — Create QR code (MANAGER+)
-router.post("/", authenticate, authorize("MANAGER"), async (req, res) => {
+router.post("/", authenticate, requireRole("MANAGER"), async (req, res) => {
   try {
-    const qrCode = await req.prisma.qRCode.create({ data: req.body });
+    const qrCode = await prisma.qRCode.create({ data: req.body });
     res.status(201).json({ data: qrCode });
   } catch (err) {
     res.status(500).json({ error: "Failed to create QR code" });
@@ -31,19 +32,19 @@ router.post("/", authenticate, authorize("MANAGER"), async (req, res) => {
 // GET /api/qrcodes/:code — Track QR scan (public, increments scan count)
 router.get("/:code", async (req, res) => {
   try {
-    const qrCode = await req.prisma.qRCode.update({
+    const qrCode = await prisma.qRCode.update({
       where: { code: req.params.code },
       data: { scanCount: { increment: 1 } },
     });
     if (!qrCode) return res.status(404).json({ error: "QR code not found" });
     
     // Create tracking event
-    await req.prisma.trackingEvent.create({
+    await prisma.trackingEvent.create({
       data: {
         eventType: "PAGE_VIEW",
         source: "QR_CODE",
         sessionId: req.headers["x-session-id"] as string || "unknown",
-        campaign: qrCode.campaignId || undefined,
+        campaignId: qrCode.campaignId || undefined,
         qrCodeId: qrCode.id,
         page: req.headers.referer || undefined,
         userAgent: req.headers["user-agent"] || undefined,

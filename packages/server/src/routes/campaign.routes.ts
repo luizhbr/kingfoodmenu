@@ -1,14 +1,15 @@
 "use strict";
 
 import { Router } from "express";
-import { authenticate, authorize } from "../middleware/auth.js";
+import { authenticate, requireRole } from "../middleware/auth.js";
 import { Prisma } from "@prisma/client";
+import prisma from '../lib/db.js';
 
 const router = Router();
 
 // All campaign routes require MANAGER+ role
 router.use(authenticate);
-router.use(authorize("MANAGER"));
+router.use(requireRole("MANAGER"));
 
 // GET /api/campaigns — List all campaigns
 router.get("/", async (req, res) => {
@@ -20,14 +21,14 @@ router.get("/", async (req, res) => {
     if (isActive !== undefined) where.isActive = isActive === "true";
 
     const [campaigns, total] = await Promise.all([
-      req.prisma.campaign.findMany({
+      prisma.campaign.findMany({
         where,
         skip,
         take,
         include: { partner: true, _count: { select: { trackingEvents: true, qrCodes: true, referrals: true } } },
         orderBy: { createdAt: "desc" },
       }),
-      req.prisma.campaign.count({ where }),
+      prisma.campaign.count({ where }),
     ]);
 
     res.json({
@@ -42,7 +43,7 @@ router.get("/", async (req, res) => {
 // POST /api/campaigns — Create campaign
 router.post("/", async (req, res) => {
   try {
-    const campaign = await req.prisma.campaign.create({ data: req.body });
+    const campaign = await prisma.campaign.create({ data: req.body });
     res.status(201).json({ data: campaign });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -55,7 +56,7 @@ router.post("/", async (req, res) => {
 // GET /api/campaigns/:id — Get campaign
 router.get("/:id", async (req, res) => {
   try {
-    const campaign = await req.prisma.campaign.findUnique({
+    const campaign = await prisma.campaign.findUnique({
       where: { id: req.params.id },
       include: { partner: true, qrCodes: true, referrals: true },
     });
@@ -69,7 +70,7 @@ router.get("/:id", async (req, res) => {
 // PATCH /api/campaigns/:id — Update campaign
 router.patch("/:id", async (req, res) => {
   try {
-    const campaign = await req.prisma.campaign.update({
+    const campaign = await prisma.campaign.update({
       where: { id: req.params.id },
       data: req.body,
     });
@@ -85,7 +86,7 @@ router.patch("/:id", async (req, res) => {
 // DELETE /api/campaigns/:id — Delete campaign
 router.delete("/:id", async (req, res) => {
   try {
-    await req.prisma.campaign.delete({ where: { id: req.params.id } });
+    await prisma.campaign.delete({ where: { id: req.params.id } });
     res.json({ data: { id: req.params.id } });
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {

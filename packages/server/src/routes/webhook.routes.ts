@@ -2,6 +2,9 @@
 
 import { Router, Request, Response } from "express";
 import crypto from "crypto";
+import prisma from '../lib/db.js';
+import type { OrderStatus } from '@prisma/client';
+import express from 'express';
 
 const router = Router();
 
@@ -75,9 +78,9 @@ router.post("/n8n", express.json(), async (req: Request, res: Response) => {
           };
           const status = statusMap[event];
           if (status) {
-            await req.prisma.order.update({
+            await prisma.order.update({
               where: { id: data.orderId },
-              data: { status },
+              data: { status: status as OrderStatus },
             }).catch(() => {
               console.warn("[webhook] Order not found:", data.orderId);
             });
@@ -102,7 +105,7 @@ router.post("/n8n", express.json(), async (req: Request, res: Response) => {
         // WhatsApp message received — preserve attribution
         if (data?.customerPhone && attribution) {
           // Track the WhatsApp touch as a tracking event
-          await req.prisma.trackingEvent.create({
+          await prisma.trackingEvent.create({
             data: {
               eventType: "WHATSAPP_CLICKED",
               sessionId: `whatsapp_${data.customerPhone}_${Date.now()}`,
@@ -118,7 +121,7 @@ router.post("/n8n", express.json(), async (req: Request, res: Response) => {
                 originalSource: attribution.source,
               },
             },
-          }).catch((err) => {
+          }).catch((err: any) => {
             console.warn("[webhook] Failed to track WhatsApp event:", err.message);
           });
         }
@@ -131,12 +134,12 @@ router.post("/n8n", express.json(), async (req: Request, res: Response) => {
 
     // If attribution data is provided, update customer attribution
     if (attribution?.customerId && attribution.source && attribution.source !== "UNKNOWN") {
-      const existing = await req.prisma.attribution.findUnique({
+      const existing = await prisma.attribution.findUnique({
         where: { customerId: attribution.customerId },
       }).catch(() => null);
 
       if (!existing) {
-        await req.prisma.attribution.create({
+        await prisma.attribution.create({
           data: {
             customerId: attribution.customerId,
             firstSource: attribution.source,
@@ -155,7 +158,7 @@ router.post("/n8n", express.json(), async (req: Request, res: Response) => {
         }).catch(() => {});
       } else {
         // Only update last touch — never overwrite first touch
-        await req.prisma.attribution.update({
+        await prisma.attribution.update({
           where: { customerId: attribution.customerId },
           data: {
             lastSource: attribution.source,
