@@ -1,5 +1,6 @@
 {
   "installCommand": "npm install --include=dev",
+  "buildCommand": "npx prisma generate && npm run build -w packages/storefront",
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
@@ -40,6 +41,5 @@
     "api/[[...path]].ts": {
       "maxDuration": 30
     }
-  },
-  "buildCommand": "npm install --include=dev && npx prisma generate && npx vite build"
+  }
 }
