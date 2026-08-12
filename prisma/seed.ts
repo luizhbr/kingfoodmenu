@@ -4,9 +4,9 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding database (King Food foundation)...');
+  console.log('Seeding database (King Food catalog — Milestone 2)...');
 
-  // Create admin user
+  // Admin
   const hashedPassword = await bcrypt.hash('admin123', 10);
   await prisma.user.upsert({
     where: { email: 'admin@kitchenasty.com' },
@@ -20,7 +20,7 @@ async function main() {
     },
   });
 
-  // Create a customer
+  // Customer
   const customerPassword = await bcrypt.hash('customer123', 10);
   const customer = await prisma.customer.upsert({
     where: { email: 'customer@example.com' },
@@ -33,24 +33,32 @@ async function main() {
     },
   });
 
-  // Create allergens
+  // Allergens
   const allergens = await Promise.all(
-    ['Gluten', 'Dairy', 'Nuts', 'Eggs', 'Soy', 'Shellfish', 'Fish', 'Sesame'].map(
-      (name) => prisma.allergen.upsert({ where: { name }, update: {}, create: { name } })
+    ['Gluten', 'Dairy', 'Nuts', 'Eggs', 'Soy', 'Shellfish', 'Fish', 'Sesame'].map((name) =>
+      prisma.allergen.upsert({ where: { name }, update: {}, create: { name } })
     )
   );
+  const allergenMap = Object.fromEntries(allergens.map((a) => [a.name, a.id]));
 
-  // Create customer group
-  const regularGroup = await prisma.customerGroup.upsert({
+  await prisma.customerGroup.upsert({
     where: { name: 'Regular' },
     update: {},
     create: { name: 'Regular' },
   });
 
-  // Create location — King Food Columbus
+  // Location — King Food Columbus
   const location = await prisma.location.upsert({
     where: { slug: 'columbus' },
-    update: {},
+    update: {
+      name: 'King Food Columbus',
+      description: 'Açaí BR da saudade — Brazilian bowls, burgers and combos delivered in Columbus, OH',
+      phone: '(380) 269-5741',
+      email: 'orders@kingfood.local',
+      city: 'Columbus',
+      state: 'OH',
+      postalCode: '43035',
+    },
     create: {
       name: 'King Food Columbus',
       slug: 'columbus',
@@ -73,7 +81,6 @@ async function main() {
     },
   });
 
-  // Operating hours (Mon-Sun, 10am-10pm)
   for (let day = 0; day <= 6; day++) {
     await prisma.operatingHour.upsert({
       where: { locationId_dayOfWeek: { locationId: location.id, dayOfWeek: day } },
@@ -88,385 +95,515 @@ async function main() {
     });
   }
 
-  // Delivery zones
-  await prisma.deliveryZone.create({
-    data: {
-      locationId: location.id,
-      name: 'Zone 1 - Nearby',
-      charge: 3.99,
-      minOrder: 15,
-      isActive: true,
-    },
-  });
-
-  await prisma.deliveryZone.create({
-    data: {
-      locationId: location.id,
-      name: 'Zone 2 - Extended',
-      charge: 6.99,
-      minOrder: 25,
-      isActive: true,
-    },
-  });
+  // Delivery zones (skip if re-seed creates duplicates — use createMany skipDuplicates pattern via try)
+  const existingZones = await prisma.deliveryZone.count({ where: { locationId: location.id } });
+  if (existingZones === 0) {
+    await prisma.deliveryZone.createMany({
+      data: [
+        { locationId: location.id, name: 'Zone 1 - Nearby', charge: 3.99, minOrder: 15, isActive: true },
+        { locationId: location.id, name: 'Zone 2 - Extended', charge: 6.99, minOrder: 25, isActive: true },
+      ],
+    });
+  }
 
   // Mealtimes
-  const lunch = await prisma.mealtime.create({
-    data: {
-      name: 'Lunch',
-      startTime: '11:00',
-      endTime: '15:00',
-      days: [1, 2, 3, 4, 5],
-      locationId: location.id,
-    },
+  let lunch = await prisma.mealtime.findFirst({ where: { locationId: location.id, name: 'Lunch' } });
+  if (!lunch) {
+    lunch = await prisma.mealtime.create({
+      data: {
+        name: 'Lunch',
+        startTime: '11:00',
+        endTime: '15:00',
+        days: [1, 2, 3, 4, 5],
+        locationId: location.id,
+      },
+    });
+  }
+
+  let dinner = await prisma.mealtime.findFirst({ where: { locationId: location.id, name: 'Dinner' } });
+  if (!dinner) {
+    dinner = await prisma.mealtime.create({
+      data: {
+        name: 'Dinner',
+        startTime: '17:00',
+        endTime: '22:00',
+        days: [0, 1, 2, 3, 4, 5, 6],
+        locationId: location.id,
+      },
+    });
+  }
+
+  // ========== KING FOOD CATEGORIES ==========
+  const catAcai = await prisma.category.upsert({
+    where: { slug: 'acai' },
+    update: { name: 'Açaí', sortOrder: 1, locationId: location.id },
+    create: { name: 'Açaí', slug: 'acai', sortOrder: 1, locationId: location.id },
   });
 
-  const dinner = await prisma.mealtime.create({
-    data: {
-      name: 'Dinner',
-      startTime: '17:00',
-      endTime: '22:00',
-      days: [0, 1, 2, 3, 4, 5, 6],
-      locationId: location.id,
-    },
+  const catBurgers = await prisma.category.upsert({
+    where: { slug: 'burgers' },
+    update: { name: 'Burgers', sortOrder: 2, locationId: location.id },
+    create: { name: 'Burgers', slug: 'burgers', sortOrder: 2, locationId: location.id },
   });
 
-  // Categories (demo menu kept for foundation; real King Food catalog in later milestone)
-  const appetizers = await prisma.category.upsert({
-    where: { slug: 'appetizers' },
-    update: {},
-    create: { name: 'Mezze & Starters', slug: 'appetizers', sortOrder: 1, locationId: location.id },
+  const catCombos = await prisma.category.upsert({
+    where: { slug: 'combos' },
+    update: { name: 'Combos', sortOrder: 3, locationId: location.id },
+    create: { name: 'Combos', slug: 'combos', sortOrder: 3, locationId: location.id },
   });
 
-  const mains = await prisma.category.upsert({
-    where: { slug: 'main-courses' },
-    update: {},
-    create: { name: 'Mains', slug: 'main-courses', sortOrder: 2, locationId: location.id },
+  const catSides = await prisma.category.upsert({
+    where: { slug: 'sides' },
+    update: { name: 'Sides', sortOrder: 4, locationId: location.id },
+    create: { name: 'Sides', slug: 'sides', sortOrder: 4, locationId: location.id },
   });
 
-  const pizzas = await prisma.category.upsert({
-    where: { slug: 'pizzas' },
-    update: {},
-    create: { name: 'Flatbreads & Pizza', slug: 'pizzas', sortOrder: 3, locationId: location.id },
+  const catSweets = await prisma.category.upsert({
+    where: { slug: 'sweets' },
+    update: { name: 'Sweets', sortOrder: 5, locationId: location.id },
+    create: { name: 'Sweets', slug: 'sweets', sortOrder: 5, locationId: location.id },
   });
 
-  const desserts = await prisma.category.upsert({
-    where: { slug: 'desserts' },
-    update: {},
-    create: { name: 'Sweets', slug: 'desserts', sortOrder: 4, locationId: location.id },
-  });
-
-  const drinks = await prisma.category.upsert({
+  const catDrinks = await prisma.category.upsert({
     where: { slug: 'drinks' },
-    update: {},
-    create: { name: 'Beverages', slug: 'drinks', sortOrder: 5, locationId: location.id },
+    update: { name: 'Drinks', sortOrder: 6, locationId: location.id },
+    create: { name: 'Drinks', slug: 'drinks', sortOrder: 6, locationId: location.id },
   });
 
-  // Menu items with options
-  const bruschetta = await prisma.menuItem.upsert({
-    where: { slug: 'bruschetta' },
-    update: {},
-    create: {
-      name: 'Bruschetta',
-      slug: 'bruschetta',
-      description: 'Wood-fired sourdough topped with heirloom tomatoes, roasted garlic, fresh basil, and a drizzle of aged balsamic',
-      price: 8.99,
-      image: 'https://images.unsplash.com/photo-1572695157366-5e585ab2b69f?w=600&h=400&fit=crop',
-      categoryId: appetizers.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
-  });
+  // ========== PRODUCTS ==========
 
-  const caesarSalad = await prisma.menuItem.upsert({
-    where: { slug: 'caesar-salad' },
-    update: {},
-    create: {
-      name: 'Caesar Salad',
-      slug: 'caesar-salad',
-      description: 'Crisp romaine hearts tossed in house-made Caesar dressing with garlic croutons, shaved Parmigiano-Reggiano, and anchovy breadcrumbs',
-      price: 10.99,
-      image: 'https://images.unsplash.com/photo-1550304943-4f24f54ddde9?w=600&h=400&fit=crop',
-      categoryId: appetizers.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
-  });
-
-  // Caesar salad size option
-  await prisma.menuOption.create({
-    data: {
-      menuItemId: caesarSalad.id,
-      name: 'Size',
-      displayType: 'RADIO',
-      isRequired: true,
-      values: {
-        create: [
-          { name: 'Regular', priceModifier: 0, isDefault: true, sortOrder: 1 },
-          { name: 'Large', priceModifier: 3.0, sortOrder: 2 },
-        ],
-      },
-    },
-  });
-
-  // Caesar salad add-ons
-  await prisma.menuOption.create({
-    data: {
-      menuItemId: caesarSalad.id,
-      name: 'Add Protein',
-      displayType: 'CHECKBOX',
-      isRequired: false,
-      maxSelect: 3,
-      values: {
-        create: [
-          { name: 'Grilled Chicken', priceModifier: 4.0, sortOrder: 1 },
-          { name: 'Shrimp', priceModifier: 6.0, sortOrder: 2 },
-          { name: 'Salmon', priceModifier: 7.0, sortOrder: 3 },
-        ],
-      },
-    },
-  });
-
-  const hummusTrio = await prisma.menuItem.upsert({
-    where: { slug: 'hummus-trio' },
-    update: {},
-    create: {
-      name: 'Hummus Trio',
-      slug: 'hummus-trio',
-      description: 'Classic, roasted red pepper, and herb-infused hummus served with warm pita bread and marinated olives',
-      price: 12.99,
-      image: 'https://images.unsplash.com/photo-1577805947697-89e18249d767?w=600&h=400&fit=crop',
-      categoryId: appetizers.id,
-      locationId: location.id,
-      sortOrder: 3,
-    },
-  });
-
-  const grilledSalmon = await prisma.menuItem.upsert({
-    where: { slug: 'grilled-salmon' },
-    update: {},
-    create: {
-      name: 'Grilled Salmon',
-      slug: 'grilled-salmon',
-      description: 'Wild-caught salmon fillet glazed with saffron-lemon butter, served over herbed couscous with charred broccolini',
-      price: 22.99,
-      image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?w=600&h=400&fit=crop',
-      categoryId: mains.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
-  });
-
-  const lambKofta = await prisma.menuItem.upsert({
-    where: { slug: 'lamb-kofta' },
-    update: {},
-    create: {
-      name: 'Lamb Kofta',
-      slug: 'lamb-kofta',
-      description: 'Spiced lamb kofta skewers grilled over charcoal, served with tzatziki, pickled onions, and saffron rice',
-      price: 19.99,
-      image: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&h=400&fit=crop',
-      categoryId: mains.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
-  });
-
-  const shawarmaBowl = await prisma.menuItem.upsert({
-    where: { slug: 'chicken-shawarma-bowl' },
-    update: {},
-    create: {
-      name: 'Chicken Shawarma Bowl',
-      slug: 'chicken-shawarma-bowl',
-      description: 'Slow-roasted shawarma chicken over turmeric rice with tahini sauce, pickled turnips, and a fresh herb salad',
-      price: 17.99,
-      image: 'https://images.unsplash.com/photo-1529006557810-274b9b2fc783?w=600&h=400&fit=crop',
-      categoryId: mains.id,
-      locationId: location.id,
-      sortOrder: 3,
-    },
-  });
-
-  const margherita = await prisma.menuItem.upsert({
-    where: { slug: 'margherita-pizza' },
-    update: {},
-    create: {
-      name: 'Margherita Pizza',
-      slug: 'margherita-pizza',
-      description: 'San Marzano tomato sauce, buffalo mozzarella, fresh basil, and extra-virgin olive oil on our house-made dough',
-      price: 14.99,
-      image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?w=600&h=400&fit=crop',
-      categoryId: pizzas.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
-  });
-
-  const zaatarFlatbread = await prisma.menuItem.upsert({
-    where: { slug: 'zaatar-flatbread' },
-    update: {},
-    create: {
-      name: "Za'atar Flatbread",
-      slug: 'zaatar-flatbread',
-      description: "Crispy flatbread brushed with olive oil and topped with za'atar, cherry tomatoes, labneh, and a squeeze of lemon",
-      price: 13.99,
-      image: 'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=600&h=400&fit=crop',
-      categoryId: pizzas.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
-  });
-
-  // Pizza size option
-  await prisma.menuOption.create({
-    data: {
-      menuItemId: margherita.id,
-      name: 'Size',
-      displayType: 'RADIO',
-      isRequired: true,
-      values: {
-        create: [
-          { name: '10\" Small', priceModifier: 0, isDefault: true, sortOrder: 1 },
-          { name: '12\" Medium', priceModifier: 3.0, sortOrder: 2 },
-          { name: '14\" Large', priceModifier: 6.0, sortOrder: 3 },
-        ],
-      },
-    },
-  });
-
-  // Pizza extra toppings
-  await prisma.menuOption.create({
-    data: {
-      menuItemId: margherita.id,
-      name: 'Extra Toppings',
-      displayType: 'CHECKBOX',
-      isRequired: false,
-      maxSelect: 5,
-      values: {
-        create: [
-          { name: 'Mushrooms', priceModifier: 1.5, sortOrder: 1 },
-          { name: 'Olives', priceModifier: 1.5, sortOrder: 2 },
-          { name: 'Peppers', priceModifier: 1.5, sortOrder: 3 },
-          { name: 'Pepperoni', priceModifier: 2.0, sortOrder: 4 },
-          { name: 'Extra Cheese', priceModifier: 2.0, sortOrder: 5 },
-        ],
-      },
-    },
-  });
-
-  const tiramisu = await prisma.menuItem.upsert({
-    where: { slug: 'tiramisu' },
-    update: {},
-    create: {
-      name: 'Tiramisu',
-      slug: 'tiramisu',
-      description: 'Layers of espresso-soaked savoiardi and whipped mascarpone dusted with Valrhona cocoa',
+  // --- Açaí ---
+  const acaiClassico = await prisma.menuItem.upsert({
+    where: { slug: 'acai-classico' },
+    update: {
+      name: 'Açaí Clássico',
+      description: 'Açaí cremoso batido na hora. Escolha o tamanho e os complementos.',
       price: 9.99,
-      image: 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=600&h=400&fit=crop',
-      categoryId: desserts.id,
+      categoryId: catAcai.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Açaí Clássico',
+      slug: 'acai-classico',
+      description: 'Açaí cremoso batido na hora. Escolha o tamanho e os complementos.',
+      price: 9.99,
+      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
+      categoryId: catAcai.id,
       locationId: location.id,
       sortOrder: 1,
     },
   });
 
-  const baklava = await prisma.menuItem.upsert({
-    where: { slug: 'baklava' },
-    update: {},
+  const acaiBowl = await prisma.menuItem.upsert({
+    where: { slug: 'acai-bowl-especial' },
+    update: {
+      name: 'Açaí Bowl Especial',
+      description: 'Açaí com granola, banana e mel — base pronta para personalizar.',
+      price: 12.99,
+      categoryId: catAcai.id,
+      locationId: location.id,
+      sortOrder: 2,
+      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
+    },
     create: {
-      name: 'Baklava',
-      slug: 'baklava',
-      description: 'Flaky phyllo pastry layered with pistachios and walnuts, soaked in rose-water honey syrup',
-      price: 8.99,
-      image: 'https://images.unsplash.com/photo-1598110750624-207050c4f28c?w=600&h=400&fit=crop',
-      categoryId: desserts.id,
+      name: 'Açaí Bowl Especial',
+      slug: 'acai-bowl-especial',
+      description: 'Açaí com granola, banana e mel — base pronta para personalizar.',
+      price: 12.99,
+      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
+      categoryId: catAcai.id,
       locationId: location.id,
       sortOrder: 2,
     },
   });
 
-  const lemonade = await prisma.menuItem.upsert({
-    where: { slug: 'fresh-lemonade' },
-    update: {},
+  // Açaí size (required RADIO)
+  const existingAcaiSize = await prisma.menuOption.findFirst({
+    where: { menuItemId: acaiClassico.id, name: 'Tamanho' },
+  });
+  if (!existingAcaiSize) {
+    await prisma.menuOption.create({
+      data: {
+        menuItemId: acaiClassico.id,
+        name: 'Tamanho',
+        displayType: 'RADIO',
+        isRequired: true,
+        values: {
+          create: [
+            { name: '300ml', priceModifier: 0, isDefault: true, sortOrder: 1 },
+            { name: '500ml', priceModifier: 3.0, sortOrder: 2 },
+            { name: '700ml', priceModifier: 5.0, sortOrder: 3 },
+          ],
+        },
+      },
+    });
+  }
+
+  const existingAcaiToppings = await prisma.menuOption.findFirst({
+    where: { menuItemId: acaiClassico.id, name: 'Complementos' },
+  });
+  if (!existingAcaiToppings) {
+    await prisma.menuOption.create({
+      data: {
+        menuItemId: acaiClassico.id,
+        name: 'Complementos',
+        displayType: 'CHECKBOX',
+        isRequired: false,
+        maxSelect: 8,
+        values: {
+          create: [
+            { name: 'Granola', priceModifier: 1.0, sortOrder: 1 },
+            { name: 'Banana', priceModifier: 1.0, sortOrder: 2 },
+            { name: 'Morango', priceModifier: 1.5, sortOrder: 3 },
+            { name: 'Leite condensado', priceModifier: 1.5, sortOrder: 4 },
+            { name: 'Paçoca', priceModifier: 1.5, sortOrder: 5 },
+            { name: 'Amendoim', priceModifier: 1.0, sortOrder: 6 },
+            { name: 'Mel', priceModifier: 0.75, sortOrder: 7 },
+            { name: 'Leite em pó', priceModifier: 1.0, sortOrder: 8 },
+          ],
+        },
+      },
+    });
+  }
+
+  // Size + toppings for bowl especial
+  const existingBowlSize = await prisma.menuOption.findFirst({
+    where: { menuItemId: acaiBowl.id, name: 'Tamanho' },
+  });
+  if (!existingBowlSize) {
+    await prisma.menuOption.create({
+      data: {
+        menuItemId: acaiBowl.id,
+        name: 'Tamanho',
+        displayType: 'RADIO',
+        isRequired: true,
+        values: {
+          create: [
+            { name: '500ml', priceModifier: 0, isDefault: true, sortOrder: 1 },
+            { name: '700ml', priceModifier: 2.5, sortOrder: 2 },
+          ],
+        },
+      },
+    });
+  }
+
+  // --- Burgers ---
+  const xBurger = await prisma.menuItem.upsert({
+    where: { slug: 'x-burger' },
+    update: {
+      name: 'X-Burger',
+      description: 'Pão, hambúrguer, queijo, alface, tomate e molho da casa.',
+      price: 11.99,
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop',
+    },
     create: {
-      name: 'Fresh Lemonade',
-      slug: 'fresh-lemonade',
-      description: 'House-squeezed lemonade with fresh mint and a hint of orange blossom water',
+      name: 'X-Burger',
+      slug: 'x-burger',
+      description: 'Pão, hambúrguer, queijo, alface, tomate e molho da casa.',
+      price: 11.99,
+      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop',
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 1,
+    },
+  });
+
+  const xBacon = await prisma.menuItem.upsert({
+    where: { slug: 'x-bacon' },
+    update: {
+      name: 'X-Bacon',
+      description: 'Hambúrguer, queijo, bacon crocante e molho especial.',
+      price: 13.99,
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 2,
+      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'X-Bacon',
+      slug: 'x-bacon',
+      description: 'Hambúrguer, queijo, bacon crocante e molho especial.',
+      price: 13.99,
+      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600&h=400&fit=crop',
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 2,
+    },
+  });
+
+  const xTudo = await prisma.menuItem.upsert({
+    where: { slug: 'x-tudo' },
+    update: {
+      name: 'X-Tudo',
+      description: 'O completo: hambúrguer, queijo, bacon, ovo, alface, tomate e molhos.',
+      price: 15.99,
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 3,
+      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'X-Tudo',
+      slug: 'x-tudo',
+      description: 'O completo: hambúrguer, queijo, bacon, ovo, alface, tomate e molhos.',
+      price: 15.99,
+      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
+      categoryId: catBurgers.id,
+      locationId: location.id,
+      sortOrder: 3,
+    },
+  });
+
+  for (const burger of [xBurger, xBacon, xTudo]) {
+    const existingExtras = await prisma.menuOption.findFirst({
+      where: { menuItemId: burger.id, name: 'Adicionais' },
+    });
+    if (!existingExtras) {
+      await prisma.menuOption.create({
+        data: {
+          menuItemId: burger.id,
+          name: 'Adicionais',
+          displayType: 'CHECKBOX',
+          isRequired: false,
+          maxSelect: 5,
+          values: {
+            create: [
+              { name: 'Bacon extra', priceModifier: 2.0, sortOrder: 1 },
+              { name: 'Cheddar extra', priceModifier: 1.5, sortOrder: 2 },
+              { name: 'Ovo', priceModifier: 1.5, sortOrder: 3 },
+              { name: 'Hambúrguer extra', priceModifier: 3.5, sortOrder: 4 },
+            ],
+          },
+        },
+      });
+    }
+  }
+
+  // --- Combos ---
+  const comboBurgerFries = await prisma.menuItem.upsert({
+    where: { slug: 'combo-burger-fries-drink' },
+    update: {
+      name: 'Combo Burger + Fries + Drink',
+      description: 'X-Burger + batata média + refrigerante lata.',
+      price: 16.99,
+      categoryId: catCombos.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Combo Burger + Fries + Drink',
+      slug: 'combo-burger-fries-drink',
+      description: 'X-Burger + batata média + refrigerante lata.',
+      price: 16.99,
+      image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&h=400&fit=crop',
+      categoryId: catCombos.id,
+      locationId: location.id,
+      sortOrder: 1,
+    },
+  });
+
+  const comboXtudo = await prisma.menuItem.upsert({
+    where: { slug: 'combo-x-tudo' },
+    update: {
+      name: 'Combo X-Tudo',
+      description: 'X-Tudo + batata média + refrigerante lata.',
+      price: 19.99,
+      categoryId: catCombos.id,
+      locationId: location.id,
+      sortOrder: 2,
+      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Combo X-Tudo',
+      slug: 'combo-x-tudo',
+      description: 'X-Tudo + batata média + refrigerante lata.',
+      price: 19.99,
+      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
+      categoryId: catCombos.id,
+      locationId: location.id,
+      sortOrder: 2,
+    },
+  });
+
+  // --- Sides ---
+  const fries = await prisma.menuItem.upsert({
+    where: { slug: 'batata-frita' },
+    update: {
+      name: 'Batata Frita',
+      description: 'Porção de batata crocante.',
       price: 4.99,
-      image: 'https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=600&h=400&fit=crop',
-      categoryId: drinks.id,
+      categoryId: catSides.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Batata Frita',
+      slug: 'batata-frita',
+      description: 'Porção de batata crocante.',
+      price: 4.99,
+      image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=400&fit=crop',
+      categoryId: catSides.id,
       locationId: location.id,
       sortOrder: 1,
     },
   });
 
-  const turkishCoffee = await prisma.menuItem.upsert({
-    where: { slug: 'turkish-coffee' },
-    update: {},
+  const existingFriesSize = await prisma.menuOption.findFirst({
+    where: { menuItemId: fries.id, name: 'Tamanho' },
+  });
+  if (!existingFriesSize) {
+    await prisma.menuOption.create({
+      data: {
+        menuItemId: fries.id,
+        name: 'Tamanho',
+        displayType: 'RADIO',
+        isRequired: true,
+        values: {
+          create: [
+            { name: 'Média', priceModifier: 0, isDefault: true, sortOrder: 1 },
+            { name: 'Grande', priceModifier: 2.0, sortOrder: 2 },
+          ],
+        },
+      },
+    });
+  }
+
+  // --- Sweets ---
+  const churros = await prisma.menuItem.upsert({
+    where: { slug: 'mini-churros' },
+    update: {
+      name: 'Mini Churros (16oz)',
+      description: 'Mini churros com doce de leite. Porção generosa.',
+      price: 7.99,
+      categoryId: catSweets.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&h=400&fit=crop',
+    },
     create: {
-      name: 'Turkish Coffee',
-      slug: 'turkish-coffee',
-      description: 'Traditional slow-brewed Turkish coffee with cardamom, served with a piece of Turkish delight',
-      price: 5.99,
-      image: 'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&h=400&fit=crop',
-      categoryId: drinks.id,
+      name: 'Mini Churros (16oz)',
+      slug: 'mini-churros',
+      description: 'Mini churros com doce de leite. Porção generosa.',
+      price: 7.99,
+      image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&h=400&fit=crop',
+      categoryId: catSweets.id,
+      locationId: location.id,
+      sortOrder: 1,
+    },
+  });
+
+  // --- Drinks ---
+  const refriLata = await prisma.menuItem.upsert({
+    where: { slug: 'refrigerante-lata' },
+    update: {
+      name: 'Refrigerante Lata',
+      description: 'Lata 350ml — Coca, Guaraná ou Sprite.',
+      price: 2.99,
+      categoryId: catDrinks.id,
+      locationId: location.id,
+      sortOrder: 1,
+      image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Refrigerante Lata',
+      slug: 'refrigerante-lata',
+      description: 'Lata 350ml — Coca, Guaraná ou Sprite.',
+      price: 2.99,
+      image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=400&fit=crop',
+      categoryId: catDrinks.id,
+      locationId: location.id,
+      sortOrder: 1,
+    },
+  });
+
+  const existingDrinkFlavor = await prisma.menuOption.findFirst({
+    where: { menuItemId: refriLata.id, name: 'Sabor' },
+  });
+  if (!existingDrinkFlavor) {
+    await prisma.menuOption.create({
+      data: {
+        menuItemId: refriLata.id,
+        name: 'Sabor',
+        displayType: 'RADIO',
+        isRequired: true,
+        values: {
+          create: [
+            { name: 'Coca-Cola', priceModifier: 0, isDefault: true, sortOrder: 1 },
+            { name: 'Guaraná', priceModifier: 0, sortOrder: 2 },
+            { name: 'Sprite', priceModifier: 0, sortOrder: 3 },
+          ],
+        },
+      },
+    });
+  }
+
+  const agua = await prisma.menuItem.upsert({
+    where: { slug: 'agua' },
+    update: {
+      name: 'Água',
+      description: 'Água mineral 500ml.',
+      price: 1.99,
+      categoryId: catDrinks.id,
+      locationId: location.id,
+      sortOrder: 2,
+      image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=600&h=400&fit=crop',
+    },
+    create: {
+      name: 'Água',
+      slug: 'agua',
+      description: 'Água mineral 500ml.',
+      price: 1.99,
+      image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=600&h=400&fit=crop',
+      categoryId: catDrinks.id,
       locationId: location.id,
       sortOrder: 2,
     },
   });
 
-  // Allergen associations
-  const allergenMap = Object.fromEntries(allergens.map((a) => [a.name, a.id]));
+  // Allergens (minimal)
   await prisma.menuItemAllergen.createMany({
     data: [
-      { menuItemId: bruschetta.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: caesarSalad.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: caesarSalad.id, allergenId: allergenMap['Eggs'] },
-      { menuItemId: hummusTrio.id, allergenId: allergenMap['Sesame'] },
-      { menuItemId: hummusTrio.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: grilledSalmon.id, allergenId: allergenMap['Fish'] },
-      { menuItemId: lambKofta.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: lambKofta.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: shawarmaBowl.id, allergenId: allergenMap['Sesame'] },
-      { menuItemId: shawarmaBowl.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: margherita.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: margherita.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: zaatarFlatbread.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: zaatarFlatbread.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: zaatarFlatbread.id, allergenId: allergenMap['Sesame'] },
-      { menuItemId: tiramisu.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: tiramisu.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: tiramisu.id, allergenId: allergenMap['Eggs'] },
-      { menuItemId: baklava.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: baklava.id, allergenId: allergenMap['Nuts'] },
+      { menuItemId: xBurger.id, allergenId: allergenMap['Gluten'] },
+      { menuItemId: xBurger.id, allergenId: allergenMap['Dairy'] },
+      { menuItemId: xBacon.id, allergenId: allergenMap['Gluten'] },
+      { menuItemId: xBacon.id, allergenId: allergenMap['Dairy'] },
+      { menuItemId: xTudo.id, allergenId: allergenMap['Gluten'] },
+      { menuItemId: xTudo.id, allergenId: allergenMap['Dairy'] },
+      { menuItemId: xTudo.id, allergenId: allergenMap['Eggs'] },
+      { menuItemId: churros.id, allergenId: allergenMap['Gluten'] },
+      { menuItemId: churros.id, allergenId: allergenMap['Dairy'] },
+      { menuItemId: acaiClassico.id, allergenId: allergenMap['Dairy'] },
     ],
     skipDuplicates: true,
   });
 
-  // Mealtime associations
+  // Mealtimes for all items
+  const allItems = [
+    acaiClassico,
+    acaiBowl,
+    xBurger,
+    xBacon,
+    xTudo,
+    comboBurgerFries,
+    comboXtudo,
+    fries,
+    churros,
+    refriLata,
+    agua,
+  ];
+
   await prisma.menuItemMealtime.createMany({
-    data: [
-      { menuItemId: bruschetta.id, mealtimeId: lunch.id },
-      { menuItemId: bruschetta.id, mealtimeId: dinner.id },
-      { menuItemId: caesarSalad.id, mealtimeId: lunch.id },
-      { menuItemId: caesarSalad.id, mealtimeId: dinner.id },
-      { menuItemId: hummusTrio.id, mealtimeId: lunch.id },
-      { menuItemId: hummusTrio.id, mealtimeId: dinner.id },
-      { menuItemId: grilledSalmon.id, mealtimeId: dinner.id },
-      { menuItemId: lambKofta.id, mealtimeId: dinner.id },
-      { menuItemId: shawarmaBowl.id, mealtimeId: lunch.id },
-      { menuItemId: shawarmaBowl.id, mealtimeId: dinner.id },
-      { menuItemId: margherita.id, mealtimeId: lunch.id },
-      { menuItemId: margherita.id, mealtimeId: dinner.id },
-      { menuItemId: zaatarFlatbread.id, mealtimeId: lunch.id },
-      { menuItemId: zaatarFlatbread.id, mealtimeId: dinner.id },
-      { menuItemId: tiramisu.id, mealtimeId: lunch.id },
-      { menuItemId: tiramisu.id, mealtimeId: dinner.id },
-      { menuItemId: baklava.id, mealtimeId: lunch.id },
-      { menuItemId: baklava.id, mealtimeId: dinner.id },
-      { menuItemId: lemonade.id, mealtimeId: lunch.id },
-      { menuItemId: lemonade.id, mealtimeId: dinner.id },
-      { menuItemId: turkishCoffee.id, mealtimeId: lunch.id },
-      { menuItemId: turkishCoffee.id, mealtimeId: dinner.id },
-    ],
+    data: allItems.flatMap((item) => [
+      { menuItemId: item.id, mealtimeId: lunch!.id },
+      { menuItemId: item.id, mealtimeId: dinner!.id },
+    ]),
     skipDuplicates: true,
   });
 
@@ -513,101 +650,67 @@ async function main() {
     },
   });
 
-  // Sample orders
+  // Sample orders using King Food items
   const orderStatuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'PICKED_UP'];
   const orderTypes = ['DELIVERY', 'PICKUP'] as const;
-  for (let i = 0; i < 15; i++) {
-    const status = orderStatuses[i % orderStatuses.length];
-    const orderType = orderTypes[i % 2];
-    const daysAgo = Math.floor(i / 2);
-    const createdAt = new Date();
-    createdAt.setDate(createdAt.getDate() - daysAgo);
-    createdAt.setHours(10 + (i % 12), (i * 17) % 60);
+  const orderCount = await prisma.order.count({ where: { locationId: location.id } });
+  if (orderCount < 5) {
+    for (let i = 0; i < 6; i++) {
+      const status = orderStatuses[i % orderStatuses.length];
+      const orderType = orderTypes[i % 2];
+      const createdAt = new Date();
+      createdAt.setDate(createdAt.getDate() - Math.floor(i / 2));
 
-    await prisma.order.create({
-      data: {
-        orderNumber: `KF-SEED-${String(i + 1).padStart(3, '0')}`,
-        customerId: customer.id,
-        locationId: location.id,
-        orderType,
-        status,
-        subtotal: 20 + i * 5,
-        tax: (20 + i * 5) * 0.08,
-        deliveryFee: orderType === 'DELIVERY' ? 4.99 : 0,
-        total: (20 + i * 5) * 1.08 + (orderType === 'DELIVERY' ? 4.99 : 0),
-        createdAt,
-        items: {
-          create: [
-            {
-              menuItemId: margherita.id,
-              name: 'Margherita Pizza',
-              quantity: 1 + (i % 3),
-              unitPrice: 14.99,
-              subtotal: 14.99 * (1 + (i % 3)),
-            },
-            ...(i % 2 === 0
-              ? [
-                  {
-                    menuItemId: lemonade.id,
-                    name: 'Fresh Lemonade',
-                    quantity: 2,
-                    unitPrice: 4.99,
-                    subtotal: 9.98,
-                  },
-                ]
-              : []),
-          ],
+      await prisma.order.create({
+        data: {
+          orderNumber: `KF-SEED-${String(i + 1).padStart(3, '0')}`,
+          customerId: customer.id,
+          locationId: location.id,
+          orderType,
+          status,
+          subtotal: 18 + i * 3,
+          tax: (18 + i * 3) * 0.08,
+          deliveryFee: orderType === 'DELIVERY' ? 3.99 : 0,
+          total: (18 + i * 3) * 1.08 + (orderType === 'DELIVERY' ? 3.99 : 0),
+          createdAt,
+          items: {
+            create: [
+              {
+                menuItemId: i % 2 === 0 ? acaiClassico.id : xBurger.id,
+                name: i % 2 === 0 ? 'Açaí Clássico' : 'X-Burger',
+                quantity: 1,
+                unitPrice: i % 2 === 0 ? 9.99 : 11.99,
+                subtotal: i % 2 === 0 ? 9.99 : 11.99,
+              },
+            ],
+          },
         },
-      },
-    });
+      });
+    }
   }
 
-  // Sample reviews
+  // Reviews
   await prisma.review.createMany({
     data: [
       {
         customerId: customer.id,
         locationId: location.id,
-        orderId: undefined,
         rating: 5,
-        comment: 'Excellent food and fast delivery!',
+        comment: 'Melhor açaí de Columbus!',
         isApproved: true,
       },
       {
         customerId: customer.id,
         locationId: location.id,
-        orderId: undefined,
-        rating: 4,
-        comment: 'Great pizza, will order again.',
-        isApproved: true,
-      },
-      {
-        customerId: customer.id,
-        locationId: location.id,
-        orderId: undefined,
         rating: 5,
-        comment: 'Best restaurant in town!',
-        isApproved: false,
+        comment: 'X-Tudo top demais.',
+        isApproved: true,
       },
     ],
     skipDuplicates: true,
   });
 
-  // Sample reservation
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  await prisma.reservation.create({
-    data: {
-      customerId: customer.id,
-      locationId: location.id,
-      date: tomorrow,
-      time: '19:00',
-      partySize: 4,
-      status: 'PENDING',
-    },
-  });
-
-  // Site settings — King Food branding
+  // Site settings — King Food
   await prisma.siteSettings.upsert({
     where: { id: 'default' },
     update: {
@@ -627,21 +730,9 @@ async function main() {
         ctaSecondaryLink: '/menu',
       },
       featuresSection: [
-        {
-          icon: '🥤',
-          title: 'Açaí autêntico',
-          description: 'Sabor brasileiro de verdade, montado do seu jeito',
-        },
-        {
-          icon: '🍔',
-          title: 'Combos e burgers',
-          description: 'Opções completas para matar a fome',
-        },
-        {
-          icon: '🚗',
-          title: 'Delivery Columbus',
-          description: 'Rápido e direto na sua porta',
-        },
+        { icon: '🥤', title: 'Açaí autêntico', description: 'Sabor brasileiro de verdade, montado do seu jeito' },
+        { icon: '🍔', title: 'Combos e burgers', description: 'Opções completas para matar a fome' },
+        { icon: '🚗', title: 'Delivery Columbus', description: 'Rápido e direto na sua porta' },
       ],
       ctaSection: {
         title: 'Com fome de BR?',
@@ -668,21 +759,9 @@ async function main() {
         ctaSecondaryLink: '/menu',
       },
       featuresSection: [
-        {
-          icon: '🥤',
-          title: 'Açaí autêntico',
-          description: 'Sabor brasileiro de verdade, montado do seu jeito',
-        },
-        {
-          icon: '🍔',
-          title: 'Combos e burgers',
-          description: 'Opções completas para matar a fome',
-        },
-        {
-          icon: '🚗',
-          title: 'Delivery Columbus',
-          description: 'Rápido e direto na sua porta',
-        },
+        { icon: '🥤', title: 'Açaí autêntico', description: 'Sabor brasileiro de verdade, montado do seu jeito' },
+        { icon: '🍔', title: 'Combos e burgers', description: 'Opções completas para matar a fome' },
+        { icon: '🚗', title: 'Delivery Columbus', description: 'Rápido e direto na sua porta' },
       ],
       ctaSection: {
         title: 'Com fome de BR?',
@@ -693,33 +772,22 @@ async function main() {
     },
   });
 
-  // Legal pages
   await prisma.legalPage.upsert({
     where: { slug: 'privacy-policy' },
     update: {},
     create: {
       slug: 'privacy-policy',
       title: 'Privacy Policy',
-      content: `# Privacy Policy\n\nWe value your privacy. This policy explains how King Food collects, uses, and protects your personal information.\n\n## Information We Collect\n\n- **Account information**: name, email address, phone number\n- **Order information**: delivery addresses, order history, payment details\n- **Usage data**: cookies, browsing behavior, device information\n\n## How We Use Your Information\n\nWe use your information to process orders, improve our services, and communicate with you about promotions and updates.\n\n## Your Rights\n\nYou have the right to access, correct, or delete your personal data at any time by contacting us.\n\n## Contact\n\nIf you have questions about this policy, please email us at privacy@kingfood.local.`,
+      content:
+        '# Privacy Policy\n\nKing Food respects your privacy. Contact privacy@kingfood.local for questions.',
     },
   });
 
-  await prisma.legalPage.upsert({
-    where: { slug: 'impressum' },
-    update: {},
-    create: {
-      slug: 'impressum',
-      title: 'Impressum',
-      content: `# Impressum\n\n## Company Information\n\n**King Food**\nColumbus, OH\nUnited States\n\n**Email:** orders@kingfood.local\n**Phone:** (380) 269-5741\n\n## Responsible for Content\n\nKing Food Management\n\nBuilt on KitchenAsty (MIT).`,
-    },
-  });
-
-  // Cookie categories
   const cookieCategories = [
     {
       name: 'essential',
       label: 'Essential Cookies',
-      description: 'Required for the website to function properly. These cannot be disabled.',
+      description: 'Required for the website to function properly.',
       isRequired: true,
       sortOrder: 0,
     },
@@ -733,7 +801,7 @@ async function main() {
     {
       name: 'marketing',
       label: 'Marketing Cookies',
-      description: 'Used to deliver personalized advertisements and track campaigns.',
+      description: 'Used for personalized ads and campaigns.',
       isRequired: false,
       sortOrder: 2,
     },
@@ -747,47 +815,10 @@ async function main() {
     });
   }
 
-  // Gallery images (placeholder)
-  const galleryImages = [
-    {
-      url: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1200&q=80&auto=format&fit=crop',
-      alt: 'Açaí bowl',
-      category: 'FOOD',
-      sortOrder: 0,
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=1200&q=80&auto=format&fit=crop',
-      alt: 'Burger',
-      category: 'FOOD',
-      sortOrder: 1,
-    },
-    {
-      url: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=1200&q=80&auto=format&fit=crop',
-      alt: 'Combo meal',
-      category: 'FOOD',
-      sortOrder: 2,
-    },
-  ] as const;
-
-  for (const img of galleryImages) {
-    const seedId = `seed-gallery-${img.category}-${img.sortOrder}`;
-    await prisma.galleryImage.upsert({
-      where: { id: seedId },
-      update: { url: img.url, alt: img.alt },
-      create: {
-        id: seedId,
-        url: img.url,
-        alt: img.alt,
-        category: img.category,
-        sortOrder: img.sortOrder,
-      },
-    });
-  }
-
-  console.log('Seed completed successfully (King Food foundation)!');
+  console.log('Seed completed — King Food catalog (Milestone 2)!');
   console.log('');
-  console.log('Admin login: admin@kitchenasty.com / admin123');
-  console.log('Customer login: customer@example.com / customer123');
+  console.log('Categories: Açaí, Burgers, Combos, Sides, Sweets, Drinks');
+  console.log('Admin: admin@kitchenasty.com / admin123');
   console.log('Location: King Food Columbus');
 }
 
