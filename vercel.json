@@ -40,5 +40,6 @@
     "api/[[...path]].ts": {
       "maxDuration": 30
     }
-  }
+  },
+  "buildCommand": "npm install --include=dev && npx prisma generate && npx vite build"
 }

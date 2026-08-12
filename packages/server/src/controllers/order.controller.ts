@@ -34,8 +34,11 @@ const createOrderSchema = z.object({
       city: z.string().min(1),
       state: z.string().min(1),
       zip: z.string().min(1),
+      country: z.string().default('US'),
       lat: z.number().optional(),
       lng: z.number().optional(),
+      placeId: z.string().optional(),
+      formattedAddress: z.string().optional(),
     })
     .optional(),
   guestName: z.string().optional(),
@@ -148,7 +151,35 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   }
 
   let deliveryFee = 0;
+  let savedAddressId: string | null = null;
+  let addressSnapshot: {
+    line1: string;
+    line2: string | null;
+    city: string;
+    state: string | null;
+    postalCode: string;
+    country: string;
+    lat: number | null;
+    lng: number | null;
+    placeId: string | null;
+    formattedAddress: string | null;
+  } | null = null;
+
   if (orderType === 'DELIVERY') {
+    // Build snapshot from the submitted address (always, even without lat/lng)
+    addressSnapshot = {
+      line1: address!.line1,
+      line2: address!.line2 ?? null,
+      city: address!.city,
+      state: address!.state,
+      postalCode: address!.zip,
+      country: address!.country ?? 'US',
+      lat: address!.lat ?? null,
+      lng: address!.lng ?? null,
+      placeId: address!.placeId ?? null,
+      formattedAddress: address!.formattedAddress ?? null,
+    };
+
     if (address?.lat != null && address?.lng != null) {
       const zones = await prisma.deliveryZone.findMany({
         where: { locationId: location.id, isActive: true },
@@ -182,6 +213,28 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         orderBy: { charge: 'asc' },
       });
       deliveryFee = defaultZone ? defaultZone.charge : 4.99;
+    }
+
+    // Persist the address row (customer-linked when logged in, orphan-safe for guests).
+    // Guest addresses are stored too: they document the delivery point and are
+    // reusable later if the guest creates an account.
+    if (addressSnapshot) {
+      const saved = await prisma.address.create({
+        data: {
+          customerId,
+          line1: addressSnapshot.line1,
+          line2: addressSnapshot.line2,
+          city: addressSnapshot.city,
+          state: addressSnapshot.state,
+          postalCode: addressSnapshot.postalCode,
+          country: addressSnapshot.country,
+          lat: addressSnapshot.lat,
+          lng: addressSnapshot.lng,
+          placeId: addressSnapshot.placeId,
+          formattedAddress: addressSnapshot.formattedAddress,
+        },
+      });
+      savedAddressId = saved.id;
     }
   }
 
@@ -287,6 +340,17 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       total,
       comment,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+      addressId: savedAddressId,
+      deliveryLine1: addressSnapshot?.line1 ?? null,
+      deliveryLine2: addressSnapshot?.line2 ?? null,
+      deliveryCity: addressSnapshot?.city ?? null,
+      deliveryState: addressSnapshot?.state ?? null,
+      deliveryPostalCode: addressSnapshot?.postalCode ?? null,
+      deliveryCountry: addressSnapshot?.country ?? null,
+      deliveryLat: addressSnapshot?.lat ?? null,
+      deliveryLng: addressSnapshot?.lng ?? null,
+      deliveryPlaceId: addressSnapshot?.placeId ?? null,
+      deliveryFormattedAddress: addressSnapshot?.formattedAddress ?? null,
       guestName: customerId ? undefined : guestName,
       guestEmail: customerId ? undefined : guestEmail,
       guestPhone: customerId ? undefined : guestPhone,

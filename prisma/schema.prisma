@@ -84,21 +84,26 @@ model CustomerGroup {
 }
 
 model Address {
-  id         String  @id @default(cuid())
-  customerId String
-  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  label      String?
-  line1      String
-  line2      String?
-  city       String
-  state      String?
-  postalCode String
-  country    String  @default("US")
-  lat        Float?
-  lng        Float?
-  isDefault  Boolean @default(false)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  // Nullable: guest checkout does not require a customer account.
+  // Customer-linked addresses are created when the buyer is logged in.
+  customerId       String?
+  customer         Customer? @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  label            String?
+  line1            String
+  line2            String?
+  city             String
+  state            String?
+  postalCode       String
+  country          String   @default("US")
+  // Google Places (New) identifiers
+  placeId          String?
+  formattedAddress String?
+  lat              Float?
+  lng              Float?
+  isDefault        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   orders Order[]
 
@@ -386,6 +391,20 @@ model Order {
   guestName   String?
   guestEmail  String?
   guestPhone  String?
+
+  // Delivery address SNAPSHOT at time of purchase.
+  // Denormalized on purpose: the order must preserve the address used at
+  // checkout even if the customer later edits their saved Address record.
+  deliveryLine1            String?
+  deliveryLine2            String?
+  deliveryCity             String?
+  deliveryState            String?
+  deliveryPostalCode       String?
+  deliveryCountry          String?  @default("US")
+  deliveryLat              Float?
+  deliveryLng              Float?
+  deliveryPlaceId          String?
+  deliveryFormattedAddress String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
