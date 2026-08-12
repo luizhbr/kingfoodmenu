@@ -1,166 +1,86 @@
-# Contributing to KitchenAsty
+# Contributing — King Food Foundation
 
-Thank you for your interest in contributing to KitchenAsty! This guide will help you get started.
-
-## Table of Contents
-
-- [Getting Started](#getting-started)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Making Changes](#making-changes)
-- [Coding Standards](#coding-standards)
-- [Testing](#testing)
-- [Submitting a Pull Request](#submitting-a-pull-request)
-- [Reporting Issues](#reporting-issues)
-- [Community](#community)
-
-## Getting Started
-
-1. **Fork** the repository on GitHub
-2. **Clone** your fork locally:
-   ```bash
-   git clone git@github.com:YOUR_USERNAME/kitchenasty.git
-   cd kitchenasty
-   ```
-3. **Add the upstream remote**:
-   ```bash
-   git remote add upstream git@github.com:mighty840/kitchenasty.git
-   ```
-
-## Development Setup
-
-### Prerequisites
-
-- Node.js 22+
-- Docker (for PostgreSQL)
-- npm 10+
-
-### Install & Run
+## Setup
 
 ```bash
-# Install dependencies
+# Requisitos: Node 22+, npm 10+
+git clone https://github.com/luizhbr/kitchenasty.git
+cd kitchenasty
 npm install
 
-# Start PostgreSQL
-docker compose up -d
-
-# Set up environment
-cp packages/server/.env.example packages/server/.env
-
-# Run database migrations and seed
-npx -w packages/server prisma migrate dev --schema ../../prisma/schema.prisma
-npx -w packages/server prisma db seed
-
-# Start development servers
-npm run dev:server      # API server → http://localhost:3000
-npm run dev:admin       # Admin panel → http://localhost:5173
-npm run dev:storefront  # Storefront  → http://localhost:5174
+# Banco (Neon)
+cp .env.deploy .env   # contém DATABASE_URL
+npx prisma generate
 ```
 
-## Project Structure
-
-```
-kitchenasty/
-├── packages/
-│   ├── admin/        # React admin panel
-│   ├── docs/         # VitePress documentation
-│   ├── server/       # Express API server
-│   ├── shared/       # Shared types and constants
-│   └── storefront/   # React customer storefront
-├── prisma/           # Database schema and seeds
-├── e2e/              # Playwright E2E tests
-└── .github/          # CI/CD workflows and templates
-```
-
-## Making Changes
-
-1. **Create a branch** from `main`:
-   ```bash
-   git checkout -b feature/your-feature-name
-   ```
-2. **Make your changes** — keep commits focused and atomic
-3. **Write or update tests** for your changes
-4. **Run the test suite** before committing (see [Testing](#testing))
-5. **Push** to your fork and open a pull request
-
-### Branch Naming
-
-- `feature/` — new functionality
-- `fix/` — bug fixes
-- `docs/` — documentation changes
-- `refactor/` — code restructuring without behavior changes
-
-## Coding Standards
-
-- **TypeScript** strict mode is enabled across the monorepo — no `any` types
-- **Linting**: Run `npm run lint` and fix all errors before committing
-- **Formatting**: Follow the existing code style in each package
-- **Imports**: Use relative imports within a package, workspace imports across packages
-- **Validation**: Use Zod schemas for all API input validation
-- **Error handling**: Use the existing error middleware patterns in the server package
-
-## Testing
-
-We maintain a comprehensive test suite with 330+ tests:
+## Rodar local
 
 ```bash
-# Run all unit and integration tests
-npm test
+# Server (API) — porta 3000
+npm run dev:server
 
-# Run only unit tests
-npm run test:unit
+# Storefront — porta 5173
+npm run dev:storefront
 
-# Run only integration tests
-npm run test:integration
-
-# Run E2E tests (requires dev servers running)
-npm run test:e2e
+# Admin — porta 5174
+npm run dev:admin
 ```
 
-- **Unit tests**: Located alongside source files or in `__tests__/` directories
-- **Integration tests**: In `packages/server/src/__tests__/`
-- **E2E tests**: In `e2e/admin/` and `e2e/storefront/`
+## Testes
 
-All tests must pass before a pull request can be merged.
+```bash
+npm run test:unit -w packages/server   # unit tests
+npm run build -w packages/server      # typecheck
+npm run build                          # build completo
+npx playwright test                    # E2E
+```
 
-## Submitting a Pull Request
+## Trabalhar no server
 
-1. Ensure your branch is up to date with `main`:
-   ```bash
-   git fetch upstream
-   git rebase upstream/main
-   ```
-2. Push your branch and open a PR against `mighty840/kitchenasty:main`
-3. Fill out the PR template with:
-   - A clear description of **what** changed and **why**
-   - Steps to test your changes
-   - Screenshots for UI changes
-4. Wait for CI checks to pass
-5. A maintainer will review your PR — please be responsive to feedback
+- Código em `packages/server/src/`
+- Rotas em `src/routes/*.routes.ts`
+- Controllers em `src/controllers/*.controller.ts`
+- **Toda rota nova precisa ser montada no `src/app.ts`** (senão → 404)
+- Build: `tsc` → `packages/server/dist/`
 
-### PR Guidelines
+## Trabalhar no storefront
 
-- Keep PRs focused — one feature or fix per PR
-- Update documentation if your change affects user-facing behavior
-- Add tests for new functionality
-- Don't include unrelated formatting or refactoring changes
+- Código em `packages/storefront/src/`
+- API base: `VITE_API_URL` (vazio = mesmo domínio)
+- CSRF: usar `withCsrf()` para POSTs
 
-## Reporting Issues
+## Trabalhar no admin
 
-- **Bug reports**: Use the [bug report template](https://github.com/mighty840/kitchenasty/issues/new?template=bug_report.md)
-- **Feature requests**: Use the [feature request template](https://github.com/mighty840/kitchenasty/issues/new?template=feature_request.md)
-- **Security issues**: See [SECURITY.md](SECURITY.md) — do **not** open a public issue
+- Código em `packages/admin/src/`
+- Base path: `/admin/` (VITE_BASE_PATH)
+- Build copia o dist para dentro do storefront
 
-## Community
+## Prisma
 
-- **GitHub Discussions**: Ask questions, share ideas, and connect with other users
-- **Issues**: Report bugs and request features
-- See [`PLAN.md`](PLAN.md) for the roadmap and areas where help is needed
+```bash
+npx prisma generate    # regenerar client
+npx prisma migrate dev --name <nome>   # criar migration
+npx prisma studio      # visualizar banco
+```
 
-### Good First Issues
+**Toda alteração de schema PRECISA de migration.**
 
-Look for issues labeled [`good first issue`](https://github.com/mighty840/kitchenasty/labels/good%20first%20issue) — these are great starting points for new contributors.
+## Deploy
 
----
+```bash
+vercel --prod --yes    # com token válido
+# ou push no GitHub (CI da Vercel)
+```
 
-Thank you for helping make KitchenAsty better!
+## Como NÃO quebrar produção
+
+1. Nunca importar `src/*.ts` no serverless — usar `dist/`
+2. Nunca confiar em dados do cliente (preços vêm do servidor)
+3. Toda alteração de API precisa de teste
+4. Toda alteração de produção precisa de build
+5. Toda alteração crítica precisa de smoke test
+6. Nunca declarar PASS sem evidência
+7. Nunca declarar write concluído sem reler o arquivo
+8. Nunca apagar código órfão sem decisão explícita
+
+Ver [[DEVELOPMENT_RULES]] para as regras completas.

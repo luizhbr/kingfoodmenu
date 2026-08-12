@@ -297,6 +297,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // Server-side pricing: unit prices come from the DB (menuItem.price),
+  // never from the client. The client only sends menuItemId + quantity.
   let subtotal = 0;
   const orderItemsData = items.map((item) => {
     const menuItem = menuItemMap.get(item.menuItemId)!;

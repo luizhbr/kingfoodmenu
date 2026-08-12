@@ -1,142 +1,120 @@
-# King Food — Private Ordering Platform
+# King Food Foundation
 
-**Foundation branch:** `feature/king-food-foundation`  
-**Status:** Milestone 1 (Foundation) in progress
+Sistema de pedidos online, reservas e gestão para restaurante — monorepo
+com storefront público, painel admin/POS e API serverless.
 
-Private online ordering platform for **King Food** (Açaí BR da saudade · Columbus, OH).
+**Domínio:** https://king-food-foundation-ui.vercel.app
+**Admin:** https://king-food-foundation-ui.vercel.app/admin/
 
-Built on top of **[KitchenAsty](https://github.com/mighty840/kitchenasty)** (MIT License).
+## Features
 
----
+- 🛒 Storefront (menu, carrinho, checkout, pedidos)
+- 🏪 Admin/POS (dashboard, pedidos, menu, staff, settings)
+- 🍳 Kitchen Display (polling 15s)
+- 📊 Sales Attribution (first/last touch)
+- 🎯 Customer Journey Tracking (UTM, sessions)
+- 🎟️ Cupons, reservas, reviews, loyalty
+- 🔒 CSRF + JWT + RBAC + IDOR protection
 
-## What this is
-
-King Food is evolving into a private ordering stack:
+## Architecture
 
 ```
-Customer → Storefront → Cart → Checkout → Order
-                              ↓
-                         King Food API
-                              ↓
-              Admin · Kitchen · WhatsApp · Hermes · N8N
+Storefront/Admin (React/Vite)
+   → Vercel (rewrites)
+   → api/index.ts (serverless)
+   → Express (packages/server/dist)
+   → Controllers
+   → Prisma
+   → Neon PostgreSQL
 ```
 
-This repository is the **technical foundation**. Core capabilities already present from KitchenAsty:
+Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-- Customer storefront
-- Admin panel
-- Kitchen display (real-time Kanban)
-- Order engine (full lifecycle)
-- Menu + modifiers
-- Payments (Stripe / PayPal / Cash)
-- Auth + roles
+## Stack
 
----
+| Camada | Tecnologia |
+|--------|-----------|
+| Backend | Express + TypeScript |
+| Frontend | React + Vite |
+| ORM | Prisma 5.22 |
+| Banco | Neon PostgreSQL |
+| Deploy | Vercel serverless |
 
-## Branding defaults (seed)
-
-| Setting | Value |
-|---------|-------|
-| Site name | King Food |
-| Tagline | Açaí BR da saudade · Columbus, OH |
-| Location | King Food Columbus (`columbus`) |
-| Primary | `#FFD100` |
-| Accent | `#E31818` |
-
-> Demo menu items are still the original KitchenAsty sample data. Real King Food catalog comes in a later milestone.
-
----
-
-## Quick start (local)
-
-### Prerequisites
-
-- Node.js 22+
-- Docker (PostgreSQL)
-- npm 10+
-
-### Setup
+## Development
 
 ```bash
-git clone https://github.com/luizhbr/kitchenasty.git
-cd kitchenasty
-git checkout feature/king-food-foundation
-
 npm install
-docker compose up -d
-
-cp packages/server/.env.example packages/server/.env
-# Edit DATABASE_URL if needed
-
-npx -w packages/server prisma migrate dev --schema ../../prisma/schema.prisma
-npx -w packages/server prisma db seed
-
-npm run dev:server      # http://localhost:3000
-npm run dev:admin       # http://localhost:5173
-npm run dev:storefront  # http://localhost:5174
+cp .env.deploy .env
+npx prisma generate
+npm run dev:server    # API :3000
+npm run dev:storefront  # :5173
+npm run dev:admin     # :5174
 ```
 
-### Demo credentials
+## Environment
 
-- Admin: `admin@kitchenasty.com` / `admin123`
-- Customer: `customer@example.com` / `customer123`
+Ver [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md) — apenas nomes, nunca valores.
 
-Upstream live demo (original KitchenAsty):
-- https://demo.kitchenasty.com
-- https://demo.kitchenasty.com/admin
+## Testing
 
----
-
-## Project structure
-
-```
-king-food (foundation)/
-├── docs/
-│   ├── audit/              # Milestone 0 audits
-│   └── king-food/          # King Food project docs
-├── packages/
-│   ├── admin/              # Admin panel
-│   ├── server/             # Express API
-│   ├── shared/             # Shared types
-│   ├── storefront/         # Customer storefront
-│   ├── mobile/             # Expo app (secondary)
-│   └── docs/               # VitePress docs
-├── prisma/
-│   ├── schema.prisma
-│   └── seed.ts            # King Food branding defaults
-└── package.json            # name: king-food
+```bash
+npm run test:unit -w packages/server   # 29/29
+npm run build                          # typecheck + build
 ```
 
----
+Ver [docs/TESTING.md](docs/TESTING.md)
+
+## Deployment
+
+```bash
+vercel --prod --yes
+```
+
+Ver [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+
+## Admin
+
+Ver [docs/ADMIN_POS.md](docs/ADMIN_POS.md)
+
+## Kitchen
+
+Ver [docs/KITCHEN.md](docs/KITCHEN.md)
+
+## Tracking
+
+Ver [docs/TRACKING.md](docs/TRACKING.md)
+
+## Security
+
+Ver [docs/SECURITY.md](docs/SECURITY.md)
 
 ## Documentation
 
-| Doc | Path |
-|-----|------|
-| Milestone 0 audits | [`docs/audit/`](docs/audit/) |
-| Milestone 1 plan | [`docs/king-food/MILESTONE_1_PLAN.md`](docs/king-food/MILESTONE_1_PLAN.md) |
-| Identity / branding | [`docs/king-food/IDENTITY.md`](docs/king-food/IDENTITY.md) |
-| Upstream KitchenAsty docs | https://mighty840.github.io/kitchenasty/ |
+| Documento | Conteúdo |
+|-----------|----------|
+| [PROJECT_SNAPSHOT.md](docs/PROJECT_SNAPSHOT.md) | Estado atual do projeto |
+| [ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitetura |
+| [API.md](docs/API.md) | Mapa de rotas |
+| [DATABASE.md](docs/DATABASE.md) | Banco de dados |
+| [ORDER_FLOW.md](docs/ORDER_FLOW.md) | Ciclo do pedido |
+| [ADMIN_POS.md](docs/ADMIN_POS.md) | Admin/POS |
+| [KITCHEN.md](docs/KITCHEN.md) | Kitchen display |
+| [TRACKING.md](docs/TRACKING.md) | Customer journey |
+| [SALES_ATTRIBUTION.md](docs/SALES_ATTRIBUTION.md) | Atribuição de vendas |
+| [SECURITY.md](docs/SECURITY.md) | Segurança |
+| [ENVIRONMENT.md](docs/ENVIRONMENT.md) | Variáveis de ambiente |
+| [DEPLOYMENT.md](docs/DEPLOYMENT.md) | Deploy |
+| [TESTING.md](docs/TESTING.md) | Testes |
+| [KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md) | Problemas conhecidos |
+| [ROADMAP.md](docs/ROADMAP.md) | Roadmap |
+| [ORPHAN_ROUTES.md](docs/ORPHAN_ROUTES.md) | Rotas órfãs |
 
----
+Obsidian: [docs/obsidian/](docs/obsidian/) — abrir como vault.
 
-## Attribution & license
+## Roadmap
 
-This project is based on **KitchenAsty**, Copyright (c) 2025 KitchenAsty Contributors, licensed under the [MIT License](LICENSE).
+Ver [docs/ROADMAP.md](docs/ROADMAP.md)
 
-- Upstream: https://github.com/mighty840/kitchenasty
-- Fork: https://github.com/luizhbr/kitchenasty
+## Contributing
 
-King Food is a **private commercial platform**. The MIT license permits commercial use, modification, and private distribution, provided the original copyright notice is preserved.
-
----
-
-## Development rules (orchestrator)
-
-Work is done by **milestones**. Do not implement the entire platform at once.
-
-- **Milestone 0** — Audit → CLOSED
-- **Milestone 1** — Foundation (current)
-- Later: catalog, storefront focus, WhatsApp, Hermes, N8N, production hardening
-
-See `docs/king-food/MILESTONE_1_PLAN.md` for scope and success criteria.
+Ver [CONTRIBUTING.md](CONTRIBUTING.md) e [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
