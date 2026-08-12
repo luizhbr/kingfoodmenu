@@ -18,3 +18,4 @@ uploads/
 .env.deploy
 .neon-secret.json
 test-db.js
+.vercel
