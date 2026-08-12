@@ -8,6 +8,11 @@ export default function Account() {
   const { t } = useTranslation();
   const { user, token, isLoading, logout } = useAuth();
   const [loyaltyPoints, setLoyaltyPoints] = useState<number | null>(null);
+  const [editName, setEditName] = useState(user?.name || '');
+  const [editPhone, setEditPhone] = useState(user?.phone || '');
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
@@ -20,6 +25,30 @@ export default function Account() {
       })
       .catch(() => {});
   }, [token]);
+
+  const saveProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    setSaveMsg(null);
+    setSaveError(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/customer/profile`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name: editName, phone: editPhone || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+      setSaveMsg('Profile updated');
+    } catch (err: any) {
+      setSaveError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -41,22 +70,41 @@ export default function Account() {
         {/* Profile */}
         <div className="p-6 border-b border-gray-200">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('account.personalInfo')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={saveProfile} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-500 mb-1">{t('auth.name')}</label>
-              <p className="text-gray-900 font-medium">{user.name}</p>
+              <input
+                type="text"
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
             </div>
             <div>
               <label className="block text-sm text-gray-500 mb-1">{t('account.emailLabel')}</label>
-              <p className="text-gray-900">{user.email}</p>
+              <p className="text-gray-900 font-medium">{user.email}</p>
             </div>
-            {user.phone && (
-              <div>
-                <label className="block text-sm text-gray-500 mb-1">{t('account.phoneLabel')}</label>
-                <p className="text-gray-900">{user.phone}</p>
-              </div>
-            )}
-          </div>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">{t('account.phoneLabel')}</label>
+              <input
+                type="tel"
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div className="sm:col-span-2 flex items-center gap-3">
+              <button
+                type="submit"
+                disabled={saving}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
+              >
+                {saving ? 'Saving...' : 'Save'}
+              </button>
+              {saveMsg && <span className="text-sm text-green-600">{saveMsg}</span>}
+              {saveError && <span className="text-sm text-red-600">{saveError}</span>}
+            </div>
+          </form>
         </div>
 
         {/* Loyalty Points */}
