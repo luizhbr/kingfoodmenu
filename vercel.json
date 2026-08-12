@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/:path*"
+      "destination": "/api"
     },
     {
       "source": "/((?!assets/|sw\\.js|manifest\\.json|api/).*)",
@@ -42,7 +42,7 @@
     }
   ],
   "functions": {
-    "api/[[...path]].ts": {
+    "api/index.ts": {
       "maxDuration": 30
     }
   }
