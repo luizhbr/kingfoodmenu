@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../hooks/useApi.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type GalleryCategory = 'FOOD' | 'INTERIOR' | 'GARDEN' | 'EVENTS';
 

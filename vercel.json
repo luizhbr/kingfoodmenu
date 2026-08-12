@@ -3,7 +3,11 @@
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
-      "source": "/((?!assets/|sw\\.js|manifest\\.json).*)",
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    },
+    {
+      "source": "/((?!assets/|sw\\.js|manifest\\.json|api/).*)",
       "destination": "/index.html"
     }
   ],

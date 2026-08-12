@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../hooks/useApi.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface Location {
   id: string;

@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export default function Impressum() {
   const [page, setPage] = useState<{ title: string; content: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/legal/impressum')
+    fetch(`${API_BASE}/api/legal/impressum')
       .then((r) => r.json())
       .then((res) => {
         if (res.success) setPage(res.data);

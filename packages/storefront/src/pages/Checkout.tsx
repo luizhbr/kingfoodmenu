@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
 import { useAuth } from '../context/AuthContext.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type OrderType = 'delivery' | 'pickup';
 type PaymentMethod = 'cash' | 'stripe' | 'paypal';
@@ -48,7 +49,7 @@ export default function Checkout() {
 
   // Check busy mode on mount
   useEffect(() => {
-    fetch('/api/locations')
+    fetch(`${API_BASE}/api/locations')
       .then((res) => res.json())
       .then((data) => {
         const loc = data.data?.[0];
@@ -63,7 +64,7 @@ export default function Checkout() {
   // Fetch loyalty balance for logged-in users
   useEffect(() => {
     if (token) {
-      fetch('/api/loyalty/balance', {
+      fetch(`${API_BASE}/api/loyalty/balance', {
         headers: { Authorization: `Bearer ${token}` },
       })
         .then((res) => res.json())
@@ -134,7 +135,7 @@ export default function Checkout() {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
 
-      const res = await fetch('/api/orders', {
+      const res = await fetch(`${API_BASE}/api/orders', {
         method: 'POST',
         headers,
         body: JSON.stringify(body),
@@ -148,7 +149,7 @@ export default function Checkout() {
       // brings them back to /order/:id?paid=true on success (the webhook
       // is what actually flips Order.status). Cancel falls back to /checkout.
       if (paymentMethod === 'stripe') {
-        const sessRes = await fetch('/api/payments/create-checkout-session', {
+        const sessRes = await fetch(`${API_BASE}/api/payments/create-checkout-session', {
           method: 'POST',
           headers,
           body: JSON.stringify({ orderId }),

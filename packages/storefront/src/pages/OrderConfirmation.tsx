@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type Order = {
   id: string;
@@ -45,7 +46,7 @@ export default function OrderConfirmation() {
     const t = setTimeout(
       async () => {
         try {
-          const res = await fetch(`/api/orders/${id}`);
+          const res = await fetch(`${API_BASE}/api/orders/${id}`);
           if (!res.ok) return;
           const data = await res.json();
           if (!cancelled && data?.data) setOrder(data.data as Order);

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface OrderItem {
   id: string;
@@ -64,7 +65,7 @@ export default function OrderStatus() {
     const headers: Record<string, string> = {};
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    fetch(`/api/orders/${id}`, { headers })
+    fetch(`${API_BASE}/api/orders/${id}`, { headers })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load order');
         return res.json();

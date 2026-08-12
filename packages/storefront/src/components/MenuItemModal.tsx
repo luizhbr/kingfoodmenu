@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
+import { FALLBACK_ITEMS } from '../data/menuFallback.js';
 
 interface OptionValue {
   id: string;
@@ -54,9 +55,12 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/menu/items/${itemId}`)
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    fetch(`${apiBase}/api/menu/items/${itemId}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load item');
+        const ct = res.headers.get('content-type') || '';
+        if (!ct.includes('application/json')) throw new Error('API unavailable');
         return res.json();
       })
       .then((json) => {
@@ -73,7 +77,22 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
         }
         setSelections(defaults);
       })
-      .catch((err) => setError(err.message))
+      .catch(() => {
+        // Fallback to static menu data when API is unavailable
+        const fallbackItem = FALLBACK_ITEMS.find((i: { id: string }) => i.id === itemId);
+        if (fallbackItem) {
+          setItem({
+            ...fallbackItem,
+            description: fallbackItem.description || null,
+            options: [],
+            allergens: [],
+            isActive: true,
+            slug: fallbackItem.id,
+          });
+        } else {
+          setError('Item não encontrado');
+        }
+      })
       .finally(() => setLoading(false));
   }, [itemId]);
 

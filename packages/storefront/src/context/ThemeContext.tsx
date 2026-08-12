@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface HeroSection {
   title?: string;
@@ -138,7 +139,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    fetch('/api/settings')
+    fetch(`${API_BASE}/api/settings')
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {

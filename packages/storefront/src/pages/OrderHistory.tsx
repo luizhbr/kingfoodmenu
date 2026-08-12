@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.js';
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface OrderSummary {
   id: string;
@@ -44,7 +45,7 @@ export default function OrderHistory() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    fetch(`/api/orders/my-orders?page=${page}&limit=10`, {
+    fetch(`${API_BASE}/api/orders/my-orders?page=${page}&limit=10`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
