@@ -39,6 +39,14 @@ export default function Checkout() {
   const [isBusy, setIsBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
 
+  // Idempotency: one key per checkout session so a double submit / retry
+  // returns the same order instead of creating duplicates.
+  const [idempotencyKey] = useState(() =>
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `kf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  );
+
   // Loyalty points
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
   const [loyaltyRedeem, setLoyaltyRedeem] = useState(0);
@@ -116,6 +124,8 @@ export default function Checkout() {
         scheduledAt: scheduledAt || undefined,
         couponCode: couponCode || undefined,
       };
+
+      body.idempotencyKey = idempotencyKey;
 
       if (orderType === 'delivery') {
         body.address = address;

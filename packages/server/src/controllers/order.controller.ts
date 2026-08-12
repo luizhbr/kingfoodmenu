@@ -45,6 +45,9 @@ const createOrderSchema = z.object({
   guestEmail: z.string().email().optional(),
   guestPhone: z.string().optional(),
   loyaltyPointsRedeem: z.number().int().min(0).optional(),
+  // Client-generated key so a retried/double-submitted request returns the
+  // SAME order instead of creating a duplicate (idempotency).
+  idempotencyKey: z.string().min(8).max(128).optional(),
 });
 
 function generateOrderNumber(): string {
@@ -76,6 +79,18 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   if (orderType === 'DELIVERY' && !address) {
     res.status(400).json({ success: false, error: 'Delivery address is required' });
     return;
+  }
+
+  // Idempotency: if the client retries with the same key, return the
+  // existing order instead of creating a duplicate.
+  if (parsed.data.idempotencyKey) {
+    const existing = await prisma.order.findUnique({
+      where: { idempotencyKey: parsed.data.idempotencyKey },
+    });
+    if (existing) {
+      res.status(200).json({ success: true, data: existing, duplicate: true });
+      return;
+    }
   }
 
   const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
@@ -330,6 +345,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   const order = await prisma.order.create({
     data: {
       orderNumber: generateOrderNumber(),
+      idempotencyKey: parsed.data.idempotencyKey,
       customerId,
       locationId: location.id,
       orderType,

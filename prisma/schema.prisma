@@ -357,6 +357,7 @@ enum OrderStatus {
 model Order {
   id          String      @id @default(cuid())
   orderNumber String      @unique
+  idempotencyKey String?  @unique
   customerId  String?
   customer    Customer?   @relation(fields: [customerId], references: [id])
   locationId  String
