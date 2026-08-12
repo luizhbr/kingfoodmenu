@@ -237,6 +237,21 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | Local: captchaPassed=true sem token | ✅ 401 (boolean ignorado) |
 | Produção: camada inativa não quebra | ✅ P13.6-PROD-001..009 |
 
+
+## P15.6 Stripe Hardening (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (12 novos: fail-fast, USD, IDOR, idempotência, refund, webhook) | ✅ 152/152 total |
+| Local: customer→intent alheio | ✅ 403 |
+| Local: customer→refund | ✅ 403 |
+| Local: pedido inexistente | ✅ 404 |
+| Local: webhook sem assinatura | ✅ fail-closed |
+| Produção: fail-fast msg limpa | ✅ (sem placeholder) |
+| Produção: IDOR | ✅ 403 |
+| Produção: refund RBAC | ✅ 403 |
+| Produção: storefront | ✅ 200 |
+
 ## Como rodar
 
 ```bash

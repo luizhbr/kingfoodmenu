@@ -27,6 +27,7 @@ KING FOOD
 ├── [[Excel Export]]
 │
 ├── [[PWA]]
+├── [[Stripe]]
 ├── [[King Print]]
 ├── [[02 - API]]
 ├── [[03 - Database]]
@@ -56,6 +57,7 @@ KING FOOD
 | P10 Google Maps | ⛔ BLOCKED (sem API key) |
 | P14 Documentation | ✅ (este índice) |
 | P15 King Print | ✅ (backend) |
+| P15.6 Stripe Hardening | ✅ (test mode) |
 
 ## Links rápidos
 

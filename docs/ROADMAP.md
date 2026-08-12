@@ -25,6 +25,7 @@
 | P13.5 Auth Abuse Test | ✅ 2026-08-12 (brute-force/rate-limit/enumeration/JWT/RBAC — tudo PASS) |
 | P13.6 Adaptive CAPTCHA | ✅ 2026-08-12 (Turnstile, fail-closed, risk-based, 17 unit) |
 | P15 King Print | ✅ 2026-08-12 (backend: PrintJob+Printer, API, idempotência, pairing) |
+| P15.6 Stripe Hardening | ✅ 2026-08-12 (fail-fast, USD, IDOR, idempotência, refund; test mode pending chaves) |
 
 ## IN PROGRESS
 

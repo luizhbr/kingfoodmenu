@@ -1,6 +1,6 @@
 # KING FOOD FOUNDATION UI — Engineering Snapshot
 
-> **Data:** 2026-08-12 · **Commit:** `9a65e75` · **Branch:** feature/king-food-foundation
+> **Data:** 2026-08-12 · **Commit:** `b208ca0` · **Branch:** feature/king-food-foundation
 > **Produção:** https://king-food-foundation-ui.vercel.app
 
 ## Stack
