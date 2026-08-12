@@ -29,6 +29,7 @@ model User {
 
   assignedOrders Order[] @relation("AssignedStaff")
   mediaAssets    MediaAsset[]
+  printJobs       PrintJob[]
 
   @@map("users")
 }
@@ -424,6 +425,7 @@ model Order {
   couponUsage       CouponUsage?
   cashbackTransactions CashbackTransaction[]
   trackingEvents  TrackingEvent[]
+  printJobs       PrintJob[]
 
   @@map("orders")
 }
@@ -1258,3 +1260,59 @@ enum CashbackTransactionType {
   ADJUSTMENT
 }
 
+// ── KING PRINT (P15) ─────────────────────────────────────────────────────────
+
+enum PrintJobStatus {
+  QUEUED
+  PRINTING
+  PRINTED
+  FAILED
+  CANCELLED
+}
+
+enum PrinterType {
+  USB
+  NETWORK
+  OS_PRINTER
+}
+
+model Printer {
+  id            String      @id @default(cuid())
+  name          String
+  type          PrinterType @default(USB)
+  paperWidth    Int         @default(80) // mm: 58 or 80
+  location      String?
+  status        String      @default("OFFLINE") // ONLINE | OFFLINE
+  enabled       Boolean     @default(true)
+  lastSeenAt    DateTime?
+  deviceId      String?     @unique // print agent device
+  pairingCode   String?     @unique
+  pairingExpiresAt DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  jobs          PrintJob[]
+  @@map("printers")
+}
+
+model PrintJob {
+  id            String         @id @default(cuid())
+  orderId       String
+  order         Order          @relation(fields: [orderId], references: [id])
+  printerId     String
+  printer       Printer        @relation(fields: [printerId], references: [id])
+  type          String         @default("AUTO") // AUTO | REPRINT
+  status        PrintJobStatus @default(QUEUED)
+  attempts      Int            @default(0)
+  idempotencyKey String         @unique
+  errorCode     String?
+  errorMessage  String?
+  requestedById String?
+  requestedBy   User?          @relation(fields: [requestedById], references: [id])
+  createdAt     DateTime       @default(now())
+  startedAt     DateTime?
+  completedAt   DateTime?
+  failedAt      DateTime?
+  @@unique([orderId, type, printerId])
+  @@index([status, createdAt])
+  @@map("print_jobs")
+}

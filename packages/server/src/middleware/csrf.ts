@@ -65,6 +65,16 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     return next();
   }
 
+  // Skip for print-agent device tokens (header-based, not cookie-based)
+  if (authHeader?.startsWith('Device ')) {
+    return next();
+  }
+
+  // Skip for print-agent pairing (local agent, no browser cookies)
+  if (req.path.startsWith('/api/print/agent/')) {
+    return next();
+  }
+
   // Skip for webhook endpoints (they use HMAC signature verification instead)
   if (req.path.includes('/webhook')) {
     return next();
