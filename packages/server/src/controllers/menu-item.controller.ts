@@ -25,6 +25,8 @@ const createMenuItemSchema = z.object({
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   description: z.string().optional(),
   price: z.number().min(0),
+  sku: z.string().optional(),
+  cost: z.number().min(0).optional(),
   image: z.string().optional(),
   isActive: z.boolean().default(true),
   sortOrder: z.number().int().min(0).default(0),
@@ -46,10 +48,14 @@ export async function listMenuItems(req: Request, res: Response): Promise<void> 
   const skip = (page - 1) * limit;
   const categoryId = req.query.categoryId as string | undefined;
   const search = req.query.search as string | undefined;
+  // Public storefront sees only active items. The admin passes
+  // includeInactive=true to manage disabled products.
+  const includeInactive = req.query.includeInactive === 'true';
 
   const where: Record<string, unknown> = {};
   if (categoryId) where.categoryId = categoryId;
   if (search) where.name = { contains: search, mode: 'insensitive' };
+  if (!includeInactive) where.isActive = true;
 
   const [items, total] = await Promise.all([
     prisma.menuItem.findMany({

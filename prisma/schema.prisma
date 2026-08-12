@@ -223,6 +223,8 @@ model MenuItem {
   slug        String  @unique
   description String?
   price       Float
+  sku         String?
+  cost        Float?
   image       String?
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)

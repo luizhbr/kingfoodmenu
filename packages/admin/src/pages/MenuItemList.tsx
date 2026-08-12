@@ -38,7 +38,7 @@ export default function MenuItemList() {
 
   const fetchItems = (page = 1) => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    const params = new URLSearchParams({ page: String(page), limit: '20', includeInactive: 'true' });
     if (search) params.set('search', search);
     if (categoryFilter) params.set('categoryId', categoryFilter);
 

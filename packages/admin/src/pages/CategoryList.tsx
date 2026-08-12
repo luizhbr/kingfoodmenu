@@ -20,7 +20,7 @@ export default function CategoryList() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    api.get<{ data: Category[] }>('/menu/categories')
+    api.get<{ data: Category[] }>('/menu/categories?includeInactive=true')
       .then((res) => { setCategories(res.data); setLoading(false); })
       .catch((err) => { setError(err.message); setLoading(false); });
   }, []);
@@ -30,7 +30,7 @@ export default function CategoryList() {
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Delete category "${name}"?`)) return;
     try {
-      await api.delete(`/menu/categories/${id}`);
+      await api.delete(`/menu/categories?includeInactive=true/${id}`);
       setCategories((prev) => prev.filter((c) => c.id !== id));
     } catch (err: any) {
       alert(err.message);
@@ -42,7 +42,7 @@ export default function CategoryList() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold text-gray-800">Categories</h2>
         <Link
-          to="/menu/categories/new"
+          to="/menu/categories?includeInactive=true/new"
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
           Add Category
@@ -55,7 +55,7 @@ export default function CategoryList() {
       {!loading && !error && topLevel.length === 0 && (
         <div className="bg-white rounded-lg shadow p-8 text-center">
           <p className="text-gray-500 mb-4">No categories yet.</p>
-          <Link to="/menu/categories/new" className="text-primary-600 hover:text-primary-700 font-medium">
+          <Link to="/menu/categories?includeInactive=true/new" className="text-primary-600 hover:text-primary-700 font-medium">
             Create your first category
           </Link>
         </div>
@@ -99,7 +99,7 @@ export default function CategoryList() {
                     {cat.sortOrder}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
-                    <Link to={`/menu/categories/${cat.id}`} className="text-primary-600 hover:text-primary-900 font-medium" aria-label={`Edit category ${cat.name}`}>
+                    <Link to={`/menu/categories?includeInactive=true/${cat.id}`} className="text-primary-600 hover:text-primary-900 font-medium" aria-label={`Edit category ${cat.name}`}>
                       Edit
                     </Link>
                     <button onClick={() => handleDelete(cat.id, cat.name)} className="text-red-600 hover:text-red-900 font-medium" aria-label={`Delete category ${cat.name}`}>

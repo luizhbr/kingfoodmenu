@@ -24,6 +24,8 @@ interface MenuItemData {
   slug: string;
   description: string;
   price: number;
+  sku?: string;
+  cost?: number;
   isActive: boolean;
   sortOrder: number;
   trackStock: boolean;
@@ -111,6 +113,8 @@ export default function MenuItemForm() {
           slug: item.slug,
           description: item.description || '',
           price: item.price,
+          sku: item.sku || '',
+          cost: item.cost ?? undefined,
           isActive: item.isActive,
           sortOrder: item.sortOrder,
           trackStock: item.trackStock,
@@ -333,6 +337,28 @@ export default function MenuItemForm() {
                 required
                 min={0}
                 step={0.01}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+              <input
+                type="text"
+                value={form.sku ?? ''}
+                onChange={(e) => updateField('sku', e.target.value)}
+                placeholder="e.g. ACAI-KING-001"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Cost (custo)</label>
+              <input
+                type="number"
+                value={form.cost ?? ''}
+                onChange={(e) => updateField('cost', e.target.value === '' ? undefined : Number(e.target.value))}
+                min={0}
+                step={0.01}
+                placeholder="Opcional — para margem"
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               />
             </div>
