@@ -4,7 +4,7 @@
  * Vercel's catch-all [[...path]] doesn't route nested paths correctly.
  * Instead, we rewrite /api/* to /api (this function).
  */
-import { createApp } from '../packages/server/src/app.ts';
+import { createApp } from '../packages/server/src/app';
 
 let app: ReturnType<typeof createApp> | null = null;
 

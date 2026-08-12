@@ -6,9 +6,9 @@
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "noEmit": true,
     "resolveJsonModule": true,
-    "outDir": "./dist",
-    "rootDir": ".."
+    "allowJs": true
   },
   "include": [
     "./**/*.ts",
