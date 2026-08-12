@@ -2,8 +2,54 @@
 
 import { Router } from "express";
 import prisma from '../lib/db.js';
+import type { TrackingEventType, AttributionSource } from '@prisma/client';
 
 const router = Router();
+
+// ── Enum normalization ──────────────────────────────────────────────────────
+// Prisma enums are UPPERCASE. The frontend sends raw UTM values (lowercase),
+// so normalize before persisting to avoid 500 "Invalid value for argument".
+
+const TRACKING_EVENT_TYPES = new Set([
+  "SESSION_STARTED", "PAGE_VIEW", "PRODUCT_VIEW", "PRODUCT_ADDED",
+  "CART_CREATED", "CHECKOUT_STARTED", "CHECKOUT_COMPLETED", "ORDER_CREATED",
+  "ORDER_CONFIRMED", "ORDER_DELIVERED", "COUPON_USED", "WHATSAPP_CLICKED",
+]);
+
+const SOURCE_ALIASES: Record<string, string> = {
+  google: "GOOGLE",
+  googleads: "GOOGLE_ADS",
+  google_ads: "GOOGLE_ADS",
+  instagram: "INSTAGRAM",
+  facebook: "FACEBOOK",
+  meta: "META_ADS",
+  metaads: "META_ADS",
+  meta_ads: "META_ADS",
+  tiktok: "TIKTOK",
+  tiktokads: "TIKTOK_ADS",
+  tiktok_ads: "TIKTOK_ADS",
+  whatsapp: "WHATSAPP",
+  qr: "QR_CODE",
+  qrcode: "QR_CODE",
+  email: "EMAIL",
+  referral: "REFERRAL",
+  influencer: "INFLUENCER",
+  organic: "ORGANIC",
+  custom: "CUSTOM",
+  direct: "DIRECT",
+};
+
+function normalizeEventType(value: unknown): TrackingEventType {
+  if (typeof value !== "string") return "PAGE_VIEW";
+  const upper = value.trim().toUpperCase();
+  return (TRACKING_EVENT_TYPES.has(upper) ? upper : "PAGE_VIEW") as TrackingEventType;
+}
+
+function normalizeSource(value: unknown): AttributionSource {
+  if (typeof value !== "string" || !value.trim()) return "UNKNOWN";
+  const raw = value.trim().toLowerCase();
+  return (SOURCE_ALIASES[raw] || raw.toUpperCase()) as AttributionSource;
+}
 
 // POST /api/tracking/events — Track an event (public, no auth required)
 router.post("/events", async (req, res) => {
@@ -26,22 +72,34 @@ router.post("/events", async (req, res) => {
       metadata,
     } = req.body;
 
-    // Resolve attribution source
-    const attributionSource = source || "UNKNOWN";
+    // Resolve attribution source (normalized to Prisma enum)
+    const attributionSource = normalizeSource(source);
+    const normalizedEventType = normalizeEventType(eventType);
+
+    // Validate customerId — tracking must never 500 on a stale/invalid FK.
+    // If the customer doesn't exist, persist the event as anonymous.
+    let resolvedCustomerId: string | null = null;
+    if (customerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { id: true },
+      });
+      if (customer) resolvedCustomerId = customerId;
+    }
 
     const event = await prisma.trackingEvent.create({
       data: {
-        eventType,
+        eventType: normalizedEventType,
         sessionId: sessionId || "unknown",
         source: attributionSource,
         medium: medium || null,
-        campaign: campaign || null,
+        campaignSlug: campaign || null,
         content: content || null,
         term: term || null,
         page: page || null,
         referrer: referrer || null,
         landingPage: landingPage || null,
-        customerId: customerId || null,
+        customerId: resolvedCustomerId,
         orderId: orderId || null,
         productId: productId || null,
         couponCode: couponCode || null,
@@ -52,16 +110,16 @@ router.post("/events", async (req, res) => {
     });
 
     // Update customer attribution (first/last touch)
-    if (customerId && attributionSource !== "UNKNOWN") {
+    if (resolvedCustomerId && attributionSource !== "UNKNOWN") {
       const existing = await prisma.attribution.findUnique({
-        where: { customerId },
+        where: { customerId: resolvedCustomerId },
       });
 
       if (!existing) {
         // First touch — create
         await prisma.attribution.create({
           data: {
-            customerId,
+            customerId: resolvedCustomerId,
             firstSource: attributionSource,
             firstMedium: medium || null,
             firstCampaign: campaign || null,
@@ -85,7 +143,7 @@ router.post("/events", async (req, res) => {
       } else {
         // Update last touch (never overwrite first touch)
         await prisma.attribution.update({
-          where: { customerId },
+          where: { customerId: resolvedCustomerId },
           data: {
             lastSource: attributionSource,
             lastMedium: medium || null,
