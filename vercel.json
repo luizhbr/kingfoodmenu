@@ -1,5 +1,4 @@
 {
-  "buildCommand": "npm run build -w packages/shared && npm run build -w packages/storefront",
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
