@@ -17,6 +17,7 @@
 | P2.5 License + Provenance | ✅ 2026-08-12 (MIT verified, rebranding) |
 | P3 Customer Profile | ✅ 2026-08-12 (profile + order history IDOR-safe) |
 | P5 Coupons | ✅ 2026-08-12 (server-side engine + ledger) |
+| P6 Cashback | ✅ 2026-08-12 (wallet+ledger, credit on delivery) |
 
 ## IN PROGRESS
 

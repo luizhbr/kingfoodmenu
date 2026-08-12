@@ -127,6 +127,24 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | RBAC customer → cupom | ✅ 403 |
 | Neon (usage, usageCount, order.discount) | ✅ |
 
+
+## P6 Cashback (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (cashback-service) | ✅ 20 novos (70/70 total) |
+| CREDIT após PICKED_UP | ✅ $0.70 (5% de 13.9) |
+| Saldo inicial 0 | ✅ |
+| DEBIT no checkout | ✅ -$0.50, saldo 0.20 |
+| Idempotência credit (2x status) | ✅ 1 crédito |
+| CANCELLED → REVERSAL | ✅ -0.70 limitado ao saldo |
+| Saldo nunca negativo | ✅ |
+| Concurrency (2x mesmo saldo) | ✅ 1 vence, outro 400 |
+| amount falso ($9999) | ✅ 400 |
+| IDOR | ✅ 403 |
+| RBAC customer → adjust | ✅ 403 |
+| Anonymous → balance | ✅ 401 |
+
 ## Como rodar
 
 ```bash
