@@ -2,7 +2,7 @@
 
 **Branch:** `feature/king-food-foundation`  
 **Started:** 2026-08-11  
-**Status:** IN PROGRESS
+**Status:** CATALOG SEED DELIVERED — awaiting checkpoint approval
 
 ---
 
@@ -10,89 +10,85 @@
 
 Replace the KitchenAsty demo Mediterranean menu with a **King Food** product catalog foundation.
 
-Scope is limited to:
-
-- Categories
-- Products (menu items)
-- Core modifiers (sizes, toppings, extras)
-- Seed data aligned to Columbus / BR delivery business
-
-Out of scope:
-
-- UI redesign
-- WhatsApp / Hermes / N8N
-- Order Engine changes
-- Payments changes
-- Production deploy
-
 ---
 
-## Target Category Structure
+## Delivered Catalog
 
-| Sort | Category | Slug | Notes |
-|------|----------|------|-------|
-| 1 | Açaí | `acai` | Bowls + size modifiers |
-| 2 | Burgers | `burgers` | Classic BR-style burgers |
-| 3 | Combos | `combos` | Meal deals |
-| 4 | Sides | `sides` | Fries, etc. |
-| 5 | Sweets | `sweets` | Churros / desserts |
-| 6 | Drinks | `drinks` | Soft drinks, juices |
+### Categories
 
----
+| Sort | Category | Slug |
+|------|----------|------|
+| 1 | Açaí | `acai` |
+| 2 | Burgers | `burgers` |
+| 3 | Combos | `combos` |
+| 4 | Sides | `sides` |
+| 5 | Sweets | `sweets` |
+| 6 | Drinks | `drinks` |
 
-## Modifier Patterns
+### Products
 
-### Açaí bowls
-- Size: 300ml / 500ml / 700ml (RADIO, required)
-- Toppings: granola, banana, morango, leite condensado, paçoca, etc. (CHECKBOX)
-
-### Burgers
-- Optional extras: bacon, cheddar, ovo, etc. (CHECKBOX)
-
-### Combos
-- Usually fixed price; optional drink upgrade later
+| Product | Category | Base price | Modifiers |
+|---------|----------|------------|-----------|
+| Açaí Clássico | Açaí | $9.99 | Tamanho 300/500/700 + Complementos |
+| Açaí Bowl Especial | Açaí | $12.99 | Tamanho 500/700 |
+| X-Burger | Burgers | $11.99 | Adicionais |
+| X-Bacon | Burgers | $13.99 | Adicionais |
+| X-Tudo | Burgers | $15.99 | Adicionais |
+| Combo Burger + Fries + Drink | Combos | $16.99 | — |
+| Combo X-Tudo | Combos | $19.99 | — |
+| Batata Frita | Sides | $4.99 | Tamanho M/G |
+| Mini Churros (16oz) | Sweets | $7.99 | — |
+| Refrigerante Lata | Drinks | $2.99 | Sabor |
+| Água | Drinks | $1.99 | — |
 
 ---
 
 ## Execution Plan
 
 ### Step 1 — Plan & structure
-- [x] This document
+- [x] Plan document
 
-### Step 2 — Seed rewrite (catalog only)
-- [ ] Replace categories
-- [ ] Replace menu items
-- [ ] Attach modifiers
-- [ ] Keep location = King Food Columbus
-- [ ] Keep SiteSettings branding
-- [ ] Keep admin/customer users
+### Step 2 — Seed rewrite (catalog)
+- [x] Categories
+- [x] Menu items
+- [x] Modifiers (açaí sizes/toppings, burger extras, fries size, drink flavor)
+- [x] Location + SiteSettings preserved from M1
+- [x] Admin/customer users preserved
 
 ### Step 3 — Documentation
-- [ ] Update IDENTITY / README note about real catalog
-- [ ] Decision log
+- [x] This progress update
 
 ### Step 4 — Checkpoint
-- [ ] Report M2 status
-- [ ] Stop for authorization before M3
+- [ ] Formal M2 close after your OK
+- [ ] Authorization for Milestone 3
 
 ---
 
 ## Success Criteria
 
-- [ ] Seed creates King Food categories (not Mediterranean)
-- [ ] At least one product per category
-- [ ] Açaí has size + toppings modifiers
-- [ ] Burgers have extras modifiers
-- [ ] Location + branding from M1 preserved
-- [ ] Order Engine untouched
-- [ ] Docs updated
+- [x] Seed creates King Food categories
+- [x] At least one product per category
+- [x] Açaí has size + toppings modifiers
+- [x] Burgers have extras modifiers
+- [x] Location + branding from M1 preserved
+- [x] Order Engine untouched
+- [x] Docs updated
 
 ---
 
 ## Decision Log
 
 ### DECISION 004
-**Context:** Menu content source  
-**Chosen:** Curated King Food starter catalog in seed (not scraping OlaClick)  
-**Reason:** Independence from OlaClick; private platform foundation  
+Curated King Food starter catalog in seed (not OlaClick scrape).  
 **Date:** 2026-08-11
+
+### DECISION 005
+Prices are starter USD estimates for Columbus delivery; refine later with real cost sheet.  
+**Date:** 2026-08-11
+
+---
+
+## Recommended Next Milestone (after approval)
+
+**MILESTONE 3** — Storefront polish / checkout path validation  
+or refine catalog prices/photos from real King Food menu.
