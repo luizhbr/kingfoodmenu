@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../hooks/useApi.js';
 import MenuItemModal from '../components/MenuItemModal.js';
+import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
 
 interface Category {
   id: string;
@@ -45,7 +46,8 @@ export default function Menu() {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
 
-  const { data: categories, isLoading: categoriesLoading } = useApi<Category[]>('/api/menu/categories');
+  const { data: apiCategories, isLoading: categoriesLoading, error: categoriesError } = useApi<Category[]>('/api/menu/categories');
+  const categories = apiCategories || FALLBACK_CATEGORIES;
 
   // Build items URL with filters
   const itemsUrl = buildItemsUrl(selectedCategory, debouncedSearch, page);
@@ -67,7 +69,7 @@ export default function Menu() {
   useEffect(() => {
     setItemsLoading(true);
     setItemsError(null);
-    fetch(itemsUrl)
+    fetch(itemsUrl.startsWith('http') ? itemsUrl : `${import.meta.env.VITE_API_URL || ''}${itemsUrl}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load menu');
         return res.json();
@@ -76,7 +78,16 @@ export default function Menu() {
         setItems(json.data);
         setPagination(json.pagination);
       })
-      .catch((err) => setItemsError(err.message))
+      .catch((err) => {
+          // Fallback to static data when API is not available
+          console.warn('Menu API unavailable, using fallback data:', err.message);
+          const filtered = selectedCategory
+            ? FALLBACK_ITEMS.filter((i: { category: { id: string } }) => i.category.id === selectedCategory)
+            : FALLBACK_ITEMS;
+          setItems(filtered);
+          setPagination({ page: 1, limit: 100, total: filtered.length, totalPages: 1 });
+          setItemsError(null);
+        })
       .finally(() => setItemsLoading(false));
   }, [itemsUrl]);
 

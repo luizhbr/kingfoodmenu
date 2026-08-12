@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
 interface UseApiResult<T> {
   data: T | null;
   error: string | null;
@@ -19,10 +21,11 @@ export function useApi<T>(url: string | null): UseApiResult<T> {
       return;
     }
 
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
     setIsLoading(true);
     setError(null);
 
-    fetch(url)
+    fetch(fullUrl)
       .then((res) => {
         if (!res.ok) throw new Error(`Request failed (${res.status})`);
         return res.json();

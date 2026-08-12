@@ -1,0 +1,30 @@
+{
+  "buildCommand": "npm run build -w packages/shared && npm run build -w packages/storefront",
+  "outputDirectory": "packages/storefront/dist",
+  "rewrites": [
+    {
+      "source": "/((?!assets/|sw\\.js|manifest\\.json).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/manifest.json",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=60"
+        }
+      ]
+    }
+  ]
+}
