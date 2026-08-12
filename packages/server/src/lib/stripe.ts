@@ -47,11 +47,22 @@ export async function getStripe(): Promise<Stripe> {
   return cachedStripe;
 }
 
-// Default export for backwards compatibility — throws in production when unset.
-const DEFAULT_KEY: string = resolveStripeSecretKey() ?? (() => {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('STRIPE_SECRET_KEY is not configured');
+// Default export for backwards compatibility.
+// Lazy via Proxy: instantiating Stripe (and failing on a missing key) is
+// deferred until the default export is actually USED — importing this
+// module must never crash the whole app in production when Stripe is
+// simply not configured yet.
+let defaultStripeInstance: Stripe | null = null;
+function createDefaultStripe(): Stripe {
+  const key = resolveStripeSecretKey();
+  if (!key) {
+    throw new Error('STRIPE_SECRET_KEY is not configured. Stripe payments are disabled until a key is provided.');
   }
-  return 'sk_test_placeholder_for_unit_tests_only';
-})();
-export default new Stripe(DEFAULT_KEY, { apiVersion: '2026-01-28.clover' });
+  return new Stripe(key, { apiVersion: '2026-01-28.clover' });
+}
+export default new Proxy({} as Stripe, {
+  get(_target, prop) {
+    if (!defaultStripeInstance) defaultStripeInstance = createDefaultStripe();
+    return (defaultStripeInstance as any)[prop];
+  },
+});
