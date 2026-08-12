@@ -22,6 +22,7 @@
 | P8 Reports | ✅ 2026-08-12 (server-side metrics, timezone ET, RBAC MANAGER+) |
 | P9 Excel Export | ✅ 2026-08-12 (9-sheet xlsx, same data layer, RBAC MANAGER+) |
 | P13 Security Hardening | ✅ 2026-08-12 (JWT fail-fast, .claude untracked, catch logs) |
+| P13.5 Auth Abuse Test | ✅ 2026-08-12 (brute-force/rate-limit/enumeration/JWT/RBAC — tudo PASS) |
 
 ## IN PROGRESS
 

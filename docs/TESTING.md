@@ -212,6 +212,19 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | .claude untracked | ✅ |
 | Unit (104) | ✅ todos passam |
 
+
+## P13.5 Brute-Force Test (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Brute-force 10 tentativas | ✅ 9× 401 + 429 (Retry-After 38s) |
+| Account enumeration | ✅ indistinguível |
+| JWT malformado/inválido/alg=none | ✅ 401 × 3 |
+| RBAC customer→staff/reports/driver | ✅ 403 × 3 |
+| Password spraying 3 contas | ✅ 401 × 3 |
+| Login válido pós-bloqueio | ✅ 200 |
+| Sem 5xx / sem crash | ✅ |
+
 ## Como rodar
 
 ```bash
