@@ -145,6 +145,27 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | RBAC customer → adjust | ✅ 403 |
 | Anonymous → balance | ✅ 401 |
 
+
+## P7 Driver App (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (state machine) | ✅ 10 novos (80/80 total) |
+| Criar driver (role DRIVER) | ✅ 201 |
+| Driver login | ✅ |
+| Profile | ✅ 200 role=DRIVER |
+| Dashboard (assigned+available) | ✅ |
+| Accept | ✅ 200 |
+| Pickup → OFD → Delivered | ✅ 200 |
+| Transição inválida (replay) | ✅ 400 |
+| IDOR driver B → pedido A | ✅ 403 |
+| Pedido inexistente | ✅ 404 |
+| Customer → driver | ✅ 403 |
+| Anonymous → driver | ✅ 401 |
+| Staff → driver | ✅ 403 |
+| Neon (assignedToId) | ✅ |
+| PWA (manifest + sw) | ✅ |
+
 ## Como rodar
 
 ```bash

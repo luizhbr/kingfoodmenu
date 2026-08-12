@@ -18,6 +18,7 @@
 | P3 Customer Profile | ✅ 2026-08-12 (profile + order history IDOR-safe) |
 | P5 Coupons | ✅ 2026-08-12 (server-side engine + ledger) |
 | P6 Cashback | ✅ 2026-08-12 (wallet+ledger, credit on delivery) |
+| P7 Driver App + PWA | ✅ 2026-08-12 (DRIVER role, state machine, mobile UI) |
 
 ## IN PROGRESS
 
