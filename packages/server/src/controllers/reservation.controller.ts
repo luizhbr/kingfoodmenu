@@ -62,7 +62,9 @@ export async function createReservation(req: Request, res: Response): Promise<vo
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('reservation.created', { reservation });
-  } catch {}
+  } catch (err) {
+    console.error('[reservation] appEvents emit failed:', err);
+  }
 
   res.status(201).json({ success: true, data: reservation });
 }

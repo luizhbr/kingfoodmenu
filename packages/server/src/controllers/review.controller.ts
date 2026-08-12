@@ -49,7 +49,9 @@ export async function createReview(req: Request, res: Response): Promise<void> {
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('review.submitted', { review });
-  } catch {}
+  } catch (err) {
+    console.error('[review] appEvents emit failed:', err);
+  }
 
   res.status(201).json({ success: true, data: review });
 }

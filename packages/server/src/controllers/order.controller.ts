@@ -601,7 +601,9 @@ if (customerId) {
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('order.created', { order });
-  } catch {}
+  } catch (err) {
+    console.error('[order] appEvents emit failed:', err);
+  }
 
   // Sales attribution: persist first/last touch linked to this order
   if (attribution) {
@@ -820,7 +822,9 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('order.statusChanged', { order: updated, previousStatus: order.status });
-  } catch {}
+  } catch (err) {
+    console.error('[order] appEvents statusChanged failed:', err);
+  }
 
   res.json({ success: true, data: updated });
 }

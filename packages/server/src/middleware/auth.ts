@@ -2,7 +2,16 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
+// Never silently fall back to a hardcoded secret in production — a missing
+// JWT_SECRET would let anyone forge tokens. Fail fast instead. The dev
+// fallback only exists for local/test environments.
+const JWT_SECRET: string = process.env.JWT_SECRET || (() => {
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET environment variable is required in production');
+  }
+  console.warn('[auth] JWT_SECRET not set — using dev fallback (INSECURE, local only)');
+  return 'dev-secret-change-me';
+})();
 
 export interface JwtPayload {
   id: string;

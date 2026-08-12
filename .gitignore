@@ -21,3 +21,6 @@ test-db.js
 .vercel
 
 tmp/
+
+# Claude local settings (may contain local credentials)
+.claude/settings.local.json
