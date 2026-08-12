@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
       { path: '/menu/categories', label: 'Categories' },
     ],
   },
+  { path: '/reports', label: 'Reports', icon: '\uD83D\uDCCA', roles: ['SUPER_ADMIN', 'MANAGER'] },
   { path: '/coupons', label: 'Coupons', icon: '\uD83C\uDFF7', roles: ['SUPER_ADMIN', 'MANAGER'] },
   { path: '/automation', label: 'Automation', icon: '\u26A1', roles: ['SUPER_ADMIN', 'MANAGER'] },
   { path: '/loyalty', label: 'Loyalty', icon: '\uD83C\uDF81', roles: ['SUPER_ADMIN', 'MANAGER'] },

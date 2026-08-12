@@ -42,6 +42,7 @@ import StaffEdit from './pages/StaffEdit.js';
 import AcceptInvite from './pages/AcceptInvite.js';
 import Settings from './pages/Settings.js';
 import DeveloperMetrics from './pages/DeveloperMetrics.js';
+import Reports from './pages/Reports.js';
 import AuditLog from './pages/AuditLog.js';
 import SettingsGeneral from './pages/SettingsGeneral.js';
 import SettingsOrder from './pages/SettingsOrder.js';
@@ -77,6 +78,7 @@ function AppRoutes() {
       <Routes>
         {/* All roles */}
         <Route path="/" element={<Dashboard />} />
+        <Route path="/reports" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Reports /></RequireRole>} />
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/reservations" element={<ReservationList />} />

@@ -1,0 +1,93 @@
+import { Request, Response } from 'express';
+import { z } from 'zod';
+import {
+  computeRange,
+  DateRange,
+  getOverview,
+  getCustomerStats,
+  getTopProducts,
+  getTopCategories,
+  getCouponStats,
+  getLoyaltyStats,
+  getCashbackStats,
+  getDeliveryStats,
+  getAttributionStats,
+  getDailyTrend,
+  PeriodKey,
+} from '../lib/reports-service.js';
+
+// ── Reports controller ───────────────────────────────────────────────────────
+// Manager/Admin only (requireRole). The period filter is validated with zod;
+// timezone is fixed to America/New_York (restaurant's commercial day).
+
+const periodSchema = z.object({
+  period: z.enum(['today', 'yesterday', '7d', '30d', 'month', 'prevMonth', 'custom']).default('30d'),
+  start: z.string().optional(),
+  end: z.string().optional(),
+  tz: z.string().optional(),
+});
+
+function parsePeriod(req: Request, res: Response): DateRange | null {
+  const parsed = periodSchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Invalid period filter' });
+    return null;
+  }
+  const { period, start, end, tz } = parsed.data;
+  return computeRange(period as PeriodKey, tz, start ?? undefined, end ?? undefined);
+}
+
+export async function getReportsOverview(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const [overview, customers, daily] = await Promise.all([
+    getOverview(range),
+    getCustomerStats(range),
+    getDailyTrend(range),
+  ]);
+  res.json({ success: true, data: { range: { start: range.start, end: range.end, label: range.label }, overview, customers, daily } });
+}
+
+export async function getReportsProducts(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const [products, categories] = await Promise.all([
+    getTopProducts(range),
+    getTopCategories(range),
+  ]);
+  res.json({ success: true, data: { products, categories } });
+}
+
+export async function getReportsMarketing(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const [attribution, coupons] = await Promise.all([
+    getAttributionStats(range),
+    getCouponStats(range),
+  ]);
+  res.json({ success: true, data: { attribution, coupons } });
+}
+
+export async function getReportsLoyalty(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const [loyalty, cashback] = await Promise.all([
+    getLoyaltyStats(range),
+    getCashbackStats(range),
+  ]);
+  res.json({ success: true, data: { loyalty, cashback } });
+}
+
+export async function getReportsDelivery(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const delivery = await getDeliveryStats(range);
+  res.json({ success: true, data: delivery });
+}
+
+export async function getReportsSales(req: Request, res: Response): Promise<void> {
+  const range = parsePeriod(req, res);
+  if (!range) return;
+  const overview = await getOverview(range);
+  res.json({ success: true, data: overview });
+}
