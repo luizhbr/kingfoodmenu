@@ -2,93 +2,63 @@
 
 **Branch:** `feature/king-food-foundation`  
 **Started:** 2026-08-11  
-**Status:** CATALOG SEED DELIVERED — awaiting checkpoint approval
+**Closed:** 2026-08-11  
+**Status:** **CLOSED**
 
 ---
 
 ## Objective
 
-Replace the KitchenAsty demo Mediterranean menu with a **King Food** product catalog foundation.
+Replace the KitchenAsty demo Mediterranean menu with the **real King Food catalog** (from live OlaClick data), without depending on OlaClick at runtime.
 
 ---
 
-## Delivered Catalog
+## Final Deliverables
 
-### Categories
+| Item | Status |
+|------|--------|
+| Categories aligned to live menu | ✅ Açaí do King, Premium, Tropical, Combos, Hambúrgueres, Bebidas |
+| Products + real USD prices | ✅ From OlaClick API snapshot |
+| Size variants (12oz / 16oz / abacaxi) | ✅ |
+| Açaí adicionais (Nutella, paçoca, frutas…) | ✅ Real modifier prices |
+| Burgers + drinks from inventory | ✅ |
+| Catalog snapshot doc | ✅ `docs/king-food/CATALOG_FROM_OLACLICK.md` |
+| Order Engine | ✅ Untouched |
+| Location + branding (M1) | ✅ Preserved / refined |
 
-| Sort | Category | Slug |
-|------|----------|------|
-| 1 | Açaí | `acai` |
-| 2 | Burgers | `burgers` |
-| 3 | Combos | `combos` |
-| 4 | Sides | `sides` |
-| 5 | Sweets | `sweets` |
-| 6 | Drinks | `drinks` |
+### Source
 
-### Products
-
-| Product | Category | Base price | Modifiers |
-|---------|----------|------------|-----------|
-| Açaí Clássico | Açaí | $9.99 | Tamanho 300/500/700 + Complementos |
-| Açaí Bowl Especial | Açaí | $12.99 | Tamanho 500/700 |
-| X-Burger | Burgers | $11.99 | Adicionais |
-| X-Bacon | Burgers | $13.99 | Adicionais |
-| X-Tudo | Burgers | $15.99 | Adicionais |
-| Combo Burger + Fries + Drink | Combos | $16.99 | — |
-| Combo X-Tudo | Combos | $19.99 | — |
-| Batata Frita | Sides | $4.99 | Tamanho M/G |
-| Mini Churros (16oz) | Sweets | $7.99 | — |
-| Refrigerante Lata | Drinks | $2.99 | Sabor |
-| Água | Drinks | $1.99 | — |
-
----
-
-## Execution Plan
-
-### Step 1 — Plan & structure
-- [x] Plan document
-
-### Step 2 — Seed rewrite (catalog)
-- [x] Categories
-- [x] Menu items
-- [x] Modifiers (açaí sizes/toppings, burger extras, fries size, drink flavor)
-- [x] Location + SiteSettings preserved from M1
-- [x] Admin/customer users preserved
-
-### Step 3 — Documentation
-- [x] This progress update
-
-### Step 4 — Checkpoint
-- [ ] Formal M2 close after your OK
-- [ ] Authorization for Milestone 3
-
----
-
-## Success Criteria
-
-- [x] Seed creates King Food categories
-- [x] At least one product per category
-- [x] Açaí has size + toppings modifiers
-- [x] Burgers have extras modifiers
-- [x] Location + branding from M1 preserved
-- [x] Order Engine untouched
-- [x] Docs updated
+- API: `ms-products/public/companies/bbd99239-41c5-4a62-9bf0-151d7224b7f3/categories`
+- Shell: https://kingfood.online/
+- Menu UI: https://kingfood.fe-v2.ola.click/products
 
 ---
 
 ## Decision Log
 
-### DECISION 004
-Curated King Food starter catalog in seed (not OlaClick scrape).  
+### DECISION 004 (updated)
+Import real King Food menu from OlaClick public API into seed (not invented prices).  
 **Date:** 2026-08-11
 
 ### DECISION 005
-Prices are starter USD estimates for Columbus delivery; refine later with real cost sheet.  
+Include currently *hidden* OlaClick items selectively (burgers/drinks) so private platform has fuller inventory; skip caldos/frango/performance for now.  
+**Date:** 2026-08-11
+
+### DECISION 006
+Close M2 after catalog seed + snapshot doc; runtime validation remains user-side.  
 **Date:** 2026-08-11
 
 ---
 
-## Recommended Next Milestone (after approval)
+## Recommended Next Milestone
 
-**MILESTONE 3** — Storefront polish / checkout path validation  
-or refine catalog prices/photos from real King Food menu.
+**MILESTONE 3 — Storefront / Order path**
+
+Suggested focus (needs authorization):
+
+- Validate storefront menu rendering with new catalog
+- Cart + checkout path smoke
+- Optional: hide/show flags matching OlaClick visibility
+- Optional: product images cleanup
+
+Do not start until explicitly authorized.
