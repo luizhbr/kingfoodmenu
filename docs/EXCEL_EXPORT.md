@@ -24,12 +24,19 @@ Reports Service → Normalized Report Data → Excel Export
 GET /api/reports/export?period=30d&tz=America/New_York&start=&end=
 ```
 
+Validações (todas retornam 400):
+- custom sem `start` ou `end`
+- data inválida
+- range invertido (start ≥ end)
+- period desconhecido
+- injection em parâmetros → ignorado (zod)
+
 - RBAC: MANAGER/SUPER_ADMIN (requireRole — driver/staff/customer bloqueados)
 - Resposta: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
-- Filename: `king-food-report-YYYY-MM-DD.xlsx`
+- Filename: `KingFood_Report_YYYY-MM-DD.xlsx`
 - Período inválido → 400 (zod), nunca crash
 
-## Abas (9)
+## Abas (10)
 
 | Aba | Conteúdo |
 |-----|----------|
@@ -42,6 +49,7 @@ GET /api/reports/export?period=30d&tz=America/New_York&start=&end=
 | Loyalty | earned/redeemed/adjusted |
 | Cashback | credited/used/reversed/adjusted (ledger) |
 | Delivery | delivery metrics + driver performance |
+| Drivers | driver performance dedicada (assigned/delivered/completion %) |
 
 ## Permissões
 
@@ -80,6 +88,7 @@ orders=45, gross=712.11, net=680.94, AOV=15.84, coupons=12, loyalty=147, cashbac
 ## Limitações
 
 - Orders: até 2000 registros por export (paginável no futuro)
+- Formatação: autofilter + freeze panes + moeda $#,##0.00 + percentual 0.0%
 - **PROFIT/CMV NÃO FAZ PARTE DO P9** — sem CMV confiável no sistema
 - Sem filtros de status/tipo no export (usar período)
 

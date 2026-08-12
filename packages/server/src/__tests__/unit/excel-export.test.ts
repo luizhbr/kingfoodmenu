@@ -41,11 +41,11 @@ beforeEach(() => {
 });
 
 describe('Excel Export - Unit Tests', () => {
-  it('P9-UNIT-001 generates a valid workbook with 9 sheets', async () => {
+  it('P9-UNIT-001 generates a valid workbook with 10 sheets', async () => {
     const wb = await buildReportWorkbook('30d', 'America/New_York');
     expect(wb).toBeInstanceOf(ExcelJS.Workbook);
     const names = wb.worksheets.map((s) => s.name);
-    expect(names).toEqual(['Summary', 'Sales', 'Orders', 'Products', 'Categories', 'Marketing', 'Loyalty', 'Cashback', 'Delivery']);
+    expect(names).toEqual(['Summary', 'Sales', 'Orders', 'Products', 'Categories', 'Marketing', 'Loyalty', 'Cashback', 'Delivery', 'Drivers']);
   });
 
   it('P9-UNIT-002 buffer is non-empty and starts with xlsx magic', async () => {

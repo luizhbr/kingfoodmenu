@@ -111,7 +111,7 @@ export default function Reports() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `king-food-report-${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.download = `KingFood_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

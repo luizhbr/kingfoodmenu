@@ -187,7 +187,11 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 
 | Teste | Resultado |
 |-------|-----------|
-| Unit (workbook 9 abas, buffer PK, períodos) | ✅ 10 novos (104/104 total) |
+| Unit (workbook 10 abas, buffer PK, períodos) | ✅ 10 novos (104/104 total) |
+| custom sem start/end | ✅ 400 |
+| data inválida | ✅ 400 |
+| range invertido | ✅ 400 |
+| formatação (moeda/percentual/autofilter/freeze) | ✅ verificado no XLSX |
 | Export admin | ✅ 200, XLSX 17173 bytes |
 | Anonymous → export | ✅ 401 |
 | Customer → export | ✅ 403 |

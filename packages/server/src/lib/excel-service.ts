@@ -31,6 +31,30 @@ function styleHeader(row: ExcelJS.Row) {
   });
 }
 
+/** Freeze panes below header + add autofilter across the header range. */
+function finalizeTable(ws: ExcelJS.Worksheet, headerRow = 1) {
+  ws.views = [{ state: 'frozen', ySplit: headerRow }];
+  const colCount = ws.columnCount || 1;
+  const lastCol = ws.getCell(headerRow, colCount).address.replace(/\d+$/, '');
+  ws.autoFilter = `A${headerRow}:${lastCol}${headerRow}`;
+}
+
+/** Apply currency format to a range of cells. */
+function moneyFormat(ws: ExcelJS.Worksheet, col: string, startRow: number, endRow: number) {
+  for (let r = startRow; r <= endRow; r++) {
+    const cell = ws.getCell(`${col}${r}`);
+    if (typeof cell.value === 'number') cell.numFmt = '$#,##0.00';
+  }
+}
+
+/** Apply percentage format to a range of cells. */
+function pctFormat(ws: ExcelJS.Worksheet, col: string, startRow: number, endRow: number) {
+  for (let r = startRow; r <= endRow; r++) {
+    const cell = ws.getCell(`${col}${r}`);
+    if (typeof cell.value === 'number') cell.numFmt = '0.0%';
+  }
+}
+
 function addTitleRow(ws: ExcelJS.Worksheet, title: string, sub: string) {
   ws.mergeCells('A1:C1');
   const cell = ws.getCell('A1');
@@ -257,6 +281,44 @@ export async function buildReportWorkbook(
   ws9.getColumn(2).width = 10;
   ws9.getColumn(3).width = 10;
   ws9.getColumn(4).width = 14;
+
+  // ── Drivers (10th sheet — dedicated driver performance) ────────────────────
+  const ws10 = workbook.addWorksheet('Drivers');
+  ws10.columns = [
+    { header: 'Driver', key: 'driverName', width: 24 },
+    { header: 'Assigned', key: 'assigned', width: 12 },
+    { header: 'Delivered', key: 'delivered', width: 12 },
+    { header: 'Completion %', key: 'completionRate', width: 16 },
+  ];
+  styleHeader(ws10.getRow(1));
+  for (const dp of delivery.driverPerformance) {
+    const row = addRow(ws10, [dp.driverName, dp.assigned, dp.delivered, dp.completionRate / 100]);
+    if (row) {
+      row.getCell(4).numFmt = '0.0%';
+      row.getCell(1).font = { bold: true };
+    }
+  }
+  finalizeTable(ws10);
+
+  // ── Professional formatting pass ────────────────────────────────────────────
+  // Sales: currency on revenue columns
+  finalizeTable(ws2);
+  if (ws2.rowCount > 1) {
+    moneyFormat(ws2, 'C', 2, ws2.rowCount);
+    moneyFormat(ws2, 'D', 2, ws2.rowCount);
+    moneyFormat(ws2, 'E', 2, ws2.rowCount);
+    moneyFormat(ws2, 'F', 2, ws2.rowCount);
+  }
+  // Orders: currency on financial columns (F..J = subtotal..total)
+  finalizeTable(ws3);
+  if (ws3.rowCount > 1) {
+    for (const col of ['F', 'G', 'H', 'I', 'J']) moneyFormat(ws3, col, 2, ws3.rowCount);
+  }
+  // Products / Categories: currency on sales
+  finalizeTable(ws4);
+  if (ws4.rowCount > 1) moneyFormat(ws4, 'C', 2, ws4.rowCount);
+  finalizeTable(ws5);
+  if (ws5.rowCount > 1) moneyFormat(ws5, 'C', 2, ws5.rowCount);
 
   return workbook;
 }

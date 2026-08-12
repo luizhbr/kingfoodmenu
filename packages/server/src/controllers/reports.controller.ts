@@ -35,6 +35,25 @@ function parsePeriod(req: Request, res: Response): DateRange | null {
     return null;
   }
   const { period, start, end, tz } = parsed.data;
+
+  // Custom range requires BOTH start and end, and start must be < end
+  if (period === 'custom') {
+    if (!start || !end) {
+      res.status(400).json({ success: false, error: 'Custom period requires both start and end' });
+      return null;
+    }
+    const s = new Date(start).getTime();
+    const e = new Date(end).getTime();
+    if (Number.isNaN(s) || Number.isNaN(e)) {
+      res.status(400).json({ success: false, error: 'Invalid date format' });
+      return null;
+    }
+    if (s >= e) {
+      res.status(400).json({ success: false, error: 'Start date must be before end date' });
+      return null;
+    }
+  }
+
   return computeRange(period as PeriodKey, tz, start ?? undefined, end ?? undefined);
 }
 
@@ -111,7 +130,7 @@ export async function exportReportsExcel(req: Request, res: Response): Promise<v
     );
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename="king-food-report-${dateStr}.xlsx"`,
+      `attachment; filename="KingFood_Report_${dateStr}.xlsx"`,
     );
     res.setHeader('Content-Length', buffer.length);
     res.send(buffer);

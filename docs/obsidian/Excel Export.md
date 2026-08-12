@@ -6,7 +6,9 @@
 
 - **Biblioteca:** exceljs (MIT)
 - **Endpoint:** GET /api/reports/export (MANAGER+)
-- **9 abas:** Summary, Sales, Orders, Products, Categories, Marketing, Loyalty, Cashback, Delivery
+- **10 abas:** Summary, Sales, Orders, Products, Categories, Marketing, Loyalty, Cashback, Delivery, Drivers
+- **Validações:** custom sem data/range invertido → 400
+- **Formatação:** moeda, percentual, autofilter, freeze
 - **Arquitetura:** Reports calcula → Excel exporta (mesma camada de dados)
 - **Filename:** king-food-report-YYYY-MM-DD.xlsx
 - **Cross-check:** XLSX == API == Neon ✅
