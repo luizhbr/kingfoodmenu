@@ -1,6 +1,6 @@
 # KING FOOD FOUNDATION UI — Engineering Snapshot
 
-> **Data:** 2026-08-12 · **Commit:** `76ab945` · **Branch:** feature/king-food-foundation
+> **Data:** 2026-08-12 · **Commit:** `9a65e75` · **Branch:** feature/king-food-foundation
 > **Produção:** https://king-food-foundation-ui.vercel.app
 
 ## Stack
@@ -46,6 +46,7 @@ Prisma → Neon PostgreSQL
 | Reports (server-side, timezone ET) | ✅ |
 | Excel Export (10 abas, exceljs MIT) | ✅ |
 | Security Hardening + Brute-Force Test + CAPTCHA | ✅ |
+| King Print (backend) | ✅ PrintJob+Printer, API, idempotência |
 | Google Maps | ⛔ BLOCKED (sem API key) |
 | Push Notifications | ⏳ infra parcial (push-token) |
 

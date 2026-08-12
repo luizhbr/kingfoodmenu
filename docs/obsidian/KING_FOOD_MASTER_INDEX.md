@@ -27,6 +27,7 @@ KING FOOD
 ├── [[Excel Export]]
 │
 ├── [[PWA]]
+├── [[King Print]]
 ├── [[02 - API]]
 ├── [[03 - Database]]
 │
@@ -54,6 +55,7 @@ KING FOOD
 | P13.6 Adaptive CAPTCHA | ✅ |
 | P10 Google Maps | ⛔ BLOCKED (sem API key) |
 | P14 Documentation | ✅ (este índice) |
+| P15 King Print | ✅ (backend) |
 
 ## Links rápidos
 

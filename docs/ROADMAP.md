@@ -24,6 +24,7 @@
 | P13 Security Hardening | ✅ 2026-08-12 (JWT fail-fast, .claude untracked, catch logs) |
 | P13.5 Auth Abuse Test | ✅ 2026-08-12 (brute-force/rate-limit/enumeration/JWT/RBAC — tudo PASS) |
 | P13.6 Adaptive CAPTCHA | ✅ 2026-08-12 (Turnstile, fail-closed, risk-based, 17 unit) |
+| P15 King Print | ✅ 2026-08-12 (backend: PrintJob+Printer, API, idempotência, pairing) |
 
 ## IN PROGRESS
 
@@ -64,7 +65,7 @@
 IMPLEMENTED ≠ PASS. PASS exige: CODE + TYPECHECK + BUILD + TEST + DEPLOY +
 PRODUCTION TEST + DATABASE VERIFY (quando aplicável).
 
-## FUTURE — KING PRINT (registrado, NÃO implementado)
+## KING PRINT — backend ✅ (P15) · agente CLI + UI = FUTURE
 
 Solução própria de impressão térmica para o King Food (substituir
 dependência externa tipo OlaClick). Investigar: PWA de impressão,
