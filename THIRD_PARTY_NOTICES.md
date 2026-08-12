@@ -27,3 +27,10 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+## exceljs
+
+- **Licença:** MIT
+- **Uso:** geração de planilhas XLSX (Reports export)
+- **Copyright:** ExcelJS contributors
+- **Nota:** licença MIT preservada integralmente em docs/THIRD_PARTY_LICENSES.md

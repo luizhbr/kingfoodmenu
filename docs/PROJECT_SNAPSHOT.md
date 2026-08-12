@@ -1,62 +1,92 @@
-# Project Snapshot — King Food Foundation
+# KING FOOD FOUNDATION UI — Engineering Snapshot
 
-> **Data da auditoria:** 2026-08-12
-> **Commit HEAD:** `af495f5` (feature/king-food-foundation)
-> **Branch:** `feature/king-food-foundation`
-> **Status git:** limpo (sem alterações pendentes)
-
-## License
-
-- Base: **KitchenAsty (MIT)** — ver [LICENSE_AUDIT.md](LICENSE_AUDIT.md)
+> **Data:** 2026-08-12 · **Commit:** `76ab945` · **Branch:** feature/king-food-foundation
+> **Produção:** https://king-food-foundation-ui.vercel.app
 
 ## Stack
 
-| Camada | Tecnologia |
-|--------|-----------|
-| Runtime | Node.js 22 (Vercel serverless) |
-| Backend | Express 4 (TypeScript → CommonJS via tsc) |
-| Frontend storefront | React + Vite |
-| Frontend admin | React + Vite (deploy em `/admin/`) |
-| ORM | Prisma 5.22 |
-| Banco | Neon PostgreSQL (serverless) |
-| Deploy | Vercel (monorepo, função única serverless) |
-| Domínio | https://king-food-foundation-ui.vercel.app |
+- Monorepo pnpm: `packages/server` (Express+Prisma), `packages/admin` (React+Vite),
+  `packages/storefront` (React+Vite), `packages/shared`, `packages/mobile`, `packages/docs`
+- Banco: Neon PostgreSQL (Prisma ORM)
+- Deploy: Vercel serverless (`api/index.ts` → `dist/app.js`)
+- Node: `C:\Users\elysi\AppData\Local\hermes\node`
 
-## Monorepo (packages)
+## Arquitetura
 
-| Package | Nome | Função |
-|---------|------|--------|
-| `packages/server` | @kitchenasty/server | API Express (compilada para dist/) |
-| `packages/storefront` | @kitchenasty/storefront | Site público (React/Vite) |
-| `packages/admin` | @kitchenasty/admin | Painel admin/POS (React/Vite) |
-| `packages/shared` | @kitchenasty/shared | Tipos e constantes compartilhadas |
-| `packages/mobile` | @kitchenasty/mobile | App mobile (não deployado) |
-| `packages/docs` | @kitchenasty/docs | Documentação do package |
+```
+Frontend (storefront/admin/driver)
+    ↓ HTTP + JWT + CSRF
+API (Express)
+    ↓
+Controllers → Services (reports, excel, cashback, coupon, captcha)
+    ↓
+Prisma → Neon PostgreSQL
+```
 
-## Autenticação
+## Autenticação & Segurança
 
-- JWT Bearer para API (staff e customer)
-- CSRF double-submit para rotas com cookie (SPA)
-- OAuth Google/Facebook (passport) — configurado, não testado em produção
-- RBAC: `SUPER_ADMIN`, `MANAGER`, `STAFF`, `CUSTOMER`, anônimo
+- JWT (HS256, expiração 7d, secret real em produção, fail-fast sem env)
+- RBAC: SUPER_ADMIN / MANAGER / STAFF / DRIVER / CUSTOMER
+- CSRF (cookie + X-CSRF-Token) · Helmet/CSP · CORS restrito
+- Rate limiting: api 300/min, auth 100/15min, strict 10/min
+- CAPTCHA adaptativo (Turnstile) — infra pronta, ativação pendente
+- Preço 100% server-side · webhooks assinados · upload filtrado
+- Enumeration protection (mensagens genéricas)
+
+## Módulos (verificados no DISK)
+
+| Módulo | Status |
+|--------|--------|
+| Storefront / Admin / Menu CRUD / Categories | ✅ |
+| Orders / Checkout / Customer Profile | ✅ |
+| Loyalty (ledger) / Coupons (ledger) / Cashback (wallet+ledger) | ✅ |
+| Driver App + PWA (mobile-first) | ✅ |
+| Kitchen Display / Reservations / Reviews | ✅ |
+| Tracking / Attribution / QR Codes / Referrals / Campaigns | ✅ |
+| Reports (server-side, timezone ET) | ✅ |
+| Excel Export (10 abas, exceljs MIT) | ✅ |
+| Security Hardening + Brute-Force Test + CAPTCHA | ✅ |
+| Google Maps | ⛔ BLOCKED (sem API key) |
+| Push Notifications | ⏳ infra parcial (push-token) |
+
+## Database
+
+- 46 models, 15 enums, 13 migrations (todas aplicadas no Neon)
+- Ledgers: CouponUsage, LoyaltyTransaction, CashbackTransaction
+- Wallet: CashbackWallet (customerId UNIQUE, saldo nunca negativo)
+- Driver: Order.assignedToId + role DRIVER (migration aditiva)
 
 ## Testes
 
-- 29/29 unit tests (server): auth.middleware (21) + email (8)
-- Typecheck: PASS (tsc exit 0)
-- Build completo: PASS (shared + server + admin + storefront)
-- Testes de produção: tracking (7 requisições 201), dashboard (200 com auth)
+- Unit: 121/121 (8 arquivos)
+- Produção: P2-PROD..P13.6-PROD (todos PASS)
+- Cross-check: Reports ↔ Excel ↔ API ↔ Neon (idênticos)
 
-## PWA
+## Security (P13.x)
 
-- Storefront: manifest + service worker (sw.js)
-- Admin: não é PWA
+- P13: JWT fail-fast, .claude untracked, catch logs
+- P13.5: brute-force 429+Retry-After, enumeração protegida, JWT 401
+- P13.6: CAPTCHA adaptativo fail-closed, 17 unit tests
 
-## Limitações conhecidas
+## Known Issues / Blocked
 
-- Socket.IO não funciona em serverless → Kitchen usa polling (15s)
-- Uploads de arquivo: disco efêmero no serverless
-- Cron: sem timers em background no serverless
-- Google Maps: BLOCKED (sem API key)
-- 3 rotas órfãs (attribution, referral, webhook) — ver API.md
-- 9 models Prisma sem uso direto — ver DATABASE.md
+- Google Maps BLOCKED (sem API key)
+- CAPTCHA produção: CONFIGURATION PENDING (chaves Cloudflare)
+- Risk store in-memory (Redis futuro)
+- Profit/CMV NÃO implementado
+- Push notifications sem infra de envio
+- Excel Orders limitado a 2000
+- 3 rotas órfãs + 9 models sem uso (docs/ORPHAN_ROUTES.md)
+
+## License & Provenance
+
+- Original: KitchenAsty (mighty840/kitchenasty, Sharang Parnerkar) — MIT
+- 358 herdados + 79 herdados-modificados + 90 novos King Food
+- THIRD_PARTY_NOTICES.md + THIRD_PARTY_LICENSES.md + LICENSE_AUDIT.md
+- Dependências novas: exceljs (MIT) — auditada
+- **PDF de Licença/Proveniência: PENDING**
+
+## Roadmap
+
+- DONE: P1, P2, P2.5, P3, P4, P5, P6, P7, P8, P9, P13, P13.5, P13.6, P14
+- FUTURE: KING PRINT, Push Notifications, Redis risk store, UX Final, Google Maps

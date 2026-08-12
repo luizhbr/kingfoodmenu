@@ -53,3 +53,13 @@
 
 > package.json names (@kitchenasty/*) mantidos como identificadores internos —
 > sem impacto no produto visível.
+
+## Dependências adicionadas (P9–P13.6)
+
+| Pacote | Versão | Licença | Copyleft? | Uso |
+|--------|--------|---------|-----------|-----|
+| exceljs | ^4.4.0 | MIT | Não | Geração XLSX (P9) |
+| Cloudflare Turnstile | — (API externa) | ToS Cloudflare | Não | CAPTCHA adaptativo (P13.6) — sem lib npm, chamada siteverify direta |
+
+Nenhuma dependência com copyleft ou restrição comercial adicionada.
+Attribution MIT preservada (THIRD_PARTY_NOTICES.md).
