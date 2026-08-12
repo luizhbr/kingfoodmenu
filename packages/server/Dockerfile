@@ -1,9 +1,11 @@
-FROM node:22-alpine AS builder
+# ── Build stage ──────────────────────────────────────────────
+FROM node:20-alpine AS builder
 
 RUN apk add --no-cache openssl
 
 WORKDIR /app
 
+# Copy workspace root manifests first for better cache
 COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/server/package.json packages/server/
@@ -14,14 +16,17 @@ COPY tsconfig.json ./
 
 RUN npm ci
 
+# Build shared package (dependency of server)
 COPY packages/shared/ packages/shared/
 RUN npm run build -w packages/shared
 
+# Build server
 COPY packages/server/ packages/server/
 RUN npx -w packages/server prisma generate --schema ../../prisma/schema.prisma
 RUN npm run build -w packages/server
 
-FROM node:22-alpine
+# ── Production stage ─────────────────────────────────────────
+FROM node:20-alpine
 
 RUN apk add --no-cache openssl
 
