@@ -28,6 +28,7 @@ import campaignRoutes from './routes/campaign.routes.js';
 import qrCodeRoutes from './routes/qrcode.routes.js';
 import referralRoutes from './routes/referral.routes.js';
 import trackingRoutes from './routes/tracking.routes.js';
+import webhookRoutes from './routes/webhook.routes.js';
 import { openApiSpec } from './lib/openapi.js';
 import { initPassport } from './lib/passport.js';
 import passport from 'passport';
@@ -131,6 +132,7 @@ export function createApp() {
   app.use('/api/qrcodes', qrCodeRoutes);
   app.use('/api/referrals', referralRoutes);
   app.use('/api/tracking', trackingRoutes);
+  app.use('/api/webhooks', webhookRoutes);
 
   // 404 handler
   app.use((_req, res) => {
