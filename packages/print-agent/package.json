@@ -1,0 +1,29 @@
+{
+  "name": "@king-food/print-agent",
+  "version": "0.1.0",
+  "private": true,
+  "description": "King Print local agent \u2014 thermal printing bridge (ESC/POS) for King Food",
+  "type": "module",
+  "bin": {
+    "king-print": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/cli.js start",
+    "test": "vitest run",
+    "test:unit": "vitest run src/__tests__/unit",
+    "test:integration": "vitest run src/__tests__/integration",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.0",
+    "escpos": "2.5.2",
+    "iconv-lite": "^0.6.3",
+    "usb": "1.9.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
+  }
+}
