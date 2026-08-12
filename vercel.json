@@ -25,5 +25,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/[[...path]].ts": {
+      "maxDuration": 30
+    }
+  }
 }
