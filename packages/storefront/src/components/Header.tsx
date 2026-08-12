@@ -271,7 +271,8 @@ function ClassicHeader() {
                       {t('nav.login')}
                     </Link>
                     <Link
-                      to="/register" onClick={() => setMobileOpen(false)}
+                      to="/register"
+                      onClick={() => setMobileOpen(false)}
                       className="block px-3 py-2 text-base font-medium text-primary-600"
                     >
                       {t('nav.signUp')}
@@ -290,7 +291,6 @@ function ClassicHeader() {
 export default function Header() {
   const { settings } = useTheme();
   const location = useLocation();
-  // On home, always use King Food classic header (ignore template variants)
   if (location.pathname === '/') {
     return <ClassicHeader />;
   }
