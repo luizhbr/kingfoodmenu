@@ -49,7 +49,6 @@ export default function PwaInstall() {
     window.addEventListener('kf-beforeinstallprompt', onKf);
     window.addEventListener('beforeinstallprompt', onBip);
 
-    // Soft banner even without BIP (iOS instructions path) after delay
     const t = window.setTimeout(() => {
       if (!isStandalone() && sessionStorage.getItem(DISMISS_KEY) !== '1') {
         setVisible(true);
@@ -71,7 +70,6 @@ export default function PwaInstall() {
   const install = useCallback(async () => {
     const evt = promptEvent || window.__kfDeferredPrompt;
     if (!evt) {
-      // iOS / no native prompt — user must use Share → Add to Home Screen
       alert(
         'No iPhone: toque em Compartilhar → Adicionar à Tela de Início.\nNo Android: menu ⋮ → Instalar app.'
       );
@@ -99,7 +97,12 @@ export default function PwaInstall() {
   if (!visible || isStandalone()) return null;
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-[90] px-4 pointer-events-none">
+    <div
+      className="fixed left-0 right-0 z-[90] px-4 pointer-events-none md:bottom-4"
+      style={{
+        bottom: 'calc(4.5rem + env(safe-area-inset-bottom))',
+      }}
+    >
       <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl p-3 flex items-center gap-3">
         <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center text-xs font-black text-black">
           KF
