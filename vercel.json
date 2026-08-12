@@ -1,8 +1,12 @@
 {
   "installCommand": "npm install --include=dev",
-  "buildCommand": "npx prisma generate && npm run build -w packages/storefront",
   "outputDirectory": "packages/storefront/dist",
+  "buildCommand": "npx prisma generate && npm run build -w packages/server && cd packages/storefront && npx vite build",
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/[[...path]]"
+    },
     {
       "source": "/((?!assets/|sw\\.js|manifest\\.json|api/).*)",
       "destination": "/index.html"
@@ -36,10 +40,5 @@
         }
       ]
     }
-  ],
-  "functions": {
-    "api/[[...path]].ts": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }
