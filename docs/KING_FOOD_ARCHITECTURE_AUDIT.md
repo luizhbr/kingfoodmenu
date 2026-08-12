@@ -55,3 +55,38 @@
 ---
 
 See full details below.
+
+
+---
+
+## SUBAGENT AUDIT DETAILS (4 parallel deep-dives)
+
+### Server Audit (44+ endpoints, 34 models)
+
+**Auth System**: JWT + bcrypt + OAuth (Google/Facebook) + RBAC (SUPER_ADMIN, MANAGER, STAFF, customer roles)
+**Security Issues**:
+- [!] metricsCollector writes every API request to DB (ApiMetric) — performance issue at scale, no retention/cleanup policy
+- [!] customerLogin requires password field min(1) — social-only customers need workaround
+- [!] inviteToken system has no rate limiting on accept-invite endpoint
+- [!] Docker-compose credentials hardcoded (kitchenasty/kitchenasty)
+
+### Storefront Audit (16 pages, complete UX flow)
+
+**Pages**: Home, Menu, Locations, Login, Register, AuthCallback, Account, OrderHistory, OrderStatus, OrderConfirmation, Checkout, Reservations, Gallery, PrivacyPolicy, Impressum, NotFound
+**Cart**: ✅ Fully implemented — localStorage persistence, add/update/remove/clear, CartDrawer
+**Checkout**: ✅ Fully implemented — delivery/pickup, address, guest checkout, coupon, loyalty, Stripe/PayPal/Cash
+**PWA**: ✅ manifest.json, sw.js, PwaInstall, BottomDock
+**UTM Capture**: ❌ ZERO — No utm_source, utm_medium, utm_campaign, or similar parameter handling anywhere
+
+### Admin Audit (46 pages)
+
+**Present**: Dashboard (with Recharts), Orders, Reservations, Reviews, Kitchen Display, Locations, Menu Items, Categories, Coupons, Automation Rules, Loyalty, Delivery Zones, Tables, Design (6 sub-pages), Legal (4 sub-pages), Settings (7 sub-pages), Developer, Staff
+**Missing**: Customers list (full CRM), Promotions management, Campaigns builder/tracking, Attribution tracking, QR code generation/management
+
+### Shared + Build Audit
+
+- **Shared package**: Only constants + generic types (ApiResponse, PaginatedResponse). NO Zod/Joi validation schemas — only TypeScript types without runtime enforcement
+- **E2E**: 8 admin specs + 6 storefront specs via Playwright
+- **Docker**: Compose with Postgres, server, admin, storefront, docs services. Demo compose + Caddy proxy available
+- **Build**: Root build script runs shared first (correct dependency order)
+- **No Dockerfile at root** — each package has its own
