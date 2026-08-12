@@ -62,6 +62,15 @@ export function requireRole(...roles: Role[]) {
   };
 }
 
+
+export function requireDriver(req: Request, res: Response, next: NextFunction): void {
+  if (!req.user || req.user.type !== 'staff' || req.user.role !== 'DRIVER') {
+    res.status(403).json({ success: false, error: 'Driver access required' });
+    return;
+  }
+  next();
+}
+
 export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
   const authHeader = req.headers.authorization;
   if (authHeader?.startsWith('Bearer ')) {

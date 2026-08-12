@@ -100,7 +100,7 @@ export async function getStaff(req: Request<{ id: string }>, res: Response): Pro
 
 const updateStaffSchema = z.object({
   name: z.string().min(1).optional(),
-  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF']).optional(),
+  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER']).optional(),
   phone: z.string().nullable().optional(),
   locationId: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
@@ -183,7 +183,7 @@ export async function deactivateStaff(req: Request<{ id: string }>, res: Respons
 const inviteStaffSchema = z.object({
   email: z.string().email(),
   name: z.string().optional(),
-  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF']).optional(),
+  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER']).optional(),
 });
 
 export async function inviteStaff(req: Request, res: Response): Promise<void> {

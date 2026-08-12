@@ -59,7 +59,7 @@ const staffRegisterSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
   name: z.string().min(1),
-  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF']).optional(),
+  role: z.enum(['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER']).optional(),
 });
 
 export async function staffRegister(req: Request, res: Response): Promise<void> {
