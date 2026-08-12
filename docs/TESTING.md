@@ -166,6 +166,22 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | Neon (assignedToId) | ✅ |
 | PWA (manifest + sw) | ✅ |
 
+
+## P8 Reports (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (timezone/períodos/fórmulas) | ✅ 14 novos (94/94 total) |
+| Anonymous → reports | ✅ 401 |
+| Customer → reports | ✅ 403 |
+| Driver → reports | ✅ 403 |
+| Staff → reports | ✅ 403 |
+| Manager → reports | ✅ 200 |
+| Admin → reports | ✅ 200 |
+| period inválido | ✅ 400 |
+| Endpoints 6/6 | ✅ 200 |
+| Neon cross-check | ✅ números batem |
+
 ## Como rodar
 
 ```bash
