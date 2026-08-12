@@ -535,6 +535,10 @@ model Coupon {
 
   orders Order[]
 
+  // Campaign attribution
+  campaignId String?
+  campaign   Campaign? @relation(fields: [campaignId], references: [id])
+
   @@map("coupons")
 }
 
@@ -797,6 +801,7 @@ model Campaign {
   attributions    Attribution[]
   qrCodes         QRCode[]
   coupons         Coupon[]
+  promotions      Promotion[]
   referrals       Referral[]
   
   @@map("campaigns")
@@ -844,7 +849,7 @@ model TrackingEvent {
   // UTM / Attribution data
   source      AttributionSource @default(UNKNOWN)
   medium      String?
-  campaign    String?            // campaign slug or ID
+  campaignSlug String?            // campaign slug or ID
   content     String?
   term        String?
   
