@@ -91,6 +91,23 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 
 **Bugs corrigidos:** (1) sku/cost não persistiam (patch não escrito — FILE_MUTATION_FAILED detectado e corrigido); (2) produtos/categorias desativados apareciam no storefront (filtro isActive + includeInactive).
 
+
+## P3 Customer Profile (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Anonymous → profile | ✅ 401 |
+| Customer → próprio profile | ✅ 200 |
+| PATCH profile (nome/telefone) | ✅ 200 |
+| Customer → order history | ✅ 200 |
+| IDOR (customerId de outro) | ✅ isolado |
+| Staff → customer profile | ✅ 401 |
+| Checkout autenticado | ✅ 201 + customerId |
+| Neon relação customer↔order | ✅ |
+| Typecheck | ✅ |
+| Build | ✅ |
+| Unit tests | ✅ 29/29 |
+
 ## Como rodar
 
 ```bash
