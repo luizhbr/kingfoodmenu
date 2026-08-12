@@ -1,4 +1,5 @@
 {
+  "installCommand": "npm install --include=dev",
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
