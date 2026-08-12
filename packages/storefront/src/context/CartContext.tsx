@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 export interface CartItemOption {
   optionId: string;
@@ -32,14 +32,55 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | null>(null);
 
-let nextId = 1;
+const STORAGE_KEY = 'king-food-cart-v1';
+
+function loadCart(): CartItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (i) => i && typeof i.menuItemId === 'string' && typeof i.quantity === 'number'
+    );
+  } catch {
+    return [];
+  }
+}
+
+function nextLineId(items: CartItem[]): string {
+  const max = items.reduce((m, i) => {
+    const n = parseInt(i.id, 10);
+    return Number.isFinite(n) ? Math.max(m, n) : m;
+  }, 0);
+  return String(max + 1);
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(() =>
+    typeof window !== 'undefined' ? loadCart() : []
+  );
   const [isOpen, setIsOpen] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Re-hydrate on mount (SSR/safety)
+  useEffect(() => {
+    setItems(loadCart());
+    setHydrated(true);
+  }, []);
+
+  // Persist
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {
+      // quota / private mode — ignore
+    }
+  }, [items, hydrated]);
 
   const addItem = useCallback((item: Omit<CartItem, 'id'>) => {
-    setItems((prev) => [...prev, { ...item, id: String(nextId++) }]);
+    setItems((prev) => [...prev, { ...item, id: nextLineId(prev) }]);
     setIsOpen(true);
   }, []);
 
@@ -67,7 +108,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, 0);
 
   return (
-    <CartContext.Provider value={{ items, isOpen, setIsOpen, addItem, updateQuantity, removeItem, clear, itemCount, subtotal }}>
+    <CartContext.Provider
+      value={{
+        items,
+        isOpen,
+        setIsOpen,
+        addItem,
+        updateQuantity,
+        removeItem,
+        clear,
+        itemCount,
+        subtotal,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
