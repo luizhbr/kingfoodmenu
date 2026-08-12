@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import express from 'express';
-import { optionalAuth, authenticate, requireStaff } from '../middleware/auth.js';
-import { createPaymentIntent, createCheckoutSession, handleWebhook, markCashPayment, createPayPalPayment, capturePayPalPayment } from '../controllers/payment.controller.js';
+import { optionalAuth, authenticate, requireStaff, requireRole } from '../middleware/auth.js';
+import { createPaymentIntent, createCheckoutSession, handleWebhook, markCashPayment, createPayPalPayment, capturePayPalPayment, refundPayment } from '../controllers/payment.controller.js';
 
 const router = Router();
 
@@ -16,6 +16,9 @@ router.post('/create-checkout-session', optionalAuth, createCheckoutSession);
 
 // Mark cash payment (staff only)
 router.post('/cash', authenticate, requireStaff, markCashPayment);
+
+// Refund (MANAGER+)
+router.post('/refund', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), refundPayment);
 
 // PayPal
 router.post('/paypal/create', optionalAuth, createPayPalPayment);

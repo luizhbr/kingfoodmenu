@@ -26,6 +26,45 @@ const capturePayPalPaymentSchema = z.object({
   orderId: z.string().min(1),
 });
 
+// ── Ownership + idempotency helpers (P15.6) ────────────────────────────────
+
+/**
+ * Ownership check (IDOR protection). Returns true only when the caller
+ * legitimately owns the order:
+ *  - registered customer whose customerId matches the order, OR
+ *  - staff/kitchen (admin payment flow), OR
+ *  - guest checkout: the caller must prove the order's guest email
+ *    (the same email the frontend used at checkout — the project's
+ *    existing guest identity mechanism).
+ */
+function isOrderOwner(req: Request, order: { customerId: string | null; guestEmail?: string | null }): boolean {
+  const user = (req as any).user;
+  if (user?.type === 'customer' && user.id && order.customerId === user.id) {
+    return true;
+  }
+  if (user?.type === 'staff') {
+    return true; // staff/kitchen admin flow
+  }
+  // Guest checkout: prove knowledge of the guest email bound to the order
+  const guestEmail = (req.body?.guestEmail as string) || '';
+  if (order.guestEmail && guestEmail.length > 0 && guestEmail.toLowerCase() === order.guestEmail.toLowerCase()) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Find an active (non-terminal) PaymentIntent for the order, or null.
+ * A payment is reusable while it is PENDING.
+ */
+async function findActivePayment(orderId: string) {
+  return prisma.payment.findFirst({
+    where: { orderId, status: 'PENDING', method: 'STRIPE' },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
+
 export async function createPaymentIntent(req: Request, res: Response): Promise<void> {
   const parsed = createPaymentIntentSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -48,13 +87,38 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
     return;
   }
 
+  // IDOR protection: only the order owner can create a payment
+  if (!isOrderOwner(req, order)) {
+    res.status(403).json({ success: false, error: 'Forbidden' });
+    return;
+  }
+
   // Check if order already has a completed payment
-  const existingPayment = await prisma.payment.findFirst({
+  const completedPayment = await prisma.payment.findFirst({
     where: { orderId, status: 'COMPLETED' },
   });
-  if (existingPayment) {
+  if (completedPayment) {
     res.status(409).json({ success: false, error: 'Order already paid' });
     return;
+  }
+
+  // Idempotency: reuse an existing active PaymentIntent instead of
+  // creating duplicates on retry/concurrent requests.
+  const activePayment = await findActivePayment(orderId);
+  if (activePayment?.transactionId) {
+    try {
+      const stripe = await getStripe();
+      const intent = await stripe.paymentIntents.retrieve(activePayment.transactionId);
+      if (intent && intent.status === 'requires_payment_method') {
+        res.json({
+          success: true,
+          data: { clientSecret: intent.client_secret, reused: true },
+        });
+        return;
+      }
+    } catch {
+      // intent not retrievable — fall through and create a fresh one
+    }
   }
 
   // Use the registered customer's email when present, fall back to the
@@ -66,7 +130,7 @@ export async function createPaymentIntent(req: Request, res: Response): Promise<
     const stripe = await getStripe();
     const paymentIntent = await stripe.paymentIntents.create({
       amount: Math.round(order.total * 100), // cents
-      currency: 'eur',
+      currency: 'usd', // King Food operates in Columbus, Ohio (USD)
       receipt_email: receiptEmail,
       // Let Stripe pick which payment methods to surface — covers cards,
       // Apple Pay and Google Pay on PaymentSheet without extra config.
@@ -131,6 +195,12 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     return;
   }
 
+  // IDOR protection: only the order owner can start checkout
+  if (!isOrderOwner(req, order)) {
+    res.status(403).json({ success: false, error: 'Forbidden' });
+    return;
+  }
+
   const existingPayment = await prisma.payment.findFirst({
     where: { orderId, status: 'COMPLETED' },
   });
@@ -147,7 +217,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
 
     const lineItems = order.items.map((it) => ({
       price_data: {
-        currency: 'eur',
+        currency: 'usd',
         product_data: { name: it.name },
         unit_amount: Math.round(it.unitPrice * 100),
       },
@@ -157,7 +227,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     if (order.deliveryFee > 0) {
       lineItems.push({
         price_data: {
-          currency: 'eur',
+          currency: 'usd',
           product_data: { name: 'Delivery fee' },
           unit_amount: Math.round(order.deliveryFee * 100),
         },
@@ -248,6 +318,18 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
         where: { transactionId: paymentIntent.id },
         data: { status: 'FAILED' },
       });
+      break;
+    }
+
+    case 'charge.refunded': {
+      // Mark the payment REFUNDED (webhook is the trusted source)
+      const charge = event.data.object as { payment_intent?: string };
+      if (charge.payment_intent) {
+        await prisma.payment.updateMany({
+          where: { transactionId: charge.payment_intent },
+          data: { status: 'REFUNDED' },
+        });
+      }
       break;
     }
 
@@ -389,4 +471,68 @@ export async function capturePayPalPayment(req: Request, res: Response): Promise
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'PayPal capture failed' });
   }
+}
+
+
+// ── Refund (MANAGER+) — P15.6 ───────────────────────────────────────────────
+
+const refundSchema = z.object({
+  paymentId: z.string().min(1),
+});
+
+export async function refundPayment(req: Request, res: Response): Promise<void> {
+  const parsed = refundSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'paymentId is required' });
+    return;
+  }
+  const { paymentId } = parsed.data;
+
+  const payment = await prisma.payment.findUnique({
+    where: { id: paymentId },
+    include: { order: true },
+  });
+  if (!payment) {
+    res.status(404).json({ success: false, error: 'Payment not found' });
+    return;
+  }
+  if (payment.status !== 'COMPLETED') {
+    res.status(400).json({ success: false, error: 'Only completed payments can be refunded' });
+    return;
+  }
+  if (payment.method !== 'STRIPE' || !payment.transactionId) {
+    res.status(400).json({ success: false, error: 'Only Stripe payments with a transaction can be refunded' });
+    return;
+  }
+
+  const stripe = await getStripe();
+  // Refund the full amount captured (server-side, never client-declared)
+  const refund = await stripe.refunds.create({
+    payment_intent: payment.transactionId,
+    amount: Math.round(payment.amount * 100),
+  });
+
+  if (refund.status === 'succeeded' || refund.status === 'pending') {
+    // Optimistic update; the charge.refunded webhook is the final authority
+    await prisma.payment.update({
+      where: { id: payment.id },
+      data: { status: 'REFUNDED' },
+    });
+    // Audit trail
+    const refundingUser = (req.user as any) || {};
+    await prisma.auditLog.create({
+      data: {
+        action: 'PAYMENT_REFUNDED',
+        entity: 'Payment',
+        entityId: payment.id,
+        userId: refundingUser.id || 'system',
+        userEmail: refundingUser.email || 'system',
+        details: { refundId: refund.id, amount: payment.amount },
+      },
+    }).catch(() => {});
+    res.json({ success: true, data: { refundId: refund.id, status: refund.status } });
+    return;
+  }
+
+  res.status(400).json({ success: false, error: `Refund failed: ${refund.status}` });
 }
