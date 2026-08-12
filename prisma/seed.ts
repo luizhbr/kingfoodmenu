@@ -1,12 +1,96 @@
 import { PrismaClient, OrderStatus } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
+/**
+ * King Food seed — catalog aligned to live OlaClick menu
+ * Source snapshot: docs/king-food/CATALOG_FROM_OLACLICK.md
+ * Company: bbd99239-41c5-4a62-9bf0-151d7224b7f3
+ */
+
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('Seeding database (King Food catalog — Milestone 2)...');
+const ACAI_ADDONS = [
+  { name: 'Nutella', priceModifier: 4, sortOrder: 1 },
+  { name: 'Paçoca', priceModifier: 2, sortOrder: 2 },
+  { name: 'Banana', priceModifier: 1, sortOrder: 3 },
+  { name: 'Kiwi', priceModifier: 2, sortOrder: 4 },
+  { name: 'Morango', priceModifier: 2, sortOrder: 5 },
+  { name: 'Leite em pó', priceModifier: 2, sortOrder: 6 },
+  { name: 'Leite condensado', priceModifier: 2, sortOrder: 7 },
+  { name: 'Granola', priceModifier: 1, sortOrder: 8 },
+];
 
-  // Admin
+async function ensureSizeOption(
+  menuItemId: string,
+  sizes: { name: string; priceModifier: number; isDefault?: boolean; sortOrder: number }[]
+) {
+  const existing = await prisma.menuOption.findFirst({ where: { menuItemId, name: 'Tamanho' } });
+  if (existing) return;
+  await prisma.menuOption.create({
+    data: {
+      menuItemId,
+      name: 'Tamanho',
+      displayType: 'RADIO',
+      isRequired: true,
+      values: { create: sizes.map((s) => ({ ...s, isDefault: s.isDefault ?? false })) },
+    },
+  });
+}
+
+async function ensureAcaiAddons(menuItemId: string) {
+  const existing = await prisma.menuOption.findFirst({
+    where: { menuItemId, name: 'Adicionais' },
+  });
+  if (existing) return;
+  await prisma.menuOption.create({
+    data: {
+      menuItemId,
+      name: 'Adicionais',
+      displayType: 'CHECKBOX',
+      isRequired: false,
+      maxSelect: 10,
+      values: { create: ACAI_ADDONS },
+    },
+  });
+}
+
+async function upsertItem(params: {
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  categoryId: string;
+  locationId: string;
+  sortOrder: number;
+  image?: string;
+}) {
+  return prisma.menuItem.upsert({
+    where: { slug: params.slug },
+    update: {
+      name: params.name,
+      description: params.description,
+      price: params.price,
+      categoryId: params.categoryId,
+      locationId: params.locationId,
+      sortOrder: params.sortOrder,
+      image: params.image,
+    },
+    create: {
+      slug: params.slug,
+      name: params.name,
+      description: params.description,
+      price: params.price,
+      categoryId: params.categoryId,
+      locationId: params.locationId,
+      sortOrder: params.sortOrder,
+      image: params.image,
+    },
+  });
+}
+
+async function main() {
+  console.log('Seeding King Food from OlaClick catalog snapshot...');
+
   const hashedPassword = await bcrypt.hash('admin123', 10);
   await prisma.user.upsert({
     where: { email: 'admin@kitchenasty.com' },
@@ -20,7 +104,6 @@ async function main() {
     },
   });
 
-  // Customer
   const customerPassword = await bcrypt.hash('customer123', 10);
   const customer = await prisma.customer.upsert({
     where: { email: 'customer@example.com' },
@@ -33,13 +116,11 @@ async function main() {
     },
   });
 
-  // Allergens
-  const allergens = await Promise.all(
-    ['Gluten', 'Dairy', 'Nuts', 'Eggs', 'Soy', 'Shellfish', 'Fish', 'Sesame'].map((name) =>
+  await Promise.all(
+    ['Gluten', 'Dairy', 'Nuts', 'Eggs', 'Soy'].map((name) =>
       prisma.allergen.upsert({ where: { name }, update: {}, create: { name } })
     )
   );
-  const allergenMap = Object.fromEntries(allergens.map((a) => [a.name, a.id]));
 
   await prisma.customerGroup.upsert({
     where: { name: 'Regular' },
@@ -47,22 +128,22 @@ async function main() {
     create: { name: 'Regular' },
   });
 
-  // Location — King Food Columbus
   const location = await prisma.location.upsert({
     where: { slug: 'columbus' },
     update: {
       name: 'King Food Columbus',
-      description: 'Açaí BR da saudade — Brazilian bowls, burgers and combos delivered in Columbus, OH',
+      description: 'Açaí brasileiro de verdade — delivery em Columbus, OH',
       phone: '(380) 269-5741',
       email: 'orders@kingfood.local',
       city: 'Columbus',
       state: 'OH',
       postalCode: '43035',
+      deliveryLeadTime: 55,
     },
     create: {
       name: 'King Food Columbus',
       slug: 'columbus',
-      description: 'Açaí BR da saudade — Brazilian bowls, burgers and combos delivered in Columbus, OH',
+      description: 'Açaí brasileiro de verdade — delivery em Columbus, OH',
       phone: '(380) 269-5741',
       email: 'orders@kingfood.local',
       address: 'Columbus Metro',
@@ -76,28 +157,36 @@ async function main() {
       pickupEnabled: true,
       minOrderDelivery: 15,
       minOrderPickup: 0,
-      deliveryLeadTime: 35,
-      pickupLeadTime: 15,
+      deliveryLeadTime: 55,
+      pickupLeadTime: 20,
     },
   });
 
-  for (let day = 0; day <= 6; day++) {
+  // Hours aligned to OlaClick info (evening service)
+  const hours: { day: number; open: string; close: string; closed: boolean }[] = [
+    { day: 0, open: '18:30', close: '22:30', closed: false }, // Sun
+    { day: 1, open: '19:00', close: '22:00', closed: false }, // Mon
+    { day: 2, open: '00:00', close: '00:00', closed: true }, // Tue
+    { day: 3, open: '19:00', close: '22:00', closed: false }, // Wed
+    { day: 4, open: '19:00', close: '22:00', closed: false }, // Thu
+    { day: 5, open: '00:00', close: '00:00', closed: true }, // Fri
+    { day: 6, open: '21:00', close: '23:59', closed: false }, // Sat
+  ];
+  for (const h of hours) {
     await prisma.operatingHour.upsert({
-      where: { locationId_dayOfWeek: { locationId: location.id, dayOfWeek: day } },
-      update: {},
+      where: { locationId_dayOfWeek: { locationId: location.id, dayOfWeek: h.day } },
+      update: { openTime: h.open, closeTime: h.close, isClosed: h.closed },
       create: {
         locationId: location.id,
-        dayOfWeek: day,
-        openTime: '10:00',
-        closeTime: '22:00',
-        isClosed: false,
+        dayOfWeek: h.day,
+        openTime: h.open,
+        closeTime: h.close,
+        isClosed: h.closed,
       },
     });
   }
 
-  // Delivery zones (skip if re-seed creates duplicates — use createMany skipDuplicates pattern via try)
-  const existingZones = await prisma.deliveryZone.count({ where: { locationId: location.id } });
-  if (existingZones === 0) {
+  if ((await prisma.deliveryZone.count({ where: { locationId: location.id } })) === 0) {
     await prisma.deliveryZone.createMany({
       data: [
         { locationId: location.id, name: 'Zone 1 - Nearby', charge: 3.99, minOrder: 15, isActive: true },
@@ -106,521 +195,396 @@ async function main() {
     });
   }
 
-  // Mealtimes
-  let lunch = await prisma.mealtime.findFirst({ where: { locationId: location.id, name: 'Lunch' } });
-  if (!lunch) {
-    lunch = await prisma.mealtime.create({
-      data: {
-        name: 'Lunch',
-        startTime: '11:00',
-        endTime: '15:00',
-        days: [1, 2, 3, 4, 5],
-        locationId: location.id,
-      },
-    });
-  }
-
   let dinner = await prisma.mealtime.findFirst({ where: { locationId: location.id, name: 'Dinner' } });
   if (!dinner) {
     dinner = await prisma.mealtime.create({
       data: {
         name: 'Dinner',
-        startTime: '17:00',
-        endTime: '22:00',
-        days: [0, 1, 2, 3, 4, 5, 6],
+        startTime: '18:00',
+        endTime: '23:00',
+        days: [0, 1, 3, 4, 6],
         locationId: location.id,
       },
     });
   }
 
-  // ========== KING FOOD CATEGORIES ==========
-  const catAcai = await prisma.category.upsert({
-    where: { slug: 'acai' },
-    update: { name: 'Açaí', sortOrder: 1, locationId: location.id },
-    create: { name: 'Açaí', slug: 'acai', sortOrder: 1, locationId: location.id },
+  // Categories matching live menu
+  const catKing = await prisma.category.upsert({
+    where: { slug: 'acai-do-king' },
+    update: { name: 'Açaí do King', sortOrder: 1, locationId: location.id },
+    create: { name: 'Açaí do King', slug: 'acai-do-king', sortOrder: 1, locationId: location.id },
   });
-
-  const catBurgers = await prisma.category.upsert({
-    where: { slug: 'burgers' },
-    update: { name: 'Burgers', sortOrder: 2, locationId: location.id },
-    create: { name: 'Burgers', slug: 'burgers', sortOrder: 2, locationId: location.id },
+  const catPremium = await prisma.category.upsert({
+    where: { slug: 'acai-premium' },
+    update: { name: 'Açaí Premium', sortOrder: 2, locationId: location.id },
+    create: { name: 'Açaí Premium', slug: 'acai-premium', sortOrder: 2, locationId: location.id },
   });
-
+  const catTropical = await prisma.category.upsert({
+    where: { slug: 'acai-tropical' },
+    update: { name: 'Açaí Tropical', sortOrder: 3, locationId: location.id },
+    create: { name: 'Açaí Tropical', slug: 'acai-tropical', sortOrder: 3, locationId: location.id },
+  });
   const catCombos = await prisma.category.upsert({
-    where: { slug: 'combos' },
-    update: { name: 'Combos', sortOrder: 3, locationId: location.id },
-    create: { name: 'Combos', slug: 'combos', sortOrder: 3, locationId: location.id },
+    where: { slug: 'acai-combos' },
+    update: { name: 'Açaí Combos', sortOrder: 4, locationId: location.id },
+    create: { name: 'Açaí Combos', slug: 'acai-combos', sortOrder: 4, locationId: location.id },
   });
-
-  const catSides = await prisma.category.upsert({
-    where: { slug: 'sides' },
-    update: { name: 'Sides', sortOrder: 4, locationId: location.id },
-    create: { name: 'Sides', slug: 'sides', sortOrder: 4, locationId: location.id },
+  const catBurgers = await prisma.category.upsert({
+    where: { slug: 'hamburgueres' },
+    update: { name: 'Hambúrgueres', sortOrder: 5, locationId: location.id },
+    create: { name: 'Hambúrgueres', slug: 'hamburgueres', sortOrder: 5, locationId: location.id },
   });
-
-  const catSweets = await prisma.category.upsert({
-    where: { slug: 'sweets' },
-    update: { name: 'Sweets', sortOrder: 5, locationId: location.id },
-    create: { name: 'Sweets', slug: 'sweets', sortOrder: 5, locationId: location.id },
-  });
-
   const catDrinks = await prisma.category.upsert({
-    where: { slug: 'drinks' },
-    update: { name: 'Drinks', sortOrder: 6, locationId: location.id },
-    create: { name: 'Drinks', slug: 'drinks', sortOrder: 6, locationId: location.id },
+    where: { slug: 'bebidas' },
+    update: { name: 'Bebidas', sortOrder: 6, locationId: location.id },
+    create: { name: 'Bebidas', slug: 'bebidas', sortOrder: 6, locationId: location.id },
   });
 
-  // ========== PRODUCTS ==========
+  const imgAcai = 'https://assets.olaclick.app/companies/products/images/800/2ec71a1b-7d95-4290-a8ec-c2e5435d5508.png';
+  const imgNutella =
+    'https://assets.olaclick.app/companies/products/images/800/f01e009d-12c6-4b2c-b4af-3830886258aa.jpeg';
 
-  // --- Açaí ---
-  const acaiClassico = await prisma.menuItem.upsert({
-    where: { slug: 'acai-classico' },
-    update: {
-      name: 'Açaí Clássico',
-      description: 'Açaí cremoso batido na hora. Escolha o tamanho e os complementos.',
-      price: 9.99,
-      categoryId: catAcai.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Açaí Clássico',
-      slug: 'acai-classico',
-      description: 'Açaí cremoso batido na hora. Escolha o tamanho e os complementos.',
-      price: 9.99,
-      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
-      categoryId: catAcai.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
+  // --- AÇAÍ DO KING ---
+  const kingBowl = await upsertItem({
+    slug: 'acai-king-tradicional-bowl',
+    name: 'Açaí King Tradicional Bowl',
+    description:
+      'Bowl 12oz. O clássico que todo brasileiro conhece: açaí premium cremoso, leite condensado, leite em pó, morango e banana.',
+    price: 13.9,
+    categoryId: catKing.id,
+    locationId: location.id,
+    sortOrder: 1,
+    image: imgAcai,
+  });
+  await ensureAcaiAddons(kingBowl.id);
+
+  const kingCopo = await upsertItem({
+    slug: 'acai-king-tradicional',
+    name: 'Açaí King Tradicional',
+    description:
+      'Copo 16oz do nosso carro-chefe. Açaí cremoso com leite condensado, leite em pó, morango e banana fresquinha.',
+    price: 18.9,
+    categoryId: catKing.id,
+    locationId: location.id,
+    sortOrder: 2,
+    image: imgAcai,
+  });
+  await ensureAcaiAddons(kingCopo.id);
+
+  const trufado = await upsertItem({
+    slug: 'acai-trufado-nutella',
+    name: 'Açaí Trufado de Nutella',
+    description:
+      'Açaí com muita Nutella generosa, leite condensado, leite em pó e finalizado com morango e banana.',
+    price: 16.9,
+    categoryId: catKing.id,
+    locationId: location.id,
+    sortOrder: 3,
+    image: imgNutella,
+  });
+  await ensureSizeOption(trufado.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(trufado.id);
+
+  const pacoca = await upsertItem({
+    slug: 'acai-pacoca',
+    name: 'Açaí Paçoca',
+    description:
+      'Açaí cremoso com paçoca esfarelada em dupla camada, banana, leite condensado e leite em pó.',
+    price: 16.9,
+    categoryId: catKing.id,
+    locationId: location.id,
+    sortOrder: 4,
+    image: imgAcai,
+  });
+  await ensureSizeOption(pacoca.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(pacoca.id);
+
+  // --- PREMIUM ---
+  const sensacao = await upsertItem({
+    slug: 'acai-sensacao-morango',
+    name: 'Açaí Sensação de Morango',
+    description: 'Açaí inspirado no clássico bombom brasileiro com mousse artesanal de morango.',
+    price: 17.9,
+    categoryId: catPremium.id,
+    locationId: location.id,
+    sortOrder: 1,
+    image: imgAcai,
+  });
+  await ensureSizeOption(sensacao.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(sensacao.id);
+
+  const ferrero = await upsertItem({
+    slug: 'acai-ferrero-rocher',
+    name: 'Açaí Ferrero Rocher',
+    description: 'Açaí premium com toque Ferrero Rocher.',
+    price: 17.9,
+    categoryId: catPremium.id,
+    locationId: location.id,
+    sortOrder: 2,
+    image: imgAcai,
+  });
+  await ensureSizeOption(ferrero.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 7.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(ferrero.id);
+
+  const ninho = await upsertItem({
+    slug: 'acai-king-ninho',
+    name: 'Açaí King Ninho',
+    description: 'Açaí cremoso com leite em pó Ninho em generosa camada.',
+    price: 16.9,
+    categoryId: catPremium.id,
+    locationId: location.id,
+    sortOrder: 3,
+    image: imgAcai,
+  });
+  await ensureSizeOption(ninho.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(ninho.id);
+
+  const passion = await upsertItem({
+    slug: 'acai-king-passion',
+    name: 'Açaí King Passion Fruit',
+    description: 'Açaí com maracujá (passion fruit).',
+    price: 16.9,
+    categoryId: catPremium.id,
+    locationId: location.id,
+    sortOrder: 4,
+    image: imgAcai,
+  });
+  await ensureSizeOption(passion.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(passion.id);
+
+  // --- TROPICAL ---
+  const nature = await upsertItem({
+    slug: 'acai-nature',
+    name: 'Açaí Nature',
+    description: 'Açaí mais natural, com frutas.',
+    price: 14.9,
+    categoryId: catTropical.id,
+    locationId: location.id,
+    sortOrder: 1,
+    image: imgAcai,
+  });
+  await ensureSizeOption(nature.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 5.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(nature.id);
+
+  const tropical = await upsertItem({
+    slug: 'acai-tropical',
+    name: 'Açaí Tropical',
+    description: 'Açaí puro coberto com abacaxi, manga e kiwi frescos cortados na hora.',
+    price: 14.9,
+    categoryId: catTropical.id,
+    locationId: location.id,
+    sortOrder: 2,
+    image: imgAcai,
+  });
+  await ensureSizeOption(tropical.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 5.0, sortOrder: 2 },
+  ]);
+  await ensureAcaiAddons(tropical.id);
+
+  const tropicalAbacaxi = await upsertItem({
+    slug: 'acai-tropical-no-abacaxi',
+    name: 'Açaí Tropical (no Abacaxi)',
+    description:
+      'Só fruta, só frescor. Açaí puro coberto com abacaxi, manga e kiwi — montado dentro do abacaxi.',
+    price: 27.0,
+    categoryId: catTropical.id,
+    locationId: location.id,
+    sortOrder: 3,
+    image: imgAcai,
   });
 
-  const acaiBowl = await prisma.menuItem.upsert({
-    where: { slug: 'acai-bowl-especial' },
-    update: {
-      name: 'Açaí Bowl Especial',
-      description: 'Açaí com granola, banana e mel — base pronta para personalizar.',
-      price: 12.99,
-      categoryId: catAcai.id,
-      locationId: location.id,
-      sortOrder: 2,
-      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Açaí Bowl Especial',
-      slug: 'acai-bowl-especial',
-      description: 'Açaí com granola, banana e mel — base pronta para personalizar.',
-      price: 12.99,
-      image: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=600&h=400&fit=crop',
-      categoryId: catAcai.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
+  const pina = await upsertItem({
+    slug: 'acai-pina-colada-king',
+    name: 'Açaí Piña Colada King',
+    description: 'Açaí cremoso com mousse de coco, abacaxi fresco e coco ralado.',
+    price: 16.5,
+    categoryId: catTropical.id,
+    locationId: location.id,
+    sortOrder: 4,
+    image: imgAcai,
+  });
+  await ensureSizeOption(pina.id, [
+    { name: 'BOWL | 12 oz', priceModifier: 0, isDefault: true, sortOrder: 1 },
+    { name: 'COPO | 16 oz', priceModifier: 6.4, sortOrder: 2 },
+    { name: 'Montado no abacaxi', priceModifier: 9.5, sortOrder: 3 },
+  ]);
+  await ensureAcaiAddons(pina.id);
+
+  const pinaAbacaxi = await upsertItem({
+    slug: 'acai-pina-colada-no-abacaxi',
+    name: 'Açaí Piña Colada (no abacaxi)',
+    description: 'Piña Colada montada no abacaxi.',
+    price: 27.0,
+    categoryId: catTropical.id,
+    locationId: location.id,
+    sortOrder: 5,
+    image: imgAcai,
   });
 
-  // Açaí size (required RADIO)
-  const existingAcaiSize = await prisma.menuOption.findFirst({
-    where: { menuItemId: acaiClassico.id, name: 'Tamanho' },
+  // --- COMBOS ---
+  const comboCasal = await upsertItem({
+    slug: 'combo-casal',
+    name: 'Combo Casal',
+    description: 'Dois açaís cremosos no Bowl 12oz, com leite condensado, leite em pó, banana e morango.',
+    price: 24.9,
+    categoryId: catCombos.id,
+    locationId: location.id,
+    sortOrder: 1,
+    image: imgAcai,
   });
-  if (!existingAcaiSize) {
-    await prisma.menuOption.create({
-      data: {
-        menuItemId: acaiClassico.id,
-        name: 'Tamanho',
-        displayType: 'RADIO',
-        isRequired: true,
-        values: {
-          create: [
-            { name: '300ml', priceModifier: 0, isDefault: true, sortOrder: 1 },
-            { name: '500ml', priceModifier: 3.0, sortOrder: 2 },
-            { name: '700ml', priceModifier: 5.0, sortOrder: 3 },
-          ],
-        },
-      },
-    });
-  }
+  await ensureAcaiAddons(comboCasal.id);
 
-  const existingAcaiToppings = await prisma.menuOption.findFirst({
-    where: { menuItemId: acaiClassico.id, name: 'Complementos' },
+  const comboFamilia = await upsertItem({
+    slug: 'combo-familia',
+    name: 'Combo Família',
+    description: '2 copos de açaí tradicional 16oz com leite condensado, leite em pó, banana, morango e granola.',
+    price: 33.9,
+    categoryId: catCombos.id,
+    locationId: location.id,
+    sortOrder: 2,
+    image: imgAcai,
   });
-  if (!existingAcaiToppings) {
-    await prisma.menuOption.create({
-      data: {
-        menuItemId: acaiClassico.id,
-        name: 'Complementos',
-        displayType: 'CHECKBOX',
-        isRequired: false,
-        maxSelect: 8,
-        values: {
-          create: [
-            { name: 'Granola', priceModifier: 1.0, sortOrder: 1 },
-            { name: 'Banana', priceModifier: 1.0, sortOrder: 2 },
-            { name: 'Morango', priceModifier: 1.5, sortOrder: 3 },
-            { name: 'Leite condensado', priceModifier: 1.5, sortOrder: 4 },
-            { name: 'Paçoca', priceModifier: 1.5, sortOrder: 5 },
-            { name: 'Amendoim', priceModifier: 1.0, sortOrder: 6 },
-            { name: 'Mel', priceModifier: 0.75, sortOrder: 7 },
-            { name: 'Leite em pó', priceModifier: 1.0, sortOrder: 8 },
-          ],
-        },
-      },
-    });
-  }
+  await ensureAcaiAddons(comboFamilia.id);
 
-  // Size + toppings for bowl especial
-  const existingBowlSize = await prisma.menuOption.findFirst({
-    where: { menuItemId: acaiBowl.id, name: 'Tamanho' },
-  });
-  if (!existingBowlSize) {
-    await prisma.menuOption.create({
-      data: {
-        menuItemId: acaiBowl.id,
-        name: 'Tamanho',
-        displayType: 'RADIO',
-        isRequired: true,
-        values: {
-          create: [
-            { name: '500ml', priceModifier: 0, isDefault: true, sortOrder: 1 },
-            { name: '700ml', priceModifier: 2.5, sortOrder: 2 },
-          ],
-        },
-      },
-    });
-  }
-
-  // --- Burgers ---
-  const xBurger = await prisma.menuItem.upsert({
-    where: { slug: 'x-burger' },
-    update: {
-      name: 'X-Burger',
-      description: 'Pão, hambúrguer, queijo, alface, tomate e molho da casa.',
-      price: 11.99,
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'X-Burger',
-      slug: 'x-burger',
-      description: 'Pão, hambúrguer, queijo, alface, tomate e molho da casa.',
-      price: 11.99,
-      image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=600&h=400&fit=crop',
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
+  const combo2Tropical = await upsertItem({
+    slug: 'combo-2-tropical-abacaxi',
+    name: '2× Açaí Tropical (no Abacaxi)',
+    description: 'Dois açaís montados no abacaxi.',
+    price: 46.0,
+    categoryId: catCombos.id,
+    locationId: location.id,
+    sortOrder: 3,
+    image: imgAcai,
   });
 
-  const xBacon = await prisma.menuItem.upsert({
-    where: { slug: 'x-bacon' },
-    update: {
-      name: 'X-Bacon',
-      description: 'Hambúrguer, queijo, bacon crocante e molho especial.',
-      price: 13.99,
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 2,
-      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'X-Bacon',
-      slug: 'x-bacon',
-      description: 'Hambúrguer, queijo, bacon crocante e molho especial.',
-      price: 13.99,
-      image: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=600&h=400&fit=crop',
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
+  const comboBrazuca = await upsertItem({
+    slug: 'combo-brazuca',
+    name: 'Combo Brazuca',
+    description: '4 copos de 16oz tradicionais — açaí cremoso estilo brasileiro para a família.',
+    price: 67.9,
+    categoryId: catCombos.id,
+    locationId: location.id,
+    sortOrder: 4,
+    image: imgAcai,
   });
+  await ensureAcaiAddons(comboBrazuca.id);
 
-  const xTudo = await prisma.menuItem.upsert({
-    where: { slug: 'x-tudo' },
-    update: {
-      name: 'X-Tudo',
-      description: 'O completo: hambúrguer, queijo, bacon, ovo, alface, tomate e molhos.',
-      price: 15.99,
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 3,
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'X-Tudo',
-      slug: 'x-tudo',
-      description: 'O completo: hambúrguer, queijo, bacon, ovo, alface, tomate e molhos.',
-      price: 15.99,
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
-      categoryId: catBurgers.id,
-      locationId: location.id,
-      sortOrder: 3,
-    },
+  // --- Burgers (from OlaClick inventory; may be hidden online but real) ---
+  const xBurger = await upsertItem({
+    slug: 'x-burger',
+    name: 'X-Burger',
+    description: 'Hambúrguer clássico King Food.',
+    price: 14.9,
+    categoryId: catBurgers.id,
+    locationId: location.id,
+    sortOrder: 1,
   });
-
-  for (const burger of [xBurger, xBacon, xTudo]) {
-    const existingExtras = await prisma.menuOption.findFirst({
-      where: { menuItemId: burger.id, name: 'Adicionais' },
-    });
-    if (!existingExtras) {
-      await prisma.menuOption.create({
-        data: {
-          menuItemId: burger.id,
-          name: 'Adicionais',
-          displayType: 'CHECKBOX',
-          isRequired: false,
-          maxSelect: 5,
-          values: {
-            create: [
-              { name: 'Bacon extra', priceModifier: 2.0, sortOrder: 1 },
-              { name: 'Cheddar extra', priceModifier: 1.5, sortOrder: 2 },
-              { name: 'Ovo', priceModifier: 1.5, sortOrder: 3 },
-              { name: 'Hambúrguer extra', priceModifier: 3.5, sortOrder: 4 },
-            ],
-          },
-        },
-      });
-    }
-  }
-
-  // --- Combos ---
-  const comboBurgerFries = await prisma.menuItem.upsert({
-    where: { slug: 'combo-burger-fries-drink' },
-    update: {
-      name: 'Combo Burger + Fries + Drink',
-      description: 'X-Burger + batata média + refrigerante lata.',
-      price: 16.99,
-      categoryId: catCombos.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Combo Burger + Fries + Drink',
-      slug: 'combo-burger-fries-drink',
-      description: 'X-Burger + batata média + refrigerante lata.',
-      price: 16.99,
-      image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?w=600&h=400&fit=crop',
-      categoryId: catCombos.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
+  const xBacon = await upsertItem({
+    slug: 'x-bacon',
+    name: 'X-Bacon',
+    description: 'Hambúrguer com bacon.',
+    price: 15.9,
+    categoryId: catBurgers.id,
+    locationId: location.id,
+    sortOrder: 2,
   });
-
-  const comboXtudo = await prisma.menuItem.upsert({
-    where: { slug: 'combo-x-tudo' },
-    update: {
-      name: 'Combo X-Tudo',
-      description: 'X-Tudo + batata média + refrigerante lata.',
-      price: 19.99,
-      categoryId: catCombos.id,
-      locationId: location.id,
-      sortOrder: 2,
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Combo X-Tudo',
-      slug: 'combo-x-tudo',
-      description: 'X-Tudo + batata média + refrigerante lata.',
-      price: 19.99,
-      image: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&h=400&fit=crop',
-      categoryId: catCombos.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
-  });
-
-  // --- Sides ---
-  const fries = await prisma.menuItem.upsert({
-    where: { slug: 'batata-frita' },
-    update: {
-      name: 'Batata Frita',
-      description: 'Porção de batata crocante.',
-      price: 4.99,
-      categoryId: catSides.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Batata Frita',
-      slug: 'batata-frita',
-      description: 'Porção de batata crocante.',
-      price: 4.99,
-      image: 'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=600&h=400&fit=crop',
-      categoryId: catSides.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
-  });
-
-  const existingFriesSize = await prisma.menuOption.findFirst({
-    where: { menuItemId: fries.id, name: 'Tamanho' },
-  });
-  if (!existingFriesSize) {
-    await prisma.menuOption.create({
-      data: {
-        menuItemId: fries.id,
-        name: 'Tamanho',
-        displayType: 'RADIO',
-        isRequired: true,
-        values: {
-          create: [
-            { name: 'Média', priceModifier: 0, isDefault: true, sortOrder: 1 },
-            { name: 'Grande', priceModifier: 2.0, sortOrder: 2 },
-          ],
-        },
-      },
-    });
-  }
-
-  // --- Sweets ---
-  const churros = await prisma.menuItem.upsert({
-    where: { slug: 'mini-churros' },
-    update: {
-      name: 'Mini Churros (16oz)',
-      description: 'Mini churros com doce de leite. Porção generosa.',
-      price: 7.99,
-      categoryId: catSweets.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Mini Churros (16oz)',
-      slug: 'mini-churros',
-      description: 'Mini churros com doce de leite. Porção generosa.',
-      price: 7.99,
-      image: 'https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?w=600&h=400&fit=crop',
-      categoryId: catSweets.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
+  const xTudo = await upsertItem({
+    slug: 'x-tudo',
+    name: 'X-Tudo',
+    description: 'O completo da casa.',
+    price: 22.9,
+    categoryId: catBurgers.id,
+    locationId: location.id,
+    sortOrder: 3,
   });
 
   // --- Drinks ---
-  const refriLata = await prisma.menuItem.upsert({
-    where: { slug: 'refrigerante-lata' },
-    update: {
-      name: 'Refrigerante Lata',
-      description: 'Lata 350ml — Coca, Guaraná ou Sprite.',
-      price: 2.99,
-      categoryId: catDrinks.id,
-      locationId: location.id,
-      sortOrder: 1,
-      image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Refrigerante Lata',
-      slug: 'refrigerante-lata',
-      description: 'Lata 350ml — Coca, Guaraná ou Sprite.',
-      price: 2.99,
-      image: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=600&h=400&fit=crop',
-      categoryId: catDrinks.id,
-      locationId: location.id,
-      sortOrder: 1,
-    },
+  await upsertItem({
+    slug: 'guarana-350',
+    name: 'Guaraná 350 ml',
+    description: 'Lata 350ml.',
+    price: 4.0,
+    categoryId: catDrinks.id,
+    locationId: location.id,
+    sortOrder: 1,
+  });
+  await upsertItem({
+    slug: 'coca-350',
+    name: 'Coca-Cola 350 ml',
+    description: 'Lata 350ml.',
+    price: 3.0,
+    categoryId: catDrinks.id,
+    locationId: location.id,
+    sortOrder: 2,
+  });
+  await upsertItem({
+    slug: 'agua',
+    name: 'Água',
+    description: 'Água mineral.',
+    price: 1.0,
+    categoryId: catDrinks.id,
+    locationId: location.id,
+    sortOrder: 3,
   });
 
-  const existingDrinkFlavor = await prisma.menuOption.findFirst({
-    where: { menuItemId: refriLata.id, name: 'Sabor' },
-  });
-  if (!existingDrinkFlavor) {
-    await prisma.menuOption.create({
-      data: {
-        menuItemId: refriLata.id,
-        name: 'Sabor',
-        displayType: 'RADIO',
-        isRequired: true,
-        values: {
-          create: [
-            { name: 'Coca-Cola', priceModifier: 0, isDefault: true, sortOrder: 1 },
-            { name: 'Guaraná', priceModifier: 0, sortOrder: 2 },
-            { name: 'Sprite', priceModifier: 0, sortOrder: 3 },
-          ],
-        },
-      },
-    });
-  }
-
-  const agua = await prisma.menuItem.upsert({
-    where: { slug: 'agua' },
-    update: {
-      name: 'Água',
-      description: 'Água mineral 500ml.',
-      price: 1.99,
-      categoryId: catDrinks.id,
-      locationId: location.id,
-      sortOrder: 2,
-      image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=600&h=400&fit=crop',
-    },
-    create: {
-      name: 'Água',
-      slug: 'agua',
-      description: 'Água mineral 500ml.',
-      price: 1.99,
-      image: 'https://images.unsplash.com/photo-1548839140-29a749e1cf4d?w=600&h=400&fit=crop',
-      categoryId: catDrinks.id,
-      locationId: location.id,
-      sortOrder: 2,
-    },
-  });
-
-  // Allergens (minimal)
-  await prisma.menuItemAllergen.createMany({
-    data: [
-      { menuItemId: xBurger.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: xBurger.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: xBacon.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: xBacon.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: xTudo.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: xTudo.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: xTudo.id, allergenId: allergenMap['Eggs'] },
-      { menuItemId: churros.id, allergenId: allergenMap['Gluten'] },
-      { menuItemId: churros.id, allergenId: allergenMap['Dairy'] },
-      { menuItemId: acaiClassico.id, allergenId: allergenMap['Dairy'] },
-    ],
-    skipDuplicates: true,
-  });
-
-  // Mealtimes for all items
-  const allItems = [
-    acaiClassico,
-    acaiBowl,
-    xBurger,
-    xBacon,
-    xTudo,
-    comboBurgerFries,
-    comboXtudo,
-    fries,
-    churros,
-    refriLata,
-    agua,
+  const allAcai = [
+    kingBowl,
+    kingCopo,
+    trufado,
+    pacoca,
+    sensacao,
+    ferrero,
+    ninho,
+    passion,
+    nature,
+    tropical,
+    tropicalAbacaxi,
+    pina,
+    pinaAbacaxi,
+    comboCasal,
+    comboFamilia,
+    combo2Tropical,
+    comboBrazuca,
   ];
 
   await prisma.menuItemMealtime.createMany({
-    data: allItems.flatMap((item) => [
-      { menuItemId: item.id, mealtimeId: lunch!.id },
-      { menuItemId: item.id, mealtimeId: dinner!.id },
-    ]),
+    data: [...allAcai, xBurger, xBacon, xTudo].map((item) => ({
+      menuItemId: item.id,
+      mealtimeId: dinner!.id,
+    })),
     skipDuplicates: true,
   });
 
-  // Tables
-  for (let i = 1; i <= 10; i++) {
+  for (let i = 1; i <= 8; i++) {
     await prisma.table.upsert({
       where: { locationId_name: { locationId: location.id, name: `Table ${i}` } },
       update: {},
-      create: {
-        locationId: location.id,
-        name: `Table ${i}`,
-        capacity: i <= 4 ? 2 : i <= 8 ? 4 : 6,
-      },
+      create: { locationId: location.id, name: `Table ${i}`, capacity: 4 },
     });
   }
 
-  // Coupons
   await prisma.coupon.upsert({
     where: { code: 'WELCOME10' },
     update: {},
@@ -636,190 +600,81 @@ async function main() {
     },
   });
 
-  await prisma.coupon.upsert({
-    where: { code: 'FREEDELIVERY' },
-    update: {},
-    create: {
-      code: 'FREEDELIVERY',
-      type: 'FREE_DELIVERY',
-      value: 0,
-      minOrder: 30,
-      usageLimit: 500,
-      perCustomer: 3,
-      isActive: true,
-    },
-  });
-
-  // Sample orders using King Food items
-  const orderStatuses: OrderStatus[] = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'DELIVERED', 'PICKED_UP'];
-  const orderTypes = ['DELIVERY', 'PICKUP'] as const;
-  const orderCount = await prisma.order.count({ where: { locationId: location.id } });
-  if (orderCount < 5) {
-    for (let i = 0; i < 6; i++) {
-      const status = orderStatuses[i % orderStatuses.length];
-      const orderType = orderTypes[i % 2];
-      const createdAt = new Date();
-      createdAt.setDate(createdAt.getDate() - Math.floor(i / 2));
-
-      await prisma.order.create({
-        data: {
-          orderNumber: `KF-SEED-${String(i + 1).padStart(3, '0')}`,
-          customerId: customer.id,
-          locationId: location.id,
-          orderType,
-          status,
-          subtotal: 18 + i * 3,
-          tax: (18 + i * 3) * 0.08,
-          deliveryFee: orderType === 'DELIVERY' ? 3.99 : 0,
-          total: (18 + i * 3) * 1.08 + (orderType === 'DELIVERY' ? 3.99 : 0),
-          createdAt,
-          items: {
-            create: [
-              {
-                menuItemId: i % 2 === 0 ? acaiClassico.id : xBurger.id,
-                name: i % 2 === 0 ? 'Açaí Clássico' : 'X-Burger',
-                quantity: 1,
-                unitPrice: i % 2 === 0 ? 9.99 : 11.99,
-                subtotal: i % 2 === 0 ? 9.99 : 11.99,
-              },
-            ],
-          },
+  if ((await prisma.order.count({ where: { locationId: location.id } })) < 3) {
+    await prisma.order.create({
+      data: {
+        orderNumber: 'KF-SEED-001',
+        customerId: customer.id,
+        locationId: location.id,
+        orderType: 'DELIVERY',
+        status: 'DELIVERED' as OrderStatus,
+        subtotal: 18.9,
+        tax: 1.51,
+        deliveryFee: 3.99,
+        total: 24.4,
+        items: {
+          create: [
+            {
+              menuItemId: kingCopo.id,
+              name: 'Açaí King Tradicional',
+              quantity: 1,
+              unitPrice: 18.9,
+              subtotal: 18.9,
+            },
+          ],
         },
-      });
-    }
+      },
+    });
   }
 
-  // Reviews
-  await prisma.review.createMany({
-    data: [
-      {
-        customerId: customer.id,
-        locationId: location.id,
-        rating: 5,
-        comment: 'Melhor açaí de Columbus!',
-        isApproved: true,
-      },
-      {
-        customerId: customer.id,
-        locationId: location.id,
-        rating: 5,
-        comment: 'X-Tudo top demais.',
-        isApproved: true,
-      },
-    ],
-    skipDuplicates: true,
-  });
-
-  // Site settings — King Food
   await prisma.siteSettings.upsert({
     where: { id: 'default' },
     update: {
       siteName: 'King Food',
-      siteTitle: 'King Food — Açaí BR da saudade · Columbus, OH',
+      siteTitle: 'King Food — Açaí brasileiro de verdade · Columbus, OH',
       storefrontTemplate: 'modern',
       colorPrimary: '#FFD100',
       colorSecondary: '#E31818',
-      darkMode: 'light',
       heroSection: {
-        title: 'Açaí BR da saudade',
-        subtitle: 'Bowls, burgers e combos brasileiros — delivery em Columbus, OH.',
-        backgroundImage: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1600&h=900&fit=crop',
+        title: 'Açaí brasileiro de verdade',
+        subtitle: 'Sabor do Brasil pra sua casa. Peça agora.',
+        backgroundImage: imgAcai,
         ctaPrimaryText: 'Ver Cardápio',
         ctaPrimaryLink: '/menu',
         ctaSecondaryText: 'Pedir agora',
         ctaSecondaryLink: '/menu',
-      },
-      featuresSection: [
-        { icon: '🥤', title: 'Açaí autêntico', description: 'Sabor brasileiro de verdade, montado do seu jeito' },
-        { icon: '🍔', title: 'Combos e burgers', description: 'Opções completas para matar a fome' },
-        { icon: '🚗', title: 'Delivery Columbus', description: 'Rápido e direto na sua porta' },
-      ],
-      ctaSection: {
-        title: 'Com fome de BR?',
-        description: 'Peça King Food e receba em casa — açaí, burgers e combos.',
-        buttonText: 'Fazer pedido',
-        buttonLink: '/menu',
       },
     },
     create: {
       id: 'default',
       siteName: 'King Food',
-      siteTitle: 'King Food — Açaí BR da saudade · Columbus, OH',
+      siteTitle: 'King Food — Açaí brasileiro de verdade · Columbus, OH',
       storefrontTemplate: 'modern',
       colorPrimary: '#FFD100',
       colorSecondary: '#E31818',
       darkMode: 'light',
       heroSection: {
-        title: 'Açaí BR da saudade',
-        subtitle: 'Bowls, burgers e combos brasileiros — delivery em Columbus, OH.',
-        backgroundImage: 'https://images.unsplash.com/photo-1590301157890-4810ed352733?w=1600&h=900&fit=crop',
+        title: 'Açaí brasileiro de verdade',
+        subtitle: 'Sabor do Brasil pra sua casa. Peça agora.',
+        backgroundImage: imgAcai,
         ctaPrimaryText: 'Ver Cardápio',
         ctaPrimaryLink: '/menu',
         ctaSecondaryText: 'Pedir agora',
         ctaSecondaryLink: '/menu',
       },
-      featuresSection: [
-        { icon: '🥤', title: 'Açaí autêntico', description: 'Sabor brasileiro de verdade, montado do seu jeito' },
-        { icon: '🍔', title: 'Combos e burgers', description: 'Opções completas para matar a fome' },
-        { icon: '🚗', title: 'Delivery Columbus', description: 'Rápido e direto na sua porta' },
-      ],
+      featuresSection: [],
       ctaSection: {
-        title: 'Com fome de BR?',
-        description: 'Peça King Food e receba em casa — açaí, burgers e combos.',
-        buttonText: 'Fazer pedido',
+        title: 'Peça King Food',
+        description: 'Delivery em Columbus, OH',
+        buttonText: 'Ver Cardápio',
         buttonLink: '/menu',
       },
     },
   });
 
-  await prisma.legalPage.upsert({
-    where: { slug: 'privacy-policy' },
-    update: {},
-    create: {
-      slug: 'privacy-policy',
-      title: 'Privacy Policy',
-      content:
-        '# Privacy Policy\n\nKing Food respects your privacy. Contact privacy@kingfood.local for questions.',
-    },
-  });
-
-  const cookieCategories = [
-    {
-      name: 'essential',
-      label: 'Essential Cookies',
-      description: 'Required for the website to function properly.',
-      isRequired: true,
-      sortOrder: 0,
-    },
-    {
-      name: 'analytics',
-      label: 'Analytics Cookies',
-      description: 'Help us understand how visitors interact with our website.',
-      isRequired: false,
-      sortOrder: 1,
-    },
-    {
-      name: 'marketing',
-      label: 'Marketing Cookies',
-      description: 'Used for personalized ads and campaigns.',
-      isRequired: false,
-      sortOrder: 2,
-    },
-  ];
-
-  for (const cat of cookieCategories) {
-    await prisma.cookieCategory.upsert({
-      where: { name: cat.name },
-      update: {},
-      create: cat,
-    });
-  }
-
-  console.log('Seed completed — King Food catalog (Milestone 2)!');
-  console.log('');
-  console.log('Categories: Açaí, Burgers, Combos, Sides, Sweets, Drinks');
+  console.log('Seed OK — catalog from OlaClick snapshot');
   console.log('Admin: admin@kitchenasty.com / admin123');
-  console.log('Location: King Food Columbus');
+  console.log('See docs/king-food/CATALOG_FROM_OLACLICK.md');
 }
 
 main()
