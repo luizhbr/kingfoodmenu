@@ -2,64 +2,74 @@
 
 **Branch:** `feature/king-food-foundation`  
 **Started:** 2026-08-11  
-**Status:** IN PROGRESS
+**Closed:** 2026-08-11  
+**Status:** **CLOSED**
 
 ---
 
 ## Objective
 
-Ensure the customer storefront works with the King Food catalog from Milestone 2 and that the core order path is coherent:
+Confirm the customer storefront can consume the King Food catalog and complete:
 
 ```
 Menu → Product → Modifiers → Cart → Checkout → Order
 ```
 
-This milestone is **validation + minimal fixes**, not a full UI redesign.
+Validation-first milestone (no redesign).
 
 ---
 
-## In Scope
+## Findings
 
-1. Inspect storefront menu/cart/checkout code paths
-2. Confirm categories/products from seed are consumable by API/storefront
-3. Document order path (happy path)
-4. Minimal branding/copy fixes if blocking (King Food name)
-5. Smoke checklist for storefront
+### Architecture (inspected)
 
-## Out of Scope
+- Storefront is React + Vite with full routes for menu, cart, checkout, order status.
+- Menu API is public read: categories + items + item detail with options.
+- Cart is client-side context; checkout posts to `POST /api/orders`.
+- Modifiers RADIO/CHECKBOX already implemented in `MenuItemModal`.
+- Seed defaults (`isActive: true`) are compatible with storefront filters.
 
-- WhatsApp / Hermes / N8N
-- Full visual redesign (Uber Eats clone etc.)
-- Payment provider changes
-- Production deploy
-- Rewriting Order Engine
+### Code changes in M3
 
----
+**None required** for catalog compatibility. Path already exists in KitchenAsty foundation.
 
-## Execution Plan
+### Documentation delivered
 
-### Step 1 — Inspect
-- [ ] Storefront routes / menu pages
-- [ ] API endpoints for menu, cart, orders
-- [ ] How modifiers are rendered
+- `docs/king-food/ORDER_PATH.md` — full path map
+- `docs/king-food/STOREFRONT_SMOKE.md` — user-side checklist
 
-### Step 2 — Align (only if needed)
-- [ ] Fix blockers for King Food catalog display
-- [ ] Ensure location slug `columbus` is usable
+### Runtime
 
-### Step 3 — Document
-- [ ] Order path notes
-- [ ] Storefront smoke checklist
-
-### Step 4 — Checkpoint
-- [ ] Report and stop for authorization before M4
+Agent sandbox cannot run Docker/Postgres; user-side smoke remains recommended.
 
 ---
 
 ## Success Criteria
 
-- [ ] Storefront architecture understood and documented
-- [ ] Menu data path clear (API → storefront)
-- [ ] No known blocker for King Food categories/products
-- [ ] Order path documented
-- [ ] M3 closed with explicit next recommendation
+- [x] Storefront architecture understood and documented
+- [x] Menu data path clear (API → storefront)
+- [x] No known blocker for King Food categories/products
+- [x] Order path documented
+- [x] M3 closed with next recommendation
+
+---
+
+## Decision Log
+
+### DECISION 007
+Do not rewrite storefront UI in M3; document and rely on existing Order path.  
+**Date:** 2026-08-11
+
+---
+
+## Recommended Next Milestone
+
+**MILESTONE 4 — Hardening / independence prep**
+
+Possible focus (authorize one):
+
+1. DB cleanup strategy (deactivate leftover KitchenAsty demo categories if any)
+2. Cart persistence (localStorage)
+3. WhatsApp notification stub (out of Hermes/N8N for now)
+4. Deploy preview environment
+5. Admin ops guide for King Food catalog edits
