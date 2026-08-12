@@ -156,7 +156,8 @@
     "placeOrder": "Bestellung Aufgeben",
     "processing": "Wird verarbeitet...",
     "guestCheckout": "Als Gast Bestellen",
-    "guestEmail": "E-Mail für Bestellupdates"
+    "guestEmail": "E-Mail für Bestellupdates",
+    "remove": "Entfernen"
   },
   "orderConfirmation": {
     "title": "Bestellung Aufgegeben!",

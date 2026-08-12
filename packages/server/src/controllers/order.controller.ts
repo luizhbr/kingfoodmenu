@@ -7,6 +7,7 @@ import { isPointInPolygon } from '../lib/geo.js';
 import { sendEmail, orderConfirmationEmail, orderStatusEmail } from '../lib/email.js';
 import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
+import { validateCouponForOrder, recordCouponUsage, CouponError } from '../lib/coupon-service.js';
 
 // ── Attribution source normalization ────────────────────────────────────────
 // Prisma enums are UPPERCASE. The storefront sends raw UTM values (lowercase),
@@ -126,6 +127,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     guestEmail,
     guestPhone,
     loyaltyPointsRedeem,
+    couponCode,
     attribution,
     sessionId,
   } = parsed.data;
@@ -394,9 +396,33 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // ── Coupon (server-side) ────────────────────────────────────────────────────
+  // The client only sends couponCode. The server fetches the coupon, validates
+  // every rule against the SERVER-computed subtotal and calculates the discount.
+  // Never trust a discountAmount/finalTotal sent by the client.
+  let couponId: string | null = null;
+  let couponDiscount = 0;
+  let couponDeliveryFree = false;
+  if (couponCode) {
+    try {
+      const result = await validateCouponForOrder(couponCode, subtotal, customerId);
+      couponId = result.coupon.id;
+      couponDiscount = result.discount;
+      couponDeliveryFree = result.deliveryFree;
+      if (couponDeliveryFree) deliveryFee = 0;
+    } catch (err) {
+      if (err instanceof CouponError) {
+        res.status(err.status).json({ success: false, error: err.message });
+        return;
+      }
+      throw err;
+    }
+  }
+
   const TAX_RATE = 0.08;
   const tax = subtotal * TAX_RATE;
-  const total = subtotal + tax + deliveryFee - loyaltyDiscount;
+  // tax base stays on full subtotal (existing rule); discounts subtract from total
+  const total = Math.max(0, subtotal + tax + deliveryFee - loyaltyDiscount - couponDiscount);
 
   const order = await prisma.order.create({
     data: {
@@ -408,7 +434,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       subtotal,
       tax,
       deliveryFee,
-      discount: loyaltyDiscount,
+      discount: loyaltyDiscount + couponDiscount,
+      couponId,
       total,
       comment,
       scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
@@ -444,7 +471,18 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  if (customerId) {
+    // Record coupon usage (idempotent: unique couponId+orderId constraint)
+  if (couponId && couponCode) {
+    await recordCouponUsage({
+      couponId,
+      orderId: order.id,
+      customerId,
+      code: couponCode.trim().toUpperCase(),
+      discountAmount: couponDiscount,
+    });
+  }
+
+if (customerId) {
     const pointsEarned = Math.floor(subtotal);
     if (pointsEarned > 0) {
       await prisma.customer.update({

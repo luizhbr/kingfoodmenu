@@ -156,7 +156,8 @@
     "placeOrder": "Place Order",
     "processing": "Processing...",
     "guestCheckout": "Guest Checkout",
-    "guestEmail": "Email for order updates"
+    "guestEmail": "Email for order updates",
+    "remove": "Remove"
   },
   "orderConfirmation": {
     "title": "Order Placed!",

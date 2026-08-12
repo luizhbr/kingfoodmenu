@@ -25,6 +25,8 @@ export default function Checkout() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [comment, setComment] = useState('');
   const [couponCode, setCouponCode] = useState('');
+  const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; freeDelivery: boolean } | null>(null);
+  const [couponError, setCouponError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -48,6 +50,38 @@ export default function Checkout() {
       ? crypto.randomUUID()
       : `kf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   );
+
+  // Coupon preview — the server re-validates at checkout; this is UX only
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponError('');
+    setCouponApplied(null);
+    try {
+      const res = await fetch(`${API_BASE}/api/coupons/validate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: couponCode, subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(data.error || 'Invalid coupon');
+        return;
+      }
+      setCouponApplied({
+        code: data.data.code,
+        discount: data.data.discount,
+        freeDelivery: data.data.freeDelivery,
+      });
+    } catch {
+      setCouponError('Could not validate coupon');
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setCouponCode('');
+    setCouponError('');
+  };
 
   // Loyalty points
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
@@ -355,20 +389,43 @@ export default function Checkout() {
           {/* Coupon */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.couponCode')}</h2>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-              />
-              <button
-                type="button"
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                {t('checkout.apply')}
-              </button>
-            </div>
+            {couponApplied ? (
+              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
+                <div>
+                  <p className="text-sm font-medium text-green-800">
+                    {couponApplied.code} — -${couponApplied.discount.toFixed(2)}
+                    {couponApplied.freeDelivery ? ' + Free Delivery' : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={removeCoupon}
+                  className="text-sm text-red-600 hover:text-red-700 font-medium"
+                >
+                  {t('checkout.remove')}
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value)}
+                  placeholder="e.g. SAVE10"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={applyCoupon}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  {t('checkout.apply')}
+                </button>
+              </div>
+            )}
+            {couponError && (
+              <p className="text-sm text-red-600 mt-2">{couponError}</p>
+            )}
           </div>
 
           {/* Loyalty Points Redemption */}

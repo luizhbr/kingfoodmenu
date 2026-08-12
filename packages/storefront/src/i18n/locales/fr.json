@@ -156,7 +156,8 @@
     "placeOrder": "Passer la Commande",
     "processing": "Traitement en cours...",
     "guestCheckout": "Commander en tant qu'Invité",
-    "guestEmail": "E-mail pour le suivi de commande"
+    "guestEmail": "E-mail pour le suivi de commande",
+    "remove": "Retirer"
   },
   "orderConfirmation": {
     "title": "Commande Passée !",

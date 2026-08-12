@@ -156,7 +156,8 @@
     "placeOrder": "Realizar Pedido",
     "processing": "Procesando...",
     "guestCheckout": "Pedido como Invitado",
-    "guestEmail": "Correo para actualizaciones del pedido"
+    "guestEmail": "Correo para actualizaciones del pedido",
+    "remove": "Quitar"
   },
   "orderConfirmation": {
     "title": "¡Pedido Realizado!",

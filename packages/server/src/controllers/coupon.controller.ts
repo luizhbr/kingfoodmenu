@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
 import { auditLog } from '../lib/audit.js';
+import { CouponError } from '../lib/coupon-service.js';
 
 const createCouponSchema = z.object({
   code: z.string().min(1).max(50),
@@ -127,58 +128,63 @@ export async function validateCoupon(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const coupon = await prisma.coupon.findUnique({ where: { code: code.toUpperCase() } });
-  if (!coupon) {
-    res.status(404).json({ success: false, error: 'Invalid coupon code' });
-    return;
-  }
-
-  if (!coupon.isActive) {
-    res.status(400).json({ success: false, error: 'Coupon is not active' });
-    return;
-  }
-
-  const now = new Date();
-  if (coupon.startsAt && now < coupon.startsAt) {
-    res.status(400).json({ success: false, error: 'Coupon is not yet valid' });
-    return;
-  }
-  if (coupon.expiresAt && now > coupon.expiresAt) {
-    res.status(400).json({ success: false, error: 'Coupon has expired' });
-    return;
-  }
-
-  if (coupon.usageLimit !== null && coupon.usageCount >= coupon.usageLimit) {
-    res.status(400).json({ success: false, error: 'Coupon usage limit reached' });
-    return;
-  }
-
-  const orderSubtotal = subtotal || 0;
-  if (orderSubtotal < coupon.minOrder) {
-    res.status(400).json({ success: false, error: `Minimum order amount is $${coupon.minOrder.toFixed(2)}` });
-    return;
-  }
-
-  // Calculate discount
-  let discount = 0;
-  if (coupon.type === 'PERCENTAGE') {
-    discount = orderSubtotal * (coupon.value / 100);
-    if (coupon.maxDiscount !== null) {
-      discount = Math.min(discount, coupon.maxDiscount);
+  try {
+    const coupon = await prisma.coupon.findUnique({ where: { code: code.trim().toUpperCase() } });
+    if (!coupon) throw new CouponError('Invalid coupon code', 404);
+    if (!coupon.isActive) throw new CouponError('Coupon is not active');
+    const now = new Date();
+    if (coupon.startsAt && now < coupon.startsAt) throw new CouponError('Coupon is not yet valid');
+    if (coupon.expiresAt && now > coupon.expiresAt) throw new CouponError('Coupon has expired');
+    if (coupon.usageLimit !== null && coupon.usageCount >= coupon.usageLimit) {
+      throw new CouponError('Coupon usage limit reached');
     }
-  } else if (coupon.type === 'FIXED') {
-    discount = coupon.value;
-  }
-  // FREE_DELIVERY discount is applied at checkout level
 
-  res.json({
-    success: true,
-    data: {
-      code: coupon.code,
-      type: coupon.type,
-      value: coupon.value,
-      discount: Math.round(discount * 100) / 100,
-      freeDelivery: coupon.type === 'FREE_DELIVERY',
-    },
-  });
+    // Per-customer limit when the customer is authenticated
+    const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
+    if (customerId && coupon.perCustomer > 0) {
+      const used = await prisma.couponUsage.count({
+        where: { couponId: coupon.id, customerId },
+      });
+      if (used >= coupon.perCustomer) {
+        throw new CouponError('Coupon already used by this customer');
+      }
+    }
+
+    // NOTE: this endpoint is a PREVIEW only. The subtotal here comes from the
+    // client and must NEVER be trusted for the final discount. The checkout
+    // re-validates everything server-side via coupon-service.validateCouponForOrder.
+    const orderSubtotal = Number(subtotal) || 0;
+    let discount = 0;
+    let deliveryFree = false;
+    if (coupon.type === 'PERCENTAGE') {
+      const pct = Math.min(coupon.value, 100);
+      discount = orderSubtotal * (pct / 100);
+      if (coupon.maxDiscount !== null && coupon.maxDiscount !== undefined) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
+    } else if (coupon.type === 'FIXED') {
+      discount = Math.min(coupon.value, orderSubtotal);
+    } else if (coupon.type === 'FREE_DELIVERY') {
+      deliveryFree = true;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        valid: true,
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+        discount: Math.round(Math.max(0, discount) * 100) / 100,
+        freeDelivery: deliveryFree,
+        preview: true,
+      },
+    });
+  } catch (err) {
+    if (err instanceof CouponError) {
+      res.status(err.status).json({ success: false, error: err.message });
+      return;
+    }
+    throw err;
+  }
 }

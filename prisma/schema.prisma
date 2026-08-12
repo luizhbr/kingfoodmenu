@@ -68,6 +68,7 @@ model Customer {
   attribution          Attribution?
   trackingEvents       TrackingEvent[]
   referrals            Referral[]
+  couponUsages         CouponUsage[]
 
   @@map("customers")
 }
@@ -417,6 +418,7 @@ model Order {
   reviews             Review[]
   loyaltyTransactions LoyaltyTransaction[]
   orderAttribution OrderAttribution?
+  couponUsage       CouponUsage?
   trackingEvents  TrackingEvent[]
 
   @@map("orders")
@@ -556,6 +558,7 @@ model Coupon {
   updatedAt   DateTime   @updatedAt
 
   orders Order[]
+  usages CouponUsage[]
 
   // Campaign attribution
   campaignId String?
@@ -563,6 +566,24 @@ model Coupon {
 
   @@map("coupons")
 }
+
+model CouponUsage {
+  id            String   @id @default(cuid())
+  couponId      String
+  coupon        Coupon   @relation(fields: [couponId], references: [id], onDelete: Cascade)
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  customerId    String?
+  customer      Customer? @relation(fields: [customerId], references: [id])
+  code          String
+  discountAmount Float   @default(0)
+  createdAt     DateTime @default(now())
+
+  @@unique([couponId, orderId])
+  @@index([customerId])
+  @@map("coupon_usages")
+}
+
 
 model Review {
   id         String   @id @default(cuid())
