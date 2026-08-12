@@ -65,6 +65,9 @@ model Customer {
   reviews               Review[]
   loyaltyTransactions   LoyaltyTransaction[]
   cookieConsents        CookieConsent[]
+  attribution          Attribution?
+  trackingEvents       TrackingEvent[]
+  referrals            Referral[]
 
   @@map("customers")
 }
@@ -391,6 +394,8 @@ model Order {
   payments            Payment[]
   reviews             Review[]
   loyaltyTransactions LoyaltyTransaction[]
+  orderAttribution OrderAttribution?
+  trackingEvents  TrackingEvent[]
 
   @@map("orders")
 }
@@ -750,4 +755,408 @@ model AuditLog {
   @@index([userId])
   @@index([entity])
   @@map("audit_logs")
+}
+
+
+// ============================================================
+// SALES ATTRIBUTION — King Food
+// ============================================================
+
+/// Marketing campaigns (Instagram Ads, Google Ads, influencer partnerships, etc.)
+model Campaign {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  
+  // Campaign classification
+  source      AttributionSource  @default(UNKNOWN)
+  medium      String?             // cpc, cpm, email, social, referral
+  content     String?             // ad creative identifier
+  term        String?             // keyword for search ads
+  
+  // Budget tracking
+  budget      Float    @default(0)
+  adSpend     Float    @default(0)  // total ad spend (USD)
+  currency    String   @default("USD")
+  
+  // Status
+  isActive    Boolean  @default(true)
+  startsAt    DateTime?
+  endsAt      DateTime?
+  
+  // Partner/Influencer
+  partnerId   String?
+  partner     Partner? @relation(fields: [partnerId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  trackingEvents TrackingEvent[]
+  attributions    Attribution[]
+  qrCodes         QRCode[]
+  coupons         Coupon[]
+  referrals       Referral[]
+  
+  @@map("campaigns")
+}
+
+/// Influencer/Partner/Referrer tracking
+model Partner {
+  id          String   @id @default(cuid())
+  name        String
+  email       String?
+  phone       String?
+  
+  // Partner classification
+  type        PartnerType @default(INFLUENCER)
+  platform    String?      // instagram, tiktok, youtube, etc.
+  handle      String?      // @username
+  followerCount Int?
+  
+  // Terms
+  commissionRate Float?    // percentage
+  commissionPaid Float  @default(0)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  campaigns   Campaign[]
+  
+  @@map("partners")
+}
+
+/// Individual tracking events in customer journey
+model TrackingEvent {
+  id          String   @id @default(cuid())
+  
+  // Who & When
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  sessionId   String    // browser session ID
+  
+  // What event
+  eventType   TrackingEventType
+  
+  // UTM / Attribution data
+  source      AttributionSource @default(UNKNOWN)
+  medium      String?
+  campaign    String?            // campaign slug or ID
+  content     String?
+  term        String?
+  
+  // Context
+  page        String?   // URL path
+  referrer    String?   // HTTP referrer
+  landingPage String?  // first page seen in session
+  userAgent   String?
+  ipAddress   String?
+  
+  // Related entities
+  orderId     String?
+  order       Order?    @relation(fields: [orderId], references: [id])
+  productId   String?   // MenuItem ID
+  couponCode  String?
+  qrCodeId    String?
+  qrCode      QRCode?   @relation(fields: [qrCodeId], references: [id])
+  referralId  String?
+  referral    Referral? @relation(fields: [referralId], references: [id])
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  
+  // Metadata
+  metadata    Json?     // extra event-specific data
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([sessionId])
+  @@index([customerId])
+  @@index([eventType])
+  @@index([source])
+  @@index([createdAt])
+  @@map("tracking_events")
+}
+
+/// First/Last touch attribution for each customer
+model Attribution {
+  id          String   @id @default(cuid())
+  customerId  String   @unique
+  customer    Customer @relation(fields: [customerId], references: [id])
+  
+  // FIRST TOUCH — never overwritten
+  firstSource    AttributionSource @default(UNKNOWN)
+  firstMedium    String?
+  firstCampaign  String?
+  firstContent   String?
+  firstTerm      String?
+  firstLandingPage String?
+  firstReferrer  String?
+  firstTouchAt  DateTime @default(now())
+  
+  // LAST TOUCH — updated on each new session with attribution data
+  lastSource     AttributionSource @default(UNKNOWN)
+  lastMedium     String?
+  lastCampaign   String?
+  lastContent    String?
+  lastTerm       String?
+  lastLandingPage String?
+  lastReferrer   String?
+  lastTouchAt    DateTime @default(now())
+  
+  // Aggregation
+  totalSessions  Int     @default(0)
+  totalEvents    Int     @default(0)
+  totalOrders    Int     @default(0)
+  totalRevenue   Float   @default(0)
+  
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@index([firstSource])
+  @@index([lastSource])
+  @@index([customerId])
+  @@map("attributions")
+}
+
+/// Order-level attribution (links order to attribution data)
+model OrderAttribution {
+  id          String   @id @default(cuid())
+  orderId     String   @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  
+  // Attribution at order time
+  source      AttributionSource @default(UNKNOWN)
+  medium      String?
+  campaign    String?
+  content     String?
+  term        String?
+  
+  // Touch data
+  firstTouchSource   AttributionSource @default(UNKNOWN)
+  firstTouchMedium   String?
+  firstTouchCampaign String?
+  lastTouchSource    AttributionSource @default(UNKNOWN)
+  lastTouchMedium    String?
+  lastTouchCampaign  String?
+  
+  // Entry context
+  landingPage String?
+  referrer     String?
+  
+  // Linked entities
+  couponCode  String?
+  qrCodeId    String?
+  referralId  String?
+  
+  // Conversion path (array of sources)
+  conversionPath Json?   // ["instagram", "whatsapp", "direct"]
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([orderId])
+  @@index([source])
+  @@index([campaign])
+  @@map("order_attributions")
+}
+
+/// QR code tracking
+model QRCode {
+  id          String   @id @default(cuid())
+  code        String   @unique   // short code or slug
+  destination String?             // URL redirect
+  
+  // Attribution
+  source      AttributionSource @default(QR_CODE)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  
+  // Tracking
+  scanCount   Int      @default(0)
+  orderCount  Int      @default(0)
+  revenue     Float    @default(0)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  trackingEvents TrackingEvent[]
+  
+  @@map("qr_codes")
+}
+
+/// Referral tracking
+model Referral {
+  id          String   @id @default(cuid())
+  code        String   @unique   // referral code
+  
+  // Who referred
+  referrerId  String?             // Customer who referred
+  referrer    Customer? @relation(fields: [referrerId], references: [id])
+  
+  // Attribution
+  source      AttributionSource @default(REFERRAL)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  
+  // Tracking
+  clickCount  Int      @default(0)
+  signupCount Int      @default(0)
+  orderCount  Int      @default(0)
+  revenue     Float    @default(0)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  trackingEvents TrackingEvent[]
+  
+  @@map("referrals")
+}
+
+/// Store configuration (separate from Location)
+model Store {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  
+  // Business info
+  description String?
+  logo        String?
+  phone       String?
+  email       String?
+  website     String?
+  
+  // Social
+  instagram   String?
+  facebook    String?
+  tiktok      String?
+  whatsappNumber String?
+  
+  // Address
+  address     String?
+  city        String?
+  state       String?
+  zip         String?
+  country     String  @default("US")
+  latitude    Float?
+  longitude   Float?
+  
+  // Business hours (default)
+  timezone    String  @default("America/New_York")
+  
+  // Feature flags
+  isAcceptingOrders  Boolean @default(true)
+  isDeliveryEnabled  Boolean @default(true)
+  isPickupEnabled    Boolean @default(true)
+  isReservationsEnabled Boolean @default(true)
+  
+  // Settings
+  minOrderAmount  Float @default(0)
+  deliveryFee     Float @default(0)
+  freeDeliveryMin  Float @default(0)
+  taxRate          Float @default(0)
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("stores")
+}
+
+/// Active promotions (separate from Coupon)
+model Promotion {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  
+  // Type
+  type        PromotionType @default(PERCENTAGE)
+  value       Float          // discount percentage or fixed amount
+  
+  // Conditions
+  minOrderAmount  Float?
+  maxDiscount     Float?  // cap for percentage discounts
+  applicableCategories String? // comma-separated category IDs
+  
+  // Schedule
+  startsAt    DateTime?
+  endsAt      DateTime?
+  
+  // Limits
+  usageLimit  Int?
+  usageCount  Int      @default(0)
+  perCustomer Int?
+  
+  // Attribution
+  source      AttributionSource @default(UNKNOWN)
+  campaignId  String?
+  campaign    Campaign? @relation(fields: [campaignId], references: [id])
+  
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  @@map("promotions")
+}
+
+// ============================================================
+// ATTRIBUTION ENUMS
+// ============================================================
+
+enum AttributionSource {
+  DIRECT
+  GOOGLE
+  GOOGLE_ADS
+  INSTAGRAM
+  FACEBOOK
+  META_ADS
+  TIKTOK
+  TIKTOK_ADS
+  WHATSAPP
+  QR_CODE
+  EMAIL
+  REFERRAL
+  INFLUENCER
+  ORGANIC
+  CUSTOM
+  UNKNOWN
+}
+
+enum TrackingEventType {
+  SESSION_STARTED
+  PAGE_VIEW
+  PRODUCT_VIEW
+  PRODUCT_ADDED
+  CART_CREATED
+  CHECKOUT_STARTED
+  CHECKOUT_COMPLETED
+  ORDER_CREATED
+  ORDER_CONFIRMED
+  ORDER_DELIVERED
+  COUPON_USED
+  WHATSAPP_CLICKED
+}
+
+enum PartnerType {
+  INFLUENCER
+  AFFILIATE
+  REFERRER
+  AGENCY
+  INTERNAL
+}
+
+enum PromotionType {
+  PERCENTAGE
+  FIXED_AMOUNT
+  FREE_DELIVERY
+  FREE_ITEM
 }

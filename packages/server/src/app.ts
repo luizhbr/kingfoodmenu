@@ -23,6 +23,11 @@ import staffRoutes from './routes/staff.routes.js';
 import developerRoutes from './routes/developer.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import attributionRoutes from './routes/attribution.routes.js';
+import campaignRoutes from './routes/campaign.routes.js';
+import qrCodeRoutes from './routes/qrcode.routes.js';
+import referralRoutes from './routes/referral.routes.js';
+import trackingRoutes from './routes/tracking.routes.js';
 import { openApiSpec } from './lib/openapi.js';
 import { initPassport } from './lib/passport.js';
 import passport from 'passport';
@@ -121,6 +126,11 @@ export function createApp() {
   app.use('/api/developer', developerRoutes);
   app.use('/api/gallery', galleryRoutes);
   app.use('/api/media', mediaRoutes);
+  app.use('/api/attribution', attributionRoutes);
+  app.use('/api/campaigns', campaignRoutes);
+  app.use('/api/qrcodes', qrCodeRoutes);
+  app.use('/api/referrals', referralRoutes);
+  app.use('/api/tracking', trackingRoutes);
 
   // 404 handler
   app.use((_req, res) => {
