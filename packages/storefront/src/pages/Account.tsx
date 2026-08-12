@@ -11,7 +11,7 @@ export default function Account() {
 
   useEffect(() => {
     if (!token) return;
-    fetch(`${API_BASE}/api/loyalty/balance', {
+    fetch(`${API_BASE}/api/loyalty/balance`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())

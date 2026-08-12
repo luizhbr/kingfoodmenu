@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    fetch(`${API_BASE}/api/auth/me', {
+    fetch(`${API_BASE}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
@@ -50,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, logout]);
 
   async function login(email: string, password: string) {
-    const res = await fetch(`${API_BASE}/api/auth/customer/login', {
+    const res = await fetch(`${API_BASE}/api/auth/customer/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function register(input: { email: string; password: string; name: string; phone?: string }) {
-    const res = await fetch(`${API_BASE}/api/auth/customer/register', {
+    const res = await fetch(`${API_BASE}/api/auth/customer/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input),

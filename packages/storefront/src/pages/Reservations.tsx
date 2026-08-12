@@ -54,7 +54,7 @@ export default function Reservations() {
 
   // Load locations
   useEffect(() => {
-    fetch(`${API_BASE}/api/locations')
+    fetch(`${API_BASE}/api/locations`)
       .then((res) => res.json())
       .then((data) => setLocations(data.data || []))
       .catch(() => {});
@@ -63,7 +63,7 @@ export default function Reservations() {
   // Load customer reservations
   useEffect(() => {
     if (!token) return;
-    fetch(`${API_BASE}/api/reservations/my-reservations', {
+    fetch(`${API_BASE}/api/reservations/my-reservations`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => res.json())
@@ -102,7 +102,7 @@ export default function Reservations() {
 
     setSubmitting(true);
     try {
-      const res = await fetch(`${API_BASE}/api/reservations', {
+      const res = await fetch(`${API_BASE}/api/reservations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

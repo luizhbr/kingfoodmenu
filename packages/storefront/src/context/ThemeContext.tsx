@@ -139,7 +139,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/settings')
+    fetch(`${API_BASE}/api/settings`)
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {

@@ -6,7 +6,7 @@ export default function Impressum() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/legal/impressum')
+    fetch(`${API_BASE}/api/legal/impressum`)
       .then((r) => r.json())
       .then((res) => {
         if (res.success) setPage(res.data);

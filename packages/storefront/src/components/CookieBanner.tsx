@@ -20,7 +20,7 @@ export default function CookieBanner() {
   useEffect(() => {
     if (localStorage.getItem(STORAGE_KEY)) return;
 
-    fetch(`${API_BASE}/api/legal/cookie-categories')
+    fetch(`${API_BASE}/api/legal/cookie-categories`)
       .then((r) => r.json())
       .then((res) => {
         if (res.success && res.data.length > 0) {
@@ -43,7 +43,7 @@ export default function CookieBanner() {
         accepted,
       }));
 
-      fetch(`${API_BASE}/api/consent', {
+      fetch(`${API_BASE}/api/consent`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ consents }),
@@ -69,7 +69,7 @@ export default function CookieBanner() {
   useEffect(() => {
     function handleOpen() {
       if (categories.length === 0) {
-        fetch(`${API_BASE}/api/legal/cookie-categories')
+        fetch(`${API_BASE}/api/legal/cookie-categories`)
           .then((r) => r.json())
           .then((res) => {
             if (res.success) {
