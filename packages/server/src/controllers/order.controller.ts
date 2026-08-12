@@ -5,6 +5,7 @@ import { emitNewOrder, emitOrderStatusUpdate } from '../lib/socket.js';
 import { isPointInPolygon } from '../lib/geo.js';
 import { sendEmail, orderConfirmationEmail, orderStatusEmail } from '../lib/email.js';
 import { auditLog } from '../lib/audit.js';
+import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
 
 const orderItemOptionSchema = z.object({
   menuOptionValueId: z.string().min(1),
@@ -26,15 +27,17 @@ const createOrderSchema = z.object({
   comment: z.string().optional(),
   scheduledAt: z.string().optional(),
   couponCode: z.string().optional(),
-  address: z.object({
-    line1: z.string().min(1),
-    line2: z.string().optional(),
-    city: z.string().min(1),
-    state: z.string().min(1),
-    zip: z.string().min(1),
-    lat: z.number().optional(),
-    lng: z.number().optional(),
-  }).optional(),
+  address: z
+    .object({
+      line1: z.string().min(1),
+      line2: z.string().optional(),
+      city: z.string().min(1),
+      state: z.string().min(1),
+      zip: z.string().min(1),
+      lat: z.number().optional(),
+      lng: z.number().optional(),
+    })
+    .optional(),
   guestName: z.string().optional(),
   guestEmail: z.string().email().optional(),
   guestPhone: z.string().optional(),
@@ -42,7 +45,7 @@ const createOrderSchema = z.object({
 });
 
 function generateOrderNumber(): string {
-  const prefix = 'KA';
+  const prefix = 'KF';
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 5).toUpperCase();
   return `${prefix}-${timestamp}-${random}`;
@@ -55,46 +58,58 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { orderType, items, comment, scheduledAt, address, guestName, guestEmail, guestPhone, loyaltyPointsRedeem } = parsed.data;
+  const {
+    orderType,
+    items,
+    comment,
+    scheduledAt,
+    address,
+    guestName,
+    guestEmail,
+    guestPhone,
+    loyaltyPointsRedeem,
+  } = parsed.data;
 
   if (orderType === 'DELIVERY' && !address) {
     res.status(400).json({ success: false, error: 'Delivery address is required' });
     return;
   }
 
-  // Get customer ID from auth if available
   const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
 
-  // Guest checkout: require name + email if not authenticated
   if (!customerId) {
     if (!guestName || !guestEmail) {
-      res.status(400).json({ success: false, error: 'Guest name and email are required for guest checkout' });
+      res
+        .status(400)
+        .json({ success: false, error: 'Guest name and email are required for guest checkout' });
       return;
     }
   }
 
-  // Validate scheduledAt
   if (scheduledAt) {
     const scheduled = new Date(scheduledAt);
     const now = new Date();
-    const minTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 min in future
-    const maxTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 days out
+    const minTime = new Date(now.getTime() + 30 * 60 * 1000);
+    const maxTime = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     if (isNaN(scheduled.getTime())) {
       res.status(400).json({ success: false, error: 'Invalid scheduledAt date' });
       return;
     }
     if (scheduled < minTime) {
-      res.status(400).json({ success: false, error: 'Scheduled time must be at least 30 minutes in the future' });
+      res
+        .status(400)
+        .json({ success: false, error: 'Scheduled time must be at least 30 minutes in the future' });
       return;
     }
     if (scheduled > maxTime) {
-      res.status(400).json({ success: false, error: 'Scheduled time cannot be more than 7 days in the future' });
+      res
+        .status(400)
+        .json({ success: false, error: 'Scheduled time cannot be more than 7 days in the future' });
       return;
     }
   }
 
-  // Get first location as default (for now)
   const location = await prisma.location.findFirst({
     where: { isActive: true },
     include: { operatingHours: true },
@@ -104,16 +119,16 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  // Check busy mode
   if (location.isBusy) {
     res.status(400).json({
       success: false,
-      error: location.busyMessage || 'This location is currently not accepting orders. Please try again later.',
+      error:
+        location.busyMessage ||
+        'This location is currently not accepting orders. Please try again later.',
     });
     return;
   }
 
-  // Validate scheduledAt is within operating hours
   if (scheduledAt && location.operatingHours.length > 0) {
     const scheduled = new Date(scheduledAt);
     const dayOfWeek = scheduled.getDay();
@@ -124,12 +139,14 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       return;
     }
     if (timeStr < dayHours.openTime || timeStr >= dayHours.closeTime) {
-      res.status(400).json({ success: false, error: `Scheduled time must be within operating hours (${dayHours.openTime} - ${dayHours.closeTime})` });
+      res.status(400).json({
+        success: false,
+        error: `Scheduled time must be within operating hours (${dayHours.openTime} - ${dayHours.closeTime})`,
+      });
       return;
     }
   }
 
-  // Delivery zone enforcement
   let deliveryFee = 0;
   if (orderType === 'DELIVERY') {
     if (address?.lat != null && address?.lng != null) {
@@ -148,17 +165,18 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       }
 
       if (zones.length > 0 && !matchedZone) {
-        res.status(400).json({ success: false, error: 'Delivery address is outside our delivery zones' });
+        res
+          .status(400)
+          .json({ success: false, error: 'Delivery address is outside our delivery zones' });
         return;
       }
 
       if (matchedZone) {
         deliveryFee = matchedZone.charge;
       } else {
-        deliveryFee = 4.99; // Fallback if no zones configured
+        deliveryFee = 4.99;
       }
     } else {
-      // No coordinates provided — use fallback or first zone's charge
       const defaultZone = await prisma.deliveryZone.findFirst({
         where: { locationId: location.id, isActive: true },
         orderBy: { charge: 'asc' },
@@ -167,7 +185,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Fetch menu items to validate and get prices
   const menuItemIds = items.map((i) => i.menuItemId);
   const menuItems = await prisma.menuItem.findMany({
     where: { id: { in: menuItemIds } },
@@ -178,7 +195,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
 
   const menuItemMap = new Map(menuItems.map((m) => [m.id, m]));
 
-  // Validate all items exist and are active
   for (const item of items) {
     const menuItem = menuItemMap.get(item.menuItemId);
     if (!menuItem) {
@@ -195,7 +211,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Calculate totals
   let subtotal = 0;
   const orderItemsData = items.map((item) => {
     const menuItem = menuItemMap.get(item.menuItemId)!;
@@ -225,7 +240,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     };
   });
 
-  // Loyalty points redemption
   let loyaltyDiscount = 0;
   if (loyaltyPointsRedeem && loyaltyPointsRedeem > 0 && customerId) {
     const customer = await prisma.customer.findUnique({ where: { id: customerId } });
@@ -233,11 +247,9 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       res.status(400).json({ success: false, error: 'Insufficient loyalty points' });
       return;
     }
-    // 100 points = $1
     loyaltyDiscount = loyaltyPointsRedeem / 100;
   }
 
-  // Check minimum order for delivery zone
   if (orderType === 'DELIVERY' && address?.lat != null && address?.lng != null) {
     const zones = await prisma.deliveryZone.findMany({
       where: { locationId: location.id, isActive: true },
@@ -248,7 +260,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
           if (subtotal < zone.minOrder) {
             res.status(400).json({
               success: false,
-              error: `Mindestbestellwert für diese Lieferzone: ${zone.minOrder.toFixed(2)} €`,
+              error: `Minimum order for this delivery zone: $${zone.minOrder.toFixed(2)}`,
             });
             return;
           }
@@ -286,7 +298,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     },
   });
 
-  // Decrement stock for tracked items
   for (const item of items) {
     const menuItem = menuItemMap.get(item.menuItemId)!;
     if (menuItem.trackStock) {
@@ -297,7 +308,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Earn loyalty points (1 point per $1 spent)
   if (customerId) {
     const pointsEarned = Math.floor(subtotal);
     if (pointsEarned > 0) {
@@ -316,7 +326,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       });
     }
 
-    // Redeem loyalty points
     if (loyaltyPointsRedeem && loyaltyPointsRedeem > 0) {
       await prisma.customer.update({
         where: { id: customerId },
@@ -334,7 +343,6 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  // Send confirmation email
   const recipientEmail = order.customer?.email || guestEmail;
   if (recipientEmail) {
     const emailContent = orderConfirmationEmail({
@@ -353,7 +361,21 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     orderType: order.orderType,
   });
 
-  // Emit event for automation rules
+  // WhatsApp stub (non-blocking)
+  notifyOrderWhatsApp({
+    orderNumber: order.orderNumber,
+    orderType: order.orderType,
+    total: order.total,
+    guestName: order.guestName,
+    guestPhone: order.guestPhone,
+    customerName: order.customer?.name,
+    items: order.items.map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      subtotal: i.subtotal,
+    })),
+  }).catch(() => {});
+
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('order.created', { order });
@@ -373,7 +395,10 @@ export async function listOrders(req: Request, res: Response): Promise<void> {
 
   const where: Record<string, unknown> = {};
   if (status) {
-    const statuses = status.split(',').map((s) => s.trim()).filter(Boolean);
+    const statuses = status
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
     where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
   }
   if (orderType) where.orderType = orderType;
@@ -470,9 +495,20 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
   const { id } = req.params;
   const { status } = req.body;
 
-  const validStatuses = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKED_UP', 'CANCELLED'];
+  const validStatuses = [
+    'PENDING',
+    'CONFIRMED',
+    'PREPARING',
+    'READY',
+    'OUT_FOR_DELIVERY',
+    'DELIVERED',
+    'PICKED_UP',
+    'CANCELLED',
+  ];
   if (!validStatuses.includes(status)) {
-    res.status(400).json({ success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
+    res
+      .status(400)
+      .json({ success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` });
     return;
   }
 
@@ -493,7 +529,12 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
     },
   });
 
-  auditLog(req, { action: 'update', entity: 'Order', entityId: id, details: { status, previousStatus: order.status } });
+  auditLog(req, {
+    action: 'update',
+    entity: 'Order',
+    entityId: id,
+    details: { status, previousStatus: order.status },
+  });
 
   emitOrderStatusUpdate({
     id: updated.id,
@@ -503,14 +544,12 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
     customerId: updated.customerId,
   });
 
-  // Send status update email
   const recipientEmail = order.customer?.email || order.guestEmail;
   if (recipientEmail) {
     const emailContent = orderStatusEmail({ orderNumber: order.orderNumber, status });
     sendEmail({ to: recipientEmail, ...emailContent }).catch(() => {});
   }
 
-  // Emit event for automation rules
   try {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('order.statusChanged', { order: updated, previousStatus: order.status });
