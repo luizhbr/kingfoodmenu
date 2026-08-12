@@ -38,7 +38,7 @@
   },
   "home": {
     "heroTitle": "Pide Comida Deliciosa en Línea",
-    "heroDescription": "Explora nuestro menú, haz tu pedido para entrega o recogida, y disfruta de comidas frescas y preparadas al momento de KitchenAsty.",
+    "heroDescription": "Explora nuestro menú, haz tu pedido para entrega o recogida, y disfruta de comidas frescas y preparadas al momento de King Food.",
     "viewMenu": "Ver Menú",
     "findLocation": "Encontrar Ubicación",
     "fastDelivery": "Entrega Rápida",
@@ -70,7 +70,7 @@
     "noAccount": "¿No tienes cuenta?",
     "registerLink": "Crea una",
     "registerTitle": "Crear Cuenta",
-    "registerSubtitle": "Únete a KitchenAsty para pedidos y reservas fáciles.",
+    "registerSubtitle": "Únete a King Food para pedidos y reservas fáciles.",
     "name": "Nombre completo",
     "phone": "Teléfono (opcional)",
     "createAccount": "Crear Cuenta",
@@ -94,7 +94,7 @@
   },
   "locations": {
     "title": "Nuestras Ubicaciones",
-    "subtitle": "Encuentra un KitchenAsty cerca de ti",
+    "subtitle": "Encuentra un King Food cerca de ti",
     "noLocations": "No se encontraron ubicaciones.",
     "viewMenu": "Ver Menú",
     "previous": "Anterior",

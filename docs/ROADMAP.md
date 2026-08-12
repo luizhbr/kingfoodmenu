@@ -14,6 +14,7 @@
 | P14 Documentation | ✅ esta documentação |
 | P15 Final Smoke Test | ✅ 2026-08-12 (1 bug corrigido: OrderAttribution) |
 | P2 Admin Menu CRUD | ✅ 2026-08-12 (sku+cost, isActive filtering) |
+| P2.5 License + Provenance | ✅ 2026-08-12 (MIT verified, rebranding) |
 
 ## IN PROGRESS
 

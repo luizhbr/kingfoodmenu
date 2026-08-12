@@ -118,3 +118,9 @@ Ver [docs/ROADMAP.md](docs/ROADMAP.md)
 ## Contributing
 
 Ver [CONTRIBUTING.md](CONTRIBUTING.md) e [DEVELOPMENT_RULES.md](DEVELOPMENT_RULES.md)
+
+## License
+
+Baseado em **KitchenAsty** (MIT) — ver [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md),
+[docs/LICENSE_AUDIT.md](docs/LICENSE_AUDIT.md) e
+[docs/CODE_PROVENANCE.md](docs/CODE_PROVENANCE.md).

@@ -108,7 +108,7 @@ export default function DesignBranding() {
             value={siteName}
             onChange={(e) => setSiteName(e.target.value)}
             className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            placeholder="KitchenAsty"
+            placeholder="King Food"
           />
           <p className="mt-1 text-xs text-gray-500">Shown in the header, footer, and browser tab.</p>
         </div>
@@ -120,7 +120,7 @@ export default function DesignBranding() {
             value={siteTitle}
             onChange={(e) => setSiteTitle(e.target.value)}
             className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-            placeholder="KitchenAsty - Order Online"
+            placeholder="King Food - Order Online"
           />
           <p className="mt-1 text-xs text-gray-500">Shown in the browser tab title.</p>
         </div>

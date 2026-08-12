@@ -38,7 +38,7 @@
   },
   "home": {
     "heroTitle": "Peça Comida Deliciosa Online",
-    "heroDescription": "Navegue pelo nosso cardápio, faça seu pedido para entrega ou retirada e aproveite refeições frescas e preparadas na hora pelo KitchenAsty.",
+    "heroDescription": "Navegue pelo nosso cardápio, faça seu pedido para entrega ou retirada e aproveite refeições frescas e preparadas na hora pelo King Food.",
     "viewMenu": "Ver Cardápio",
     "findLocation": "Encontrar Unidade",
     "fastDelivery": "Entrega Rápida",
@@ -70,7 +70,7 @@
     "noAccount": "Não tem uma conta?",
     "registerLink": "Crie uma",
     "registerTitle": "Criar Conta",
-    "registerSubtitle": "Junte-se ao KitchenAsty para pedidos e reservas fáceis.",
+    "registerSubtitle": "Junte-se ao King Food para pedidos e reservas fáceis.",
     "name": "Nome completo",
     "phone": "Telefone (opcional)",
     "createAccount": "Criar Conta",
@@ -94,7 +94,7 @@
   },
   "locations": {
     "title": "Nossas Unidades",
-    "subtitle": "Encontre um KitchenAsty perto de você",
+    "subtitle": "Encontre um King Food perto de você",
     "noLocations": "Nenhuma unidade encontrada.",
     "viewMenu": "Ver Cardápio",
     "previous": "Anterior",

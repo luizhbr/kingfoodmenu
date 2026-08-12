@@ -5,6 +5,10 @@
 > **Branch:** `feature/king-food-foundation`
 > **Status git:** limpo (sem alterações pendentes)
 
+## License
+
+- Base: **KitchenAsty (MIT)** — ver [LICENSE_AUDIT.md](LICENSE_AUDIT.md)
+
 ## Stack
 
 | Camada | Tecnologia |
