@@ -6,6 +6,7 @@ import {
   customerRegister,
   customerLogin,
   getMe,
+  getCaptchaStatus,
 } from '../controllers/auth.controller.js';
 import { handleSocialCallback } from '../controllers/social-auth.controller.js';
 import { savePushToken } from '../controllers/push-token.controller.js';
@@ -16,6 +17,9 @@ const router = Router();
 // Staff auth
 router.post('/staff/login', staffLogin);
 router.post('/staff/register', authenticate, requireRole('SUPER_ADMIN'), staffRegister);
+
+// Adaptive CAPTCHA status (public — exposes only enabled/siteKey/required)
+router.get('/captcha-status', getCaptchaStatus);
 
 // Customer auth
 router.post('/customer/register', customerRegister);

@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { withCsrf } from '../lib/csrf.js';
 
 interface Props {
@@ -10,6 +10,17 @@ export default function Login({ onLogin }: Props) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaStatus, setCaptchaStatus] = useState<{ enabled: boolean; siteKey: string | null; required: boolean }>({ enabled: false, siteKey: null, required: false });
+  const [captchaToken, setCaptchaToken] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/captcha-status')
+      .then((r) => r.json())
+      .then((d) => { if (active && d.success) setCaptchaStatus(d.data); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -19,10 +30,12 @@ export default function Login({ onLogin }: Props) {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       await withCsrf(headers);
+      const body: Record<string, string> = { email, password };
+      if (captchaToken) body.captchaToken = captchaToken;
       const res = await fetch('/api/auth/staff/login', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(body),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Login failed');
@@ -49,6 +62,16 @@ export default function Login({ onLogin }: Props) {
             <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg">{error}</div>
           )}
 
+
+          {captchaStatus.enabled && captchaStatus.required && (
+            <div className="mb-4">
+              <div
+                className="cf-turnstile"
+                data-sitekey={captchaStatus.siteKey}
+                data-callback={(token: string) => setCaptchaToken(token)}
+              />
+            </div>
+          )}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input

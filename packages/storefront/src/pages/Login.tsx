@@ -1,4 +1,4 @@
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext.js';
@@ -11,13 +11,25 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [captchaStatus, setCaptchaStatus] = useState<{ enabled: boolean; siteKey: string | null; required: boolean }>({ enabled: false, siteKey: null, required: false });
+  const [captchaToken, setCaptchaToken] = useState('');
+
+  // Adaptive CAPTCHA: query the server for whether this login needs a challenge.
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth/captcha-status')
+      .then((r) => r.json())
+      .then((d) => { if (active && d.success) setCaptchaStatus(d.data); })
+      .catch(() => { /* layer disabled — normal login */ });
+    return () => { active = false; };
+  }, []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email, password, captchaStatus.required ? captchaToken : undefined);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Login failed');
@@ -54,6 +66,16 @@ export default function Login() {
             />
           </div>
 
+
+          {captchaStatus.enabled && captchaStatus.required && (
+            <div className="mb-4">
+              <div
+                className="cf-turnstile"
+                data-sitekey={captchaStatus.siteKey}
+                data-callback={(token: string) => setCaptchaToken(token)}
+              />
+            </div>
+          )}
           <div className="mb-6">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
               {t('auth.password')}

@@ -50,13 +50,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .finally(() => setIsLoading(false));
   }, [token, logout]);
 
-  async function login(email: string, password: string) {
+  async function login(email: string, password: string, captchaToken?: string) {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     await withCsrf(headers);
+    const body: Record<string, string> = { email, password };
+    if (captchaToken) body.captchaToken = captchaToken;
     const res = await fetch(`${API_BASE}/api/auth/customer/login`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Login failed');
