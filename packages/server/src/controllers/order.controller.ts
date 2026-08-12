@@ -1,11 +1,47 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
+import type { AttributionSource } from '@prisma/client';
 import { emitNewOrder, emitOrderStatusUpdate } from '../lib/socket.js';
 import { isPointInPolygon } from '../lib/geo.js';
 import { sendEmail, orderConfirmationEmail, orderStatusEmail } from '../lib/email.js';
 import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
+
+// ── Attribution source normalization ────────────────────────────────────────
+// Prisma enums are UPPERCASE. The storefront sends raw UTM values (lowercase),
+// so normalize before persisting to avoid 500 "Invalid value for argument".
+// The silent catch below would otherwise hide this failure.
+
+const SOURCE_ALIASES: Record<string, string> = {
+  google: "GOOGLE",
+  googleads: "GOOGLE_ADS",
+  google_ads: "GOOGLE_ADS",
+  instagram: "INSTAGRAM",
+  facebook: "FACEBOOK",
+  meta: "META_ADS",
+  metaads: "META_ADS",
+  meta_ads: "META_ADS",
+  tiktok: "TIKTOK",
+  tiktokads: "TIKTOK_ADS",
+  tiktok_ads: "TIKTOK_ADS",
+  whatsapp: "WHATSAPP",
+  qr: "QR_CODE",
+  qrcode: "QR_CODE",
+  email: "EMAIL",
+  referral: "REFERRAL",
+  influencer: "INFLUENCER",
+  organic: "ORGANIC",
+  custom: "CUSTOM",
+  direct: "DIRECT",
+};
+
+function normalizeAttributionSource(value: unknown): AttributionSource {
+  if (typeof value !== "string" || !value.trim()) return "UNKNOWN";
+  const raw = value.trim().toLowerCase();
+  return (SOURCE_ALIASES[raw] || raw.toUpperCase()) as AttributionSource;
+}
+
 
 const orderItemOptionSchema = z.object({
   menuOptionValueId: z.string().min(1),
@@ -487,23 +523,25 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       await prisma.orderAttribution.create({
         data: {
           orderId: order.id,
-          source: (attribution.source as any) || 'UNKNOWN',
+          source: normalizeAttributionSource(attribution.source),
           medium: attribution.medium ?? null,
           campaign: attribution.campaign ?? null,
           content: attribution.content ?? null,
           term: attribution.term ?? null,
-          firstTouchSource: (attribution.source as any) || 'UNKNOWN',
+          firstTouchSource: normalizeAttributionSource(attribution.source),
           firstTouchMedium: attribution.medium ?? null,
           firstTouchCampaign: attribution.campaign ?? null,
-          lastTouchSource: (attribution.lastSource as any) || (attribution.source as any) || 'UNKNOWN',
+          lastTouchSource: normalizeAttributionSource(attribution.lastSource || attribution.source),
           lastTouchMedium: attribution.lastMedium ?? null,
           lastTouchCampaign: attribution.lastCampaign ?? null,
           landingPage: attribution.landingPage ?? null,
           referrer: attribution.referrer ?? null,
         },
       });
-    } catch {
-      // Attribution must never block order creation
+    } catch (err) {
+      // Attribution must never block order creation, but the failure
+      // must be visible in logs (was silently swallowed before).
+      console.error("[order] Failed to persist OrderAttribution:", err);
     }
   }
 
