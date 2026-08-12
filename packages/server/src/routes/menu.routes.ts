@@ -31,6 +31,19 @@ import { authenticate, requireStaff, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 
+// Menu module discovery — public root of /api/menu (sub-resources live below)
+router.get('/', (_req, res) => {
+  res.json({
+    success: true,
+    data: {
+      categories: '/api/menu/categories',
+      items: '/api/menu/items',
+      allergens: '/api/menu/allergens',
+      mealtimes: '/api/menu/mealtimes',
+    },
+  });
+});
+
 // Categories - read is open, write requires Manager+
 router.get('/categories', listCategories);
 router.get('/categories/:id', getCategory);
