@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "KitchenAsty",
-    "slug": "kitchenasty",
+    "name": "King Food Driver",
+    "slug": "king-food-driver",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

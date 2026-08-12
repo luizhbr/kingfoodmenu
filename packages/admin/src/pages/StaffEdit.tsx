@@ -28,6 +28,7 @@ export default function StaffEdit() {
   const [phone, setPhone] = useState('');
   const [locationId, setLocationId] = useState('');
   const [isActive, setIsActive] = useState(true);
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -69,6 +70,7 @@ export default function StaffEdit() {
           phone: phone || null,
           locationId: locationId || null,
           isActive,
+          ...(password ? { password } : {}),
         }),
       });
       const data = await res.json();
@@ -174,6 +176,20 @@ export default function StaffEdit() {
             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
           <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
+        </div>
+
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            Nova senha <span className="text-gray-400 font-normal">(opcional — deixe vazio para manter)</span>
+          </label>
+          <input
+            type="password"
+            id="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Mínimo 8 caracteres"
+            className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+          />
         </div>
 
         <button

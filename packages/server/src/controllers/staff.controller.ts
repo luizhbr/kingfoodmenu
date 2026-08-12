@@ -104,6 +104,7 @@ const updateStaffSchema = z.object({
   phone: z.string().nullable().optional(),
   locationId: z.string().nullable().optional(),
   isActive: z.boolean().optional(),
+  password: z.string().min(8).max(72).optional(),
 });
 
 export async function updateStaff(req: Request<{ id: string }>, res: Response): Promise<void> {
@@ -127,9 +128,14 @@ export async function updateStaff(req: Request<{ id: string }>, res: Response): 
     return;
   }
 
+  const data: Record<string, unknown> = { ...parsed.data };
+  if (data.password) {
+    data.password = await bcrypt.hash(data.password as string, 12);
+  }
+
   const user = await prisma.user.update({
     where: { id: targetId },
-    data: parsed.data,
+    data,
     select: {
       id: true,
       email: true,

@@ -34,6 +34,7 @@ export default function RootLayout() {
         <Stack.Screen name="locations" options={{ headerShown: true, title: 'Locations' }} />
         <Stack.Screen name="reservations" options={{ headerShown: true, title: 'Reservations' }} />
         <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+        <Stack.Screen name="driver" options={{ headerShown: false }} />
       </Stack>
     </>
   );
