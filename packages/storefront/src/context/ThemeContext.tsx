@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface HeroSection {
   title?: string;
@@ -45,15 +45,22 @@ interface ThemeContextType {
 
 const defaultSettings: SiteSettings = {
   id: 'default',
-  siteName: 'KitchenAsty',
-  siteTitle: 'KitchenAsty - Order Online',
-  favicon: null,
-  logo: null,
-  colorPrimary: '#ea580c',
-  colorSecondary: '#9333ea',
+  siteName: 'King Food',
+  siteTitle: 'King Food | Açaí brasileiro de verdade · Columbus, OH',
+  favicon: 'https://kingfood.online/icons/launchericon-192x192.png',
+  logo: 'https://kingfood.online/logo-kingfood.png.png',
+  colorPrimary: '#FFD100',
+  colorSecondary: '#E31818',
   darkMode: 'light',
-  storefrontTemplate: 'classic',
-  heroSection: null,
+  storefrontTemplate: 'modern',
+  heroSection: {
+    title: 'Açaí brasileiro de verdade',
+    subtitle: 'Sabor do Brasil pra sua casa. Peça agora.',
+    ctaPrimaryText: 'Ver Cardápio',
+    ctaPrimaryLink: '/menu',
+    ctaSecondaryText: 'Pedir agora',
+    ctaSecondaryLink: '/menu',
+  },
   featuresSection: null,
   ctaSection: null,
 };
@@ -63,10 +70,6 @@ const ThemeContext = createContext<ThemeContextType>({
   isDark: false,
 });
 
-/**
- * Generate a 50–900 shade palette from a single hex color.
- * Uses HSL lightness shifts to produce 10 shades.
- */
 function hexToHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -93,7 +96,9 @@ function hslToHex(h: number, s: number, l: number): string {
   const f = (n: number) => {
     const k = (n + h / 30) % 12;
     const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
-    return Math.round(255 * color).toString(16).padStart(2, '0');
+    return Math.round(255 * color)
+      .toString(16)
+      .padStart(2, '0');
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 }
@@ -101,8 +106,17 @@ function hslToHex(h: number, s: number, l: number): string {
 function generatePalette(hex: string): Record<string, string> {
   const [h, s] = hexToHsl(hex);
   const shades: Record<string, number> = {
-    '50': 96, '100': 90, '200': 80, '300': 70, '400': 60,
-    '500': 50, '600': 40, '700': 33, '800': 26, '900': 20, '950': 12,
+    '50': 96,
+    '100': 90,
+    '200': 80,
+    '300': 70,
+    '400': 60,
+    '500': 50,
+    '600': 40,
+    '700': 33,
+    '800': 26,
+    '900': 20,
+    '950': 12,
   };
   const result: Record<string, string> = {};
   for (const [key, lightness] of Object.entries(shades)) {
@@ -128,19 +142,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       .then((res) => res.json())
       .then((json) => {
         if (json.success && json.data) {
-          setSettings(json.data);
+          setSettings({ ...defaultSettings, ...json.data });
         }
       })
       .catch(() => {});
   }, []);
 
-  // Apply CSS variables when colors change
   useEffect(() => {
-    applyColorVars('primary', settings.colorPrimary);
-    applyColorVars('secondary', settings.colorSecondary);
+    applyColorVars('primary', settings.colorPrimary || '#FFD100');
+    applyColorVars('secondary', settings.colorSecondary || '#E31818');
   }, [settings.colorPrimary, settings.colorSecondary]);
 
-  // Manage dark mode
   useEffect(() => {
     const { darkMode } = settings;
     let dark = false;
@@ -157,7 +169,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.darkMode]);
 
-  // Update document title and favicon
   useEffect(() => {
     document.title = settings.siteTitle;
   }, [settings.siteTitle]);
