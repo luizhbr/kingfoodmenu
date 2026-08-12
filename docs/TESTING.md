@@ -71,6 +71,26 @@
 com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 (commit 44d9005).
 
+
+## P2 Admin Menu CRUD (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Criar categoria | ✅ 201 |
+| Criar produto com SKU + cost | ✅ 201, persistido |
+| Editar produto | ✅ 200 |
+| Desativar produto | ✅ some do storefront |
+| Admin vê desativados (includeInactive) | ✅ |
+| Categoria desativada some | ✅ |
+| Anônimo → criar item | ✅ 401 |
+| Customer → criar item | ✅ 403 |
+| Neon persistência | ✅ sku/cost confirmados |
+| Typecheck | ✅ |
+| Build | ✅ |
+| Unit tests | ✅ 29/29 |
+
+**Bugs corrigidos:** (1) sku/cost não persistiam (patch não escrito — FILE_MUTATION_FAILED detectado e corrigido); (2) produtos/categorias desativados apareciam no storefront (filtro isActive + includeInactive).
+
 ## Como rodar
 
 ```bash

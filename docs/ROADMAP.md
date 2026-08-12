@@ -13,6 +13,7 @@
 | P13 Customer Journey | ✅ commit 86a0570 + produção + Neon |
 | P14 Documentation | ✅ esta documentação |
 | P15 Final Smoke Test | ✅ 2026-08-12 (1 bug corrigido: OrderAttribution) |
+| P2 Admin Menu CRUD | ✅ 2026-08-12 (sku+cost, isActive filtering) |
 
 ## IN PROGRESS
 
@@ -24,7 +25,7 @@
 
 | Item | Detalhe |
 |------|---------|
-| P2 Admin Menu CRUD | CRUD completo de menu no admin |
+| P2 Admin Menu CRUD | ✅ concluído |
 | Auditoria de consistência | rotas/models/frontend (parcialmente feita) |
 
 ## FUTURE
