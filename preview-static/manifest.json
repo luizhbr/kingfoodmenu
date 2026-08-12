@@ -1,0 +1,35 @@
+{
+  "id": "/",
+  "name": "King Food",
+  "short_name": "King Food",
+  "description": "Açaí brasileiro de verdade · Delivery em Columbus, OH",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFD100",
+  "theme_color": "#FFD100",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["food", "shopping"],
+  "icons": [
+    {
+      "src": "https://kingfood.online/icons/launchericon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://kingfood.online/icons/launchericon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://kingfood.online/icons/launchericon-512x512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
