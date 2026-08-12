@@ -72,6 +72,10 @@ export default function Menu() {
     fetch(itemsUrl.startsWith('http') ? itemsUrl : `${import.meta.env.VITE_API_URL || ''}${itemsUrl}`)
       .then((res) => {
         if (!res.ok) throw new Error('Failed to load menu');
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error('API returned non-JSON response');
+        }
         return res.json();
       })
       .then((json) => {
