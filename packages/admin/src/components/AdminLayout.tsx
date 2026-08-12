@@ -109,12 +109,12 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
 
     async function fetchPending() {
       try {
-        const res = await fetch('/api/dashboard', {
+        const res = await fetch('/api/dashboard/stats', {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
         if (data.success && data.data) {
-          setPendingCount(data.data.pendingOrders ?? 0);
+          setPendingCount(data.data?.metrics?.pendingOrders ?? 0);
         }
       } catch { /* ignore */ }
     }

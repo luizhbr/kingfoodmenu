@@ -22,6 +22,7 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
     totalCustomers,
     pendingReservations,
     pendingReviews,
+    pendingOrders,
     recentOrders,
     topItems,
   ] = await Promise.all([
@@ -61,6 +62,8 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
     prisma.reservation.count({ where: { status: 'PENDING' } }),
     // Pending reviews
     prisma.review.count({ where: { isApproved: false } }),
+    // Pending orders (kitchen queue)
+    prisma.order.count({ where: { status: { in: ['PENDING', 'CONFIRMED'] } } }),
     // Recent orders (last 5)
     prisma.order.findMany({
       take: 5,
@@ -100,6 +103,7 @@ export async function getDashboardStats(req: Request, res: Response): Promise<vo
         totalCustomers,
         pendingReservations,
         pendingReviews,
+        pendingOrders,
       },
       recentOrders,
       topItems: topItems.map((item) => ({
