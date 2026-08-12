@@ -2,18 +2,53 @@
 
 **Branch:** `feature/king-food-foundation`  
 **Started:** 2026-08-11  
-**Status:** IN PROGRESS
+**Closed:** 2026-08-11  
+**Status:** **CLOSED**
 
-## Scope (authorized: 1–5)
+---
 
-1. DB cleanup strategy — deactivate leftover demo catalog
-2. Cart persistence — localStorage
-3. WhatsApp notification stub
-4. Deploy preview notes / prep
-5. Admin ops guide for catalog edits
+## Delivered (1–5)
 
-## Out of scope
+| # | Item | Deliverable |
+|---|------|-------------|
+| 1 | DB cleanup strategy | `scripts/cleanup-demo-catalog.ts` (deactivate demo) |
+| 2 | Cart persistence | `CartContext` → `localStorage` key `king-food-cart-v1` |
+| 3 | WhatsApp stub | `packages/server/src/lib/whatsapp.ts` + call on order create |
+| 4 | Deploy preview | `docs/king-food/DEPLOY_PREVIEW.md` |
+| 5 | Admin ops guide | `docs/king-food/ADMIN_OPS.md` |
 
-- Full Hermes / N8N pipelines
-- Production payment keys
-- UI redesign
+### Extra
+- Order numbers prefix: **KF-** (was KA-)
+
+---
+
+## How to run cleanup
+
+```bash
+npx tsx scripts/cleanup-demo-catalog.ts
+```
+
+---
+
+## WhatsApp env
+
+```env
+WHATSAPP_STUB_ENABLED=true
+WHATSAPP_NOTIFY_NUMBER=13802695741
+WHATSAPP_STUB_WEBHOOK_URL=   # optional
+```
+
+---
+
+## Out of scope (still)
+
+- Hermes / N8N full pipeline
+- Production cutover from OlaClick
+- Live Stripe keys
+
+---
+
+## Recommended Next
+
+**MILESTONE 5** — Preview deploy on real host + first end-to-end order on staging  
+or WhatsApp real sender (Meta Cloud API / Twilio) behind the same stub interface.
