@@ -108,6 +108,25 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | Build | ✅ |
 | Unit tests | ✅ 29/29 |
 
+
+## P5 Coupons (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (coupon-service) | ✅ 22 testes novos (51/51 total) |
+| Criar PERCENTAGE/FIXED/FREE_DELIVERY | ✅ 201 |
+| Aplicar cupom válido | ✅ discount correto |
+| Expired | ✅ 400 |
+| Min subtotal | ✅ 400 |
+| Max discount | ✅ cap aplicado |
+| Usage limit | ✅ bloqueia após limite |
+| Per customer limit | ✅ bloqueia 2º uso |
+| Idempotência | ✅ mesmo pedido |
+| discountAmount falso | ✅ servidor ignora |
+| IDOR | ✅ 403 |
+| RBAC customer → cupom | ✅ 403 |
+| Neon (usage, usageCount, order.discount) | ✅ |
+
 ## Como rodar
 
 ```bash

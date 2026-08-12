@@ -16,6 +16,7 @@
 | P2 Admin Menu CRUD | ✅ 2026-08-12 (sku+cost, isActive filtering) |
 | P2.5 License + Provenance | ✅ 2026-08-12 (MIT verified, rebranding) |
 | P3 Customer Profile | ✅ 2026-08-12 (profile + order history IDOR-safe) |
+| P5 Coupons | ✅ 2026-08-12 (server-side engine + ledger) |
 
 ## IN PROGRESS
 
@@ -34,7 +35,7 @@
 
 | Item | Detalhe |
 |------|---------|
-| Coupons | avançado (já existe CRUD básico) |
+| Coupons | ✅ P5 completo |
 | Cashback | — |
 | Loyalty | avançado (já existe básico) |
 | Driver PWA | app de entregador |

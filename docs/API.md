@@ -112,6 +112,8 @@
 
 ### Coupons (`/api/coupons`)
 
+> Ledger: `coupon_usages` (CouponUsage) — idempotente por (couponId, orderId)
+
 | Method | Path | Auth | CSRF | Controller | Status |
 |--------|------|------|------|-----------|--------|
 | POST | /validate | PUBLIC | sim | validateCoupon | IMPLEMENTED |
