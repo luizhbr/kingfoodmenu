@@ -3,6 +3,7 @@ import Header from './Header.js';
 import Footer from './Footer.js';
 import CartDrawer from './CartDrawer.js';
 import CookieBanner from './CookieBanner.js';
+import PwaInstall from './PwaInstall.js';
 
 export default function Layout() {
   return (
@@ -14,6 +15,7 @@ export default function Layout() {
       <Footer />
       <CartDrawer />
       <CookieBanner />
+      <PwaInstall />
     </div>
   );
 }
