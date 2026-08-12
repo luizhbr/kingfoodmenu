@@ -48,6 +48,22 @@ const createOrderSchema = z.object({
   // Client-generated key so a retried/double-submitted request returns the
   // SAME order instead of creating a duplicate (idempotency).
   idempotencyKey: z.string().min(8).max(128).optional(),
+  // Sales attribution (first/last touch) captured by the storefront session
+  attribution: z
+    .object({
+      source: z.string().optional(),
+      medium: z.string().nullable().optional(),
+      campaign: z.string().nullable().optional(),
+      content: z.string().nullable().optional(),
+      term: z.string().nullable().optional(),
+      landingPage: z.string().nullable().optional(),
+      referrer: z.string().nullable().optional(),
+      lastSource: z.string().nullable().optional(),
+      lastMedium: z.string().nullable().optional(),
+      lastCampaign: z.string().nullable().optional(),
+    })
+    .optional(),
+  sessionId: z.string().optional(),
 });
 
 function generateOrderNumber(): string {
@@ -74,6 +90,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     guestEmail,
     guestPhone,
     loyaltyPointsRedeem,
+    attribution,
+    sessionId,
   } = parsed.data;
 
   if (orderType === 'DELIVERY' && !address) {
@@ -460,6 +478,32 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     const { appEvents } = await import('../lib/events.js');
     appEvents.emit('order.created', { order });
   } catch {}
+
+  // Sales attribution: persist first/last touch linked to this order
+  if (attribution) {
+    try {
+      await prisma.orderAttribution.create({
+        data: {
+          orderId: order.id,
+          source: (attribution.source as any) || 'UNKNOWN',
+          medium: attribution.medium ?? null,
+          campaign: attribution.campaign ?? null,
+          content: attribution.content ?? null,
+          term: attribution.term ?? null,
+          firstTouchSource: (attribution.source as any) || 'UNKNOWN',
+          firstTouchMedium: attribution.medium ?? null,
+          firstTouchCampaign: attribution.campaign ?? null,
+          lastTouchSource: (attribution.lastSource as any) || (attribution.source as any) || 'UNKNOWN',
+          lastTouchMedium: attribution.lastMedium ?? null,
+          lastTouchCampaign: attribution.lastCampaign ?? null,
+          landingPage: attribution.landingPage ?? null,
+          referrer: attribution.referrer ?? null,
+        },
+      });
+    } catch {
+      // Attribution must never block order creation
+    }
+  }
 
   res.status(201).json({ success: true, data: order });
 }

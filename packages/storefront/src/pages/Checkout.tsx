@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { withCsrf } from '../lib/csrf.js';
+import { useTracking } from '../hooks/useTracking.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type OrderType = 'delivery' | 'pickup';
@@ -15,6 +16,7 @@ export default function Checkout() {
   const { t } = useTranslation();
   const { items, subtotal, clear } = useCart();
   const { user, token } = useAuth();
+  const { getAttributionData, sessionId } = useTracking();
   const navigate = useNavigate();
 
   const [orderType, setOrderType] = useState<OrderType>('delivery');
@@ -126,6 +128,24 @@ export default function Checkout() {
       };
 
       body.idempotencyKey = idempotencyKey;
+
+      // Sales attribution: link this order to the session's first/last touch
+      const attribution = getAttributionData();
+      if (attribution) {
+        body.attribution = {
+          source: attribution.firstSource,
+          medium: attribution.firstMedium,
+          campaign: attribution.firstCampaign,
+          content: attribution.firstContent,
+          term: attribution.firstTerm,
+          landingPage: attribution.firstLandingPage,
+          referrer: attribution.firstReferrer,
+          lastSource: attribution.lastSource,
+          lastMedium: attribution.lastMedium,
+          lastCampaign: attribution.lastCampaign,
+        };
+        body.sessionId = sessionId;
+      }
 
       if (orderType === 'delivery') {
         body.address = address;
