@@ -201,6 +201,17 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | 7 períodos em produção | ✅ todos 200 |
 | Cross-check XLSX == API == Neon | ✅ idênticos |
 
+
+## P13 Security Hardening (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Token forjado (fallback dev) → produção | ✅ 401 rejeitado |
+| Admin login pós-fix | ✅ 200 |
+| Reports autenticado | ✅ 200 |
+| .claude untracked | ✅ |
+| Unit (104) | ✅ todos passam |
+
 ## Como rodar
 
 ```bash

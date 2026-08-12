@@ -21,6 +21,7 @@
 | P7 Driver App + PWA | ✅ 2026-08-12 (DRIVER role, state machine, mobile UI) |
 | P8 Reports | ✅ 2026-08-12 (server-side metrics, timezone ET, RBAC MANAGER+) |
 | P9 Excel Export | ✅ 2026-08-12 (9-sheet xlsx, same data layer, RBAC MANAGER+) |
+| P13 Security Hardening | ✅ 2026-08-12 (JWT fail-fast, .claude untracked, catch logs) |
 
 ## IN PROGRESS
 
