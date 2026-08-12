@@ -12,6 +12,6 @@
   },
   "include": [
     "./**/*.ts",
-    "../packages/server/src/**/*.ts"
+    "../packages/server/dist/**/*.d.ts"
   ]
 }

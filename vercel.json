@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install --include=dev",
-  "buildCommand": "npx prisma generate && npm run build -w packages/storefront",
+  "buildCommand": "npx prisma generate && npm run build -w packages/server && npm run build -w packages/storefront",
   "outputDirectory": "packages/storefront/dist",
   "rewrites": [
     {
