@@ -11,6 +11,8 @@ import {
   renderTicketText,
   PrintError,
 } from '../lib/print-service.js';
+import { renderReceipt } from '../lib/receipt-renderer.js';
+import { effectiveTemplate } from '../lib/receipt-template.js';
 
 // ── Printers (MANAGER+) ────────────────────────────────────────────────────
 
@@ -172,5 +174,55 @@ export async function agentTicket(req: Request, res: Response): Promise<void> {
   if (!job) { res.status(404).json({ success: false, error: 'Job not found' }); return; }
   const ticket = await buildKitchenTicket(job.orderId);
   const printer = await prisma.printer.findUnique({ where: { id: job.printerId } });
+
+  // P15.3: use the active KITCHEN template when present; fall back to the
+  // legacy renderer (DEFAULT_TEMPLATE equivalent) when none is configured.
+  try {
+    const template = await prisma.receiptTemplate.findFirst({
+      where: { type: 'KITCHEN', enabled: true },
+      orderBy: { isDefault: 'desc' },
+    });
+    if (template) {
+      const order = await prisma.order.findUnique({
+        where: { id: job.orderId },
+        include: {
+          items: { include: { options: true } },
+          customer: { select: { name: true, phone: true } },
+          payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+      });
+      if (order) {
+        const result = renderReceipt({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          createdAt: order.createdAt,
+          orderType: order.orderType,
+          status: order.status,
+          customerName: order.customer?.name ?? order.guestName,
+          customerPhone: order.customer?.phone ?? order.guestPhone,
+          deliveryAddress: order.deliveryFormattedAddress,
+          comment: order.comment,
+          subtotal: order.subtotal,
+          deliveryFee: order.deliveryFee,
+          discount: order.discount,
+          tax: order.tax,
+          total: order.total,
+          paymentMethod: order.payments?.[0]?.method ?? null,
+          lines: order.items.map((it: any) => ({
+            name: it.name,
+            qty: it.quantity,
+            unitPrice: it.unitPrice,
+            options: it.options?.map((o: any) => o.name) ?? [],
+            comment: it.comment ?? undefined,
+          })),
+        }, effectiveTemplate(template as any));
+        res.json({ success: true, data: { ticket, text: result.text, template: template.name } });
+        return;
+      }
+    }
+  } catch {
+    // template lookup failed — fall through to legacy renderer
+  }
+
   res.json({ success: true, data: { ticket, text: renderTicketText(ticket, printer?.paperWidth || 80) } });
 }

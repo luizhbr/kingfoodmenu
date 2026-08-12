@@ -8,6 +8,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
 import printRoutes from './routes/print.routes.js';
+import printTemplateRoutes from './routes/print-template.routes.js';
 import locationRoutes from './routes/location.routes.js';
 import menuRoutes from './routes/menu.routes.js';
 import orderRoutes from './routes/order.routes.js';
@@ -207,6 +208,7 @@ app.use('/api/reports', reportsRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/qrcodes', qrcodeRoutes);
   app.use('/api/print', printRoutes);
+app.use('/api/admin/print/templates', printTemplateRoutes);
 
   // ── 404 handler ───────────────────────────────────────────────────────
   app.use((_req, res) => {

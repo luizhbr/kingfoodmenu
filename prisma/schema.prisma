@@ -1316,3 +1316,70 @@ model PrintJob {
   @@index([status, createdAt])
   @@map("print_jobs")
 }
+model ReceiptTemplate {
+  id        String   @id @default(cuid())
+  name      String
+  type      String   @default("KITCHEN") // KITCHEN | CUSTOMER | DELIVERY
+  isDefault Boolean  @default(false)
+  enabled   Boolean  @default(true)
+
+  // header
+  showLogo        Boolean  @default(false)
+  logoUrl         String?
+  logoAlignment   String   @default("center") // left | center | right
+  logoWidth       Int      @default(48) // columns
+  showBusinessName Boolean @default(true)
+  businessName    String   @default("KING FOOD")
+  showPhone       Boolean  @default(false)
+  phone           String?
+  showAddress     Boolean  @default(false)
+  address         String?
+  showInstagram   Boolean  @default(false)
+  instagram       String?
+
+  // order
+  showOrderNumber Boolean  @default(true)
+  showDateTime    Boolean  @default(true)
+  showOrderType   Boolean  @default(true)
+  showCustomer    Boolean  @default(false)
+  showCustomerPhone Boolean @default(false)
+  showDeliveryAddress Boolean @default(false)
+  showNotes       Boolean  @default(true)
+
+  // items
+  showQuantity    Boolean  @default(true)
+  showItemName    Boolean  @default(true)
+  showModifiers   Boolean  @default(true)
+  showPrices      Boolean  @default(false)
+
+  // financial
+  showSubtotal    Boolean  @default(false)
+  showDeliveryFee Boolean  @default(false)
+  showDiscount    Boolean  @default(false)
+  showTax         Boolean  @default(false)
+  showTotal       Boolean  @default(true)
+  showPaymentMethod Boolean @default(false)
+
+  // footer
+  showFooter      Boolean  @default(false)
+  footerText      String?
+  footerAlignment String   @default("center") // left | center | right
+
+  // layout
+  separatorStyle  String   @default("dashes") // dashes | equals | none
+  fontSize        String   @default("medium") // small | medium | large
+  boldBusinessName Boolean @default(true)
+  boldOrderNumber Boolean  @default(true)
+  boldTotal       Boolean  @default(true)
+  lineWidth       Int      @default(42) // chars for 80mm
+
+  // printer
+  paperWidth      Int      @default(80) // 58 | 80
+  characterWidth  Int      @default(48) // chars per line
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("receipt_templates")
+}
+
