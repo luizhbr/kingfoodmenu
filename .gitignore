@@ -19,3 +19,5 @@ uploads/
 .neon-secret.json
 test-db.js
 .vercel
+
+tmp/
