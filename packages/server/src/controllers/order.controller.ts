@@ -8,6 +8,7 @@ import { sendEmail, orderConfirmationEmail, orderStatusEmail } from '../lib/emai
 import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
 import { validateCouponForOrder, recordCouponUsage, CouponError } from '../lib/coupon-service.js';
+import { debitCashback, creditCashbackForOrder, reverseCashbackForOrder, reverseDebit, linkDebitToOrder } from '../lib/cashback-service.js';
 
 // ── Attribution source normalization ────────────────────────────────────────
 // Prisma enums are UPPERCASE. The storefront sends raw UTM values (lowercase),
@@ -64,6 +65,7 @@ const createOrderSchema = z.object({
   comment: z.string().optional(),
   scheduledAt: z.string().optional(),
   couponCode: z.string().optional(),
+  cashbackUse: z.number().min(0).optional(),
   address: z
     .object({
       line1: z.string().min(1),
@@ -128,6 +130,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     guestPhone,
     loyaltyPointsRedeem,
     couponCode,
+    cashbackUse,
+    idempotencyKey,
     attribution,
     sessionId,
   } = parsed.data;
@@ -419,47 +423,82 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // ── Cashback (server-side) ──────────────────────────────────────────────────
+  // The client only sends the amount they want to use. The server caps it at
+  // the eligible subtotal (subtotal - coupon discount), and the actual DEBIT
+  // (with balance check) is executed atomically AFTER the order is created,
+  // using the real orderId as idempotency guard.
+  let cashbackUsed = 0;
+  if (cashbackUse && cashbackUse > 0 && customerId) {
+    const eligibleBase = Math.max(0, subtotal - couponDiscount);
+    cashbackUsed = Math.min(cashbackUse, eligibleBase);
+    // DEBIT executes ATOMICALLY here (with FOR UPDATE row lock) against the
+    // idempotencyKey. Concurrent checkouts can never both spend the same
+    // balance. If the order creation fails afterwards, reverseDebit restores it.
+    try {
+      await debitCashback(customerId, cashbackUsed, `ck-${idempotencyKey}`);
+    } catch (err: any) {
+      res.status(400).json({ success: false, error: err.message || 'Cashback debit failed' });
+      return;
+    }
+  }
+
   const TAX_RATE = 0.08;
   const tax = subtotal * TAX_RATE;
   // tax base stays on full subtotal (existing rule); discounts subtract from total
-  const total = Math.max(0, subtotal + tax + deliveryFee - loyaltyDiscount - couponDiscount);
+  const total = Math.max(0, subtotal + tax + deliveryFee - loyaltyDiscount - couponDiscount - cashbackUsed);
 
-  const order = await prisma.order.create({
-    data: {
-      orderNumber: generateOrderNumber(),
-      idempotencyKey: parsed.data.idempotencyKey,
-      customerId,
-      locationId: location.id,
-      orderType,
-      subtotal,
-      tax,
-      deliveryFee,
-      discount: loyaltyDiscount + couponDiscount,
-      couponId,
-      total,
-      comment,
-      scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
-      addressId: savedAddressId,
-      deliveryLine1: addressSnapshot?.line1 ?? null,
-      deliveryLine2: addressSnapshot?.line2 ?? null,
-      deliveryCity: addressSnapshot?.city ?? null,
-      deliveryState: addressSnapshot?.state ?? null,
-      deliveryPostalCode: addressSnapshot?.postalCode ?? null,
-      deliveryCountry: addressSnapshot?.country ?? null,
-      deliveryLat: addressSnapshot?.lat ?? null,
-      deliveryLng: addressSnapshot?.lng ?? null,
-      deliveryPlaceId: addressSnapshot?.placeId ?? null,
-      deliveryFormattedAddress: addressSnapshot?.formattedAddress ?? null,
-      guestName: customerId ? undefined : guestName,
-      guestEmail: customerId ? undefined : guestEmail,
-      guestPhone: customerId ? undefined : guestPhone,
-      items: { create: orderItemsData },
-    },
-    include: {
-      items: { include: { options: true } },
-      customer: { select: { id: true, name: true, email: true } },
-    },
-  });
+  let order;
+  try {
+    order = await prisma.order.create({
+      data: {
+        orderNumber: generateOrderNumber(),
+        idempotencyKey: parsed.data.idempotencyKey,
+        customerId,
+        locationId: location.id,
+        orderType,
+        subtotal,
+        tax,
+        deliveryFee,
+        discount: loyaltyDiscount + couponDiscount,
+        couponId,
+        total,
+        comment,
+        scheduledAt: scheduledAt ? new Date(scheduledAt) : null,
+        addressId: savedAddressId,
+        deliveryLine1: addressSnapshot?.line1 ?? null,
+        deliveryLine2: addressSnapshot?.line2 ?? null,
+        deliveryCity: addressSnapshot?.city ?? null,
+        deliveryState: addressSnapshot?.state ?? null,
+        deliveryPostalCode: addressSnapshot?.postalCode ?? null,
+        deliveryCountry: addressSnapshot?.country ?? null,
+        deliveryLat: addressSnapshot?.lat ?? null,
+        deliveryLng: addressSnapshot?.lng ?? null,
+        deliveryPlaceId: addressSnapshot?.placeId ?? null,
+        deliveryFormattedAddress: addressSnapshot?.formattedAddress ?? null,
+        guestName: customerId ? undefined : guestName,
+        guestEmail: customerId ? undefined : guestEmail,
+        guestPhone: customerId ? undefined : guestPhone,
+        items: { create: orderItemsData },
+      },
+      include: {
+        items: { include: { options: true } },
+        customer: { select: { id: true, name: true, email: true } },
+      },
+    });
+  } catch (err) {
+    // Order creation failed — restore any pre-paid cashback DEBIT
+    if (cashbackUsed > 0 && customerId) {
+      try {
+        await reverseDebit(customerId, `ck-${idempotencyKey}`);
+      } catch (revErr) {
+        console.error('[cashback] rollback failed', revErr);
+      }
+    }
+    console.error('[order] create failed:', err);
+    res.status(500).json({ success: false, error: 'Failed to create order' });
+    return;
+  }
 
   for (const item of items) {
     const menuItem = menuItemMap.get(item.menuItemId)!;
@@ -480,6 +519,15 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       code: couponCode.trim().toUpperCase(),
       discountAmount: couponDiscount,
     });
+  }
+
+  // Link the pre-paid DEBIT to the real order (idempotency reference → orderId)
+  if (cashbackUsed > 0 && customerId) {
+    try {
+      await linkDebitToOrder(customerId, `ck-${idempotencyKey}`, order.id);
+    } catch (err: any) {
+      console.error('[cashback] link failed', order.id, err.message);
+    }
   }
 
 if (customerId) {
@@ -730,6 +778,23 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
       items: { include: { options: true } },
     },
   });
+
+  // ── Cashback lifecycle ─────────────────────────────────────────────────────
+  // Credit cashback when the order reaches an eligible terminal state
+  // (DELIVERED / PICKED_UP) and the customer is authenticated. Idempotent via
+  // the unique [CREDIT, orderId] constraint — repeated status updates can
+  // never double-credit. Cancelled orders reverse any credited cashback.
+  if (updated.customerId) {
+    try {
+      if (status === 'DELIVERED' || status === 'PICKED_UP') {
+        await creditCashbackForOrder(updated.customerId, id, Math.max(0, updated.subtotal - (updated.discount || 0)));
+      } else if (status === 'CANCELLED') {
+        await reverseCashbackForOrder(updated.customerId, id);
+      }
+    } catch (err: any) {
+      console.error('[cashback] lifecycle error for order', id, err.message);
+    }
+  }
 
   auditLog(req, {
     action: 'update',

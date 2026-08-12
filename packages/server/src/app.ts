@@ -26,6 +26,7 @@ import galleryRoutes from './routes/gallery.routes.js';
 import mediaRoutes from './routes/media.routes.js';
 import trackingRoutes from './routes/tracking.routes.js';
 import customerRoutes from './routes/customer.routes.js';
+import cashbackRoutes from './routes/cashback.routes.js';
 import campaignRoutes from './routes/campaign.routes.js';
 import qrcodeRoutes from './routes/qrcode.routes.js';
 import { openApiSpec } from './lib/openapi.js';
@@ -197,6 +198,7 @@ export function createApp() {
   app.use('/api/media', mediaRoutes);
   app.use('/api/tracking', trackingRoutes);
 app.use('/api/customer', customerRoutes);
+app.use('/api/cashback', cashbackRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/qrcodes', qrcodeRoutes);
 
