@@ -3,19 +3,142 @@
 @tailwind utilities;
 
 :root {
-  --color-primary-50: #fff7ed;
-  --color-primary-100: #ffedd5;
-  --color-primary-200: #fed7aa;
-  --color-primary-300: #fdba74;
-  --color-primary-400: #fb923c;
-  --color-primary-500: #f97316;
-  --color-primary-600: #ea580c;
-  --color-primary-700: #c2410c;
-  --color-primary-800: #9a3412;
-  --color-primary-900: #7c2d12;
-  --color-primary-950: #431407;
+  --color-primary-50: #fffbeb;
+  --color-primary-100: #fef3c7;
+  --color-primary-200: #fde68a;
+  --color-primary-300: #fcd34d;
+  --color-primary-400: #fbbf24;
+  --color-primary-500: #FFD100;
+  --color-primary-600: #eab308;
+  --color-primary-700: #ca8a04;
+  --color-primary-800: #a16207;
+  --color-primary-900: #854d0e;
+  --color-primary-950: #713f12;
+  --kf-nav-h: calc(3.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 html.dark {
   color-scheme: dark;
+}
+
+/* === King Food v3 shell (from king-food-webview) === */
+.kf-app-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 100dvh;
+}
+
+@supports not (height: 100dvh) {
+  .kf-app-shell {
+    height: 100vh;
+    max-height: 100vh;
+    min-height: 100vh;
+  }
+}
+
+.kf-content-above-nav {
+  bottom: var(--kf-nav-h);
+}
+
+@media (min-width: 768px) {
+  .kf-content-above-nav {
+    bottom: 0;
+  }
+}
+
+.kf-bottom-nav {
+  height: var(--kf-nav-h);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@keyframes kf-acai-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.55);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-3px) scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes kf-acai-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes kf-splash-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes kf-bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.kf-splash {
+  background: #ffd100;
+}
+
+.kf-splash-exiting {
+  animation: kf-splash-out 0.28s ease-out forwards;
+  pointer-events: none;
+}
+
+.kf-acai {
+  opacity: 0;
+  animation: kf-acai-pop 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) forwards,
+    kf-acai-bob 1.1s ease-in-out 0.5s infinite;
+  will-change: transform, opacity;
+}
+
+.kf-acai:nth-child(1) {
+  animation-delay: 0.08s, 0.55s;
+}
+.kf-acai:nth-child(2) {
+  animation-delay: 0.18s, 0.65s;
+}
+.kf-acai:nth-child(3) {
+  animation-delay: 0.28s, 0.75s;
+}
+.kf-acai:nth-child(4) {
+  animation-delay: 0.38s, 0.85s;
+}
+.kf-acai:nth-child(5) {
+  animation-delay: 0.48s, 0.95s;
+}
+
+.kf-splash-bar {
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: kf-bar-fill 1.15s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-acai {
+    opacity: 1;
+    transform: none;
+  }
+  .kf-splash-bar {
+    transform: scaleX(1);
+  }
 }
