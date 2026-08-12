@@ -63,6 +63,12 @@
 - Nenhum valor financeiro vem do cliente (tudo server-side)
 - Filtros validados com zod (period inválido → 400)
 
+## P9 — Excel Export
+
+- `GET /api/reports/export` (MANAGER+) — XLSX com 9 abas
+- Mesma camada de dados (reports-service) — sem duplicação
+- Ver EXCEL_EXPORT.md
+
 ## Testes
 
 - Unit: 14 novos (94/94 total) — timezone, períodos, AOV, gross/net, completion rate

@@ -20,6 +20,7 @@
 | P6 Cashback | ✅ 2026-08-12 (wallet+ledger, credit on delivery) |
 | P7 Driver App + PWA | ✅ 2026-08-12 (DRIVER role, state machine, mobile UI) |
 | P8 Reports | ✅ 2026-08-12 (server-side metrics, timezone ET, RBAC MANAGER+) |
+| P9 Excel Export | ✅ 2026-08-12 (9-sheet xlsx, same data layer, RBAC MANAGER+) |
 
 ## IN PROGRESS
 

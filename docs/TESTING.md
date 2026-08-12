@@ -182,6 +182,21 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | Endpoints 6/6 | ✅ 200 |
 | Neon cross-check | ✅ números batem |
 
+
+## P9 Excel Export (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (workbook 9 abas, buffer PK, períodos) | ✅ 10 novos (104/104 total) |
+| Export admin | ✅ 200, XLSX 17173 bytes |
+| Anonymous → export | ✅ 401 |
+| Customer → export | ✅ 403 |
+| Driver → export | ✅ 403 |
+| Staff → export | ✅ 403 |
+| period inválido | ✅ 400 |
+| 7 períodos em produção | ✅ todos 200 |
+| Cross-check XLSX == API == Neon | ✅ idênticos |
+
 ## Como rodar
 
 ```bash

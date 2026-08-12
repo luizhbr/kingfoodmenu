@@ -1,7 +1,7 @@
 # Project Snapshot — King Food Foundation
 
 > **Data da auditoria:** 2026-08-12
-> **Commit HEAD:** `dff8774` (feature/king-food-foundation)
+> **Commit HEAD:** `d056078` (feature/king-food-foundation)
 > **Branch:** `feature/king-food-foundation`
 > **Status git:** limpo (sem alterações pendentes)
 
