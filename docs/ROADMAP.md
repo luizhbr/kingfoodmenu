@@ -23,6 +23,7 @@
 | P9 Excel Export | ✅ 2026-08-12 (9-sheet xlsx, same data layer, RBAC MANAGER+) |
 | P13 Security Hardening | ✅ 2026-08-12 (JWT fail-fast, .claude untracked, catch logs) |
 | P13.5 Auth Abuse Test | ✅ 2026-08-12 (brute-force/rate-limit/enumeration/JWT/RBAC — tudo PASS) |
+| P13.6 Adaptive CAPTCHA | ✅ 2026-08-12 (Turnstile, fail-closed, risk-based, 17 unit) |
 
 ## IN PROGRESS
 
@@ -62,3 +63,11 @@
 
 IMPLEMENTED ≠ PASS. PASS exige: CODE + TYPECHECK + BUILD + TEST + DEPLOY +
 PRODUCTION TEST + DATABASE VERIFY (quando aplicável).
+
+## FUTURE — KING PRINT (registrado, NÃO implementado)
+
+Solução própria de impressão térmica para o King Food (substituir
+dependência externa tipo OlaClick). Investigar: PWA de impressão,
+agente local, WebSocket/local bridge, ESC/POS, descoberta de
+impressoras, fila+retry+idempotência, status da impressora,
+arquitetura tipo QZ Tray, projetos open source compatíveis.

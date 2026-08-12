@@ -225,6 +225,18 @@ com source minúsculo (catch {} engolia o erro). Fix: normalização de enums
 | Login válido pós-bloqueio | ✅ 200 |
 | Sem 5xx / sem crash | ✅ |
 
+
+## P13.6 Adaptive CAPTCHA (2026-08-12)
+
+| Teste | Resultado |
+|-------|-----------|
+| Unit (17 novos: níveis, policy, fail-closed, token) | ✅ 121/121 total |
+| Local: nível 0 login normal | ✅ 200 |
+| Local: 3 falhas → captcha exigido | ✅ 401 sem token |
+| Local: token forjado + provider down | ✅ 401 (fail-closed) |
+| Local: captchaPassed=true sem token | ✅ 401 (boolean ignorado) |
+| Produção: camada inativa não quebra | ✅ P13.6-PROD-001..009 |
+
 ## Como rodar
 
 ```bash
