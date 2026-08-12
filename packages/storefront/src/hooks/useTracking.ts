@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react';
+import { withCsrf } from '../lib/csrf.js';
 
 const SESSION_KEY = 'kf_session_id';
 const ATTRIBUTION_KEY = 'kf_attribution';
@@ -154,12 +155,14 @@ export function useTracking() {
 
     try {
       const url = `${API_BASE}/api/tracking/events`;
-      fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      }).catch(() => {
-        // Silent fail — tracking should never block the user
+      withCsrf({ 'Content-Type': 'application/json' }).then((headers) => {
+        fetch(url, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        }).catch(() => {
+          // Silent fail — tracking should never block the user
+        });
       });
     } catch {
       // Silent fail

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
 import { useAuth } from '../context/AuthContext.js';
+import { withCsrf } from '../lib/csrf.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type OrderType = 'delivery' | 'pickup';
@@ -134,6 +135,7 @@ export default function Checkout() {
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (token) headers.Authorization = `Bearer ${token}`;
+      await withCsrf(headers);
 
       const res = await fetch(`${API_BASE}/api/orders`, {
         method: 'POST',

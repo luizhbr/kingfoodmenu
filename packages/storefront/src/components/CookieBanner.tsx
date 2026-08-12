@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { withCsrf } from '../lib/csrf.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface CookieCategory {
@@ -43,11 +44,14 @@ export default function CookieBanner() {
         accepted,
       }));
 
-      fetch(`${API_BASE}/api/consent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ consents }),
-      }).catch(() => {});
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      withCsrf(headers).then((h) => {
+        fetch(`${API_BASE}/api/consent`, {
+          method: 'POST',
+          headers: h,
+          body: JSON.stringify({ consents }),
+        }).catch(() => {});
+      });
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
       setVisible(false);

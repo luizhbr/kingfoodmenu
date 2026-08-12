@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { withCsrf } from '../lib/csrf.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 interface User {
@@ -50,9 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [token, logout]);
 
   async function login(email: string, password: string) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    await withCsrf(headers);
     const res = await fetch(`${API_BASE}/api/auth/customer/login`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
@@ -68,9 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function register(input: { email: string; password: string; name: string; phone?: string }) {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    await withCsrf(headers);
     const res = await fetch(`${API_BASE}/api/auth/customer/register`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify(input),
     });
     const data = await res.json();
