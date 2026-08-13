@@ -36,3 +36,20 @@ Zero layout shift na Home/Cardápio; feedback de carregamento visível; aria-bus
 ### Breaking Changes
 Nenhum (componente interno, sem contrato de API).
 
+
+## 2026-08-13 — CartDrawer footer fixo (Depth + Safe Area)
+
+### Mudanças
+- Footer do carrinho (Subtotal + Checkout + Delete) fixo acima do bottom dock
+- Container de itens com padding-bottom reservado (último item rola acima do footer)
+- Safe-area aplicada em footer e dock
+
+### Motivo
+BottomDock (z-50, DOM posterior) cobria o CTA Checkout do drawer (z-50) em mobile.
+
+### Impacto
+CTA sempre visível/tocável; zero sobreposição (medido: footer bottom 776 ≤ dock top 781); último item visível após scroll.
+
+### Breaking Changes
+Nenhum (classes Tailwind, sem contrato de API).
+

@@ -62,3 +62,20 @@ Estado de carregamento de FeaturedItems (Home + topo do Cardápio) — reserva e
 - Mesmos breakpoints do grid real (2→3→4 colunas)
 - Zero overflow em 360-1440px (validado)
 
+
+## CartDrawerFooter (padrão drawer + dock)
+
+### Uso
+Qualquer drawer/sheet que coexista com a bottom nav fixa (kf-bottom-dock).
+
+### Estrutura
+- Footer: `absolute bottom-[calc(4.25rem+env(safe-area-inset-bottom))]` + sombra superior
+- Conteúdo: `overflow-y-auto` + `pb-[calc(9.5rem+env(safe-area-inset-bottom))]`
+- Drawer: `relative` (âncora do footer absoluto)
+
+### Regra
+Nunca deixar dois elementos fixed com o mesmo z-index competindo — o footer do drawer deve ancorar ACIMA da nav (bottom = nav-height + safe-area), nunca atrás.
+
+### Validação
+390px: footer bottom 776 ≤ dock top 781; último item visível após scroll; zero erros.
+

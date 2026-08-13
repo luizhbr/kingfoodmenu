@@ -81,3 +81,29 @@ Zero layout shift na Home/Cardápio; skeleton ~300ms; acessibilidade melhorada (
 - packages/storefront/src/components/FeaturedItems.tsx (+30/−1)
 
 ---
+
+## 2026-08-13 — CartDrawer: footer fixo acima do bottom dock (Depth + Safe Area)
+
+### Contexto
+O drawer do carrinho (z-50) e o BottomDock (z-50) compartilhavam o mesmo z-index; o dock vinha depois no DOM e cobria o footer do carrinho (Subtotal + CTA Checkout) em mobile — o CTA ficava parcialmente atrás da navegação.
+
+### Opções Consideradas
+- **Opção A: Footer no fluxo do flex** (estado anterior) — Prós: simples. Contras: com o dock sobreposto, o CTA Checkout ficava atrás da nav (z-index igual, DOM posterior vence).
+- **Opção B: Footer fixo acima do dock + padding no scroll** (escolhida) — Prós: CTA sempre visível e tocável, conteúdo rola sob o footer com padding reservado. Contras: footer precisa de sombra para separar do conteúdo.
+- **Opção C: Subir z-index do drawer** — Prós: drawer cobre o dock. Contras: quebra a hierarquia visual (nav some durante o carrinho) e o usuário perde o contexto de navegação.
+
+### Decisão
+Footer do carrinho `absolute bottom-[calc(4.25rem+env(safe-area-inset-bottom))]` (altura do dock + safe-area) com sombra superior; container de itens com `pb-[calc(9.5rem+env(safe-area-inset-bottom))]` para o último item rolar acima do footer.
+
+### Justificativa
+- **Apple HIG (Depth):** camadas visuais separadas — conteúdo scrollável, footer fixo, nav fixa.
+- **Apple HIG (Safe Area):** `env(safe-area-inset-bottom)` em ambos os paddings (dock e footer).
+- **GNOME (Reduce effort):** CTA Checkout sempre visível, 1 toque, sem rolar.
+
+### Impacto
+CTA Checkout nunca mais coberto pela nav; último item do carrinho sempre acessível; safe-area respeitada em iPhones com notch.
+
+### Arquivos Afetados
+- packages/storefront/src/components/CartDrawer.tsx
+
+---

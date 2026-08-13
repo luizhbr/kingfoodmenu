@@ -18,3 +18,10 @@
 - **Alternativa:** skeleton com a mesma estrutura do estado final (grid, aspect ratio, linhas) + `aria-busy`.
 - **Exemplo:** FeaturedItems.tsx antes (`if (loading) return null`) vs. depois (skeleton 4 cards).
 
+
+## Dois fixed com mesmo z-index (drawer vs. bottom nav)
+- **Problema:** drawer (z-50) e bottom nav (z-50) — o que vem depois no DOM cobre o outro; CTA do drawer fica atrás da nav.
+- **Por que é ruim:** botão crítico (Checkout) parcialmente oculto/inacessível em mobile.
+- **Alternativa:** footer do drawer ancorado acima da nav (`bottom: nav-height + safe-area`) com padding reservado no scroll.
+- **Exemplo:** CartDrawer.tsx antes (footer no fluxo, coberto) vs. depois (footer fixo acima do dock).
+
