@@ -4,6 +4,7 @@ import { Price } from './Price.js';
 import { Button } from './Button.js';
 
 export interface ProductCardProps {
+  'data-testid'?: string;
   id: string;
   name: string;
   description?: string;
@@ -15,9 +16,10 @@ export interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
-  id, name, description, price, image, badge, onAdd, onClick
+  id, name, description, price, image, badge, onAdd, onClick, 'data-testid': dataTestId
 }) => (
   <div
+    data-testid={dataTestId || 'product-card'}
     onClick={onClick}
     className={cn(
       'group flex flex-col rounded-kf-lg bg-kf-surface border border-kf-border shadow-kf-subtle overflow-hidden',
@@ -48,7 +50,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       )}
       <div className="mt-auto flex items-center justify-between pt-3">
         <Price value={price} size="md" />
-        <Button size="md" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
+        <Button size="md" data-testid="quick-add" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
           +
         </Button>
       </div>

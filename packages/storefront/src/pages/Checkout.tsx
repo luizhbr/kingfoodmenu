@@ -1,16 +1,34 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { withCsrf } from '../lib/csrf.js';
 import { useTracking } from '../hooks/useTracking.js';
+import {
+  Badge,
+  Button,
+  Card,
+  Input,
+  Price,
+  Skeleton,
+} from '@kitchenasty/shared-ui';
+
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 type OrderType = 'delivery' | 'pickup';
-type PaymentMethod = 'cash' | 'stripe' | 'paypal';
+type PaymentMethod = 'cash' | 'stripe';
 
 const TAX_RATE = 0.08;
+
+interface MenuItem {
+  id: string;
+  name: string;
+  price: number;
+  image?: string | null;
+  category?: { name: string } | null;
+  isActive?: boolean;
+}
 
 export default function Checkout() {
   const { t } = useTranslation();
@@ -27,6 +45,7 @@ export default function Checkout() {
   const [couponCode, setCouponCode] = useState('');
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; freeDelivery: boolean } | null>(null);
   const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,6 +55,37 @@ export default function Checkout() {
   const [guestPhone, setGuestPhone] = useState('');
   const [guestErrors, setGuestErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
+  // Persist guest checkout form state across reloads
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('king-food-checkout-draft');
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.guestName !== undefined) setGuestName(draft.guestName);
+        if (draft.guestEmail !== undefined) setGuestEmail(draft.guestEmail);
+        if (draft.guestPhone !== undefined) setGuestPhone(draft.guestPhone);
+        if (draft.orderType) setOrderType(draft.orderType);
+        if (draft.address) setAddress(draft.address);
+        if (draft.comment !== undefined) setComment(draft.comment);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    try {
+      const draft = {
+        guestName,
+        guestEmail,
+        guestPhone,
+        orderType,
+        address,
+        comment,
+      };
+      localStorage.setItem('king-food-checkout-draft', JSON.stringify(draft));
+    } catch {}
+  }, [guestName, guestEmail, guestPhone, orderType, address, comment]);
+
+
   // Dynamic delivery fee from zone check
   const [deliveryFee, setDeliveryFee] = useState(4.99);
   const [zoneError, setZoneError] = useState('');
@@ -44,56 +94,26 @@ export default function Checkout() {
   const [isBusy, setIsBusy] = useState(false);
   const [busyMessage, setBusyMessage] = useState('');
 
-  // Idempotency: one key per checkout session so a double submit / retry
-  // returns the same order instead of creating duplicates.
+  // Idempotency
   const [idempotencyKey] = useState(() =>
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `kf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
   );
 
-  // Coupon preview — the server re-validates at checkout; this is UX only
-  const applyCoupon = async () => {
-    if (!couponCode.trim()) return;
-    setCouponError('');
-    setCouponApplied(null);
-    try {
-      const res = await fetch(`${API_BASE}/api/coupons/validate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: couponCode, subtotal }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setCouponError(data.error || 'Invalid coupon');
-        return;
-      }
-      setCouponApplied({
-        code: data.data.code,
-        discount: data.data.discount,
-        freeDelivery: data.data.freeDelivery,
-      });
-    } catch {
-      setCouponError('Could not validate coupon');
-    }
-  };
-
-  const removeCoupon = () => {
-    setCouponApplied(null);
-    setCouponCode('');
-    setCouponError('');
-  };
-
-  // Loyalty points
+  // Loyalty
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
   const [loyaltyRedeem, setLoyaltyRedeem] = useState(0);
   const loyaltyDiscount = loyaltyRedeem / 100;
 
-  const tax = subtotal * TAX_RATE;
-  const currentDeliveryFee = orderType === 'delivery' ? deliveryFee : 0;
-  const total = subtotal + tax + currentDeliveryFee - loyaltyDiscount;
+  // Upsell
+  const [upsellItems, setUpsellItems] = useState<MenuItem[]>([]);
+  const [upsellLoading, setUpsellLoading] = useState(false);
 
-  // Check busy mode on mount
+  const tax = subtotal * TAX_RATE;
+  const currentDeliveryFee = orderType === 'delivery' ? (couponApplied?.freeDelivery ? 0 : deliveryFee) : 0;
+  const total = Math.max(0, subtotal + tax + currentDeliveryFee - loyaltyDiscount);
+
   useEffect(() => {
     fetch(`${API_BASE}/api/locations`)
       .then((res) => res.json())
@@ -101,13 +121,12 @@ export default function Checkout() {
         const loc = data.data?.[0];
         if (loc?.isBusy) {
           setIsBusy(true);
-          setBusyMessage(loc.busyMessage || 'This location is currently not accepting orders.');
+          setBusyMessage(loc.busyMessage || t('checkout.busyMessage', 'Este local não está aceitando pedidos no momento.'));
         }
       })
       .catch(() => {});
-  }, []);
+  }, [t]);
 
-  // Fetch loyalty balance for logged-in users
   useEffect(() => {
     if (token) {
       fetch(`${API_BASE}/api/loyalty/balance`, {
@@ -121,42 +140,111 @@ export default function Checkout() {
     }
   }, [token]);
 
-  if (items.length === 0) {
-    return (
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('checkout.emptyCart')}</h1>
-        <Link
-          to="/menu"
-          className="inline-block bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition-colors"
-        >
-          {t('checkout.browseMenu')}
-        </Link>
-      </div>
-    );
-  }
+  // Fetch upsell products from menu (beverages / desserts / complements)
+  useEffect(() => {
+    setUpsellLoading(true);
+    fetch(`${API_BASE}/api/menu/items?limit=5`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = (data.data || []).filter((p: MenuItem) => p.isActive !== false).slice(0, 5);
+        setUpsellItems(list);
+      })
+      .catch(() => setUpsellItems([]))
+      .finally(() => setUpsellLoading(false));
+  }, []);
+
+  // Zone check: only if delivery and address fields filled
+  useEffect(() => {
+    if (orderType !== 'delivery' || !address.line1 || !address.city || !address.zip) {
+      setZoneError('');
+      return;
+    }
+    const timeout = setTimeout(() => {
+      fetch(`${API_BASE}/api/delivery/zones/check`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ line1: address.line1, city: address.city, zip: address.zip }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setDeliveryFee(data.data.fee ?? 4.99);
+            setZoneError('');
+          } else {
+            setZoneError(data.error || t('checkout.zoneError', 'Endereço fora da área de entrega.'));
+          }
+        })
+        .catch(() => setZoneError(''));
+    }, 600);
+    return () => clearTimeout(timeout);
+  }, [orderType, address.line1, address.city, address.zip, t]);
+
+  const applyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError('');
+    setCouponApplied(null);
+    try {
+      const couponHeaders: Record<string, string> = { 'Content-Type': 'application/json' };
+      await withCsrf(couponHeaders);
+      const res = await fetch(`${API_BASE}/api/coupons/validate`, {
+        method: 'POST',
+        headers: couponHeaders,
+        body: JSON.stringify({ code: couponCode, subtotal }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCouponError(t('checkout.couponInvalid', 'Cupom inválido ou expirado'));
+        return;
+      }
+      setCouponApplied({
+        code: data.data.code,
+        discount: data.data.discount,
+        freeDelivery: data.data.freeDelivery,
+      });
+    } catch {
+      setCouponError(t('checkout.couponError', 'Não foi possível validar o cupom'));
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setCouponCode('');
+    setCouponError('');
+  };
 
   function validateGuest(): boolean {
-    if (user) return true; // logged-in users don't need guest fields
+    if (user) return true;
     const errs: typeof guestErrors = {};
-    if (!guestName.trim()) errs.name = 'Nome é obrigatório';
+    if (!guestName.trim()) errs.name = t('checkout.nameRequired', 'Nome é obrigatório');
     if (!guestEmail.trim()) {
-      errs.email = 'Email é obrigatório';
+      errs.email = t('checkout.emailRequired', 'Email é obrigatório');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
-      errs.email = 'Digite um email válido';
+      errs.email = t('checkout.emailInvalid', 'Digite um email válido');
     }
-    if (!guestPhone.trim()) {
-      errs.phone = 'Telefone é obrigatório';
-    }
+    if (!guestPhone.trim()) errs.phone = t('checkout.phoneRequired', 'Telefone é obrigatório');
     setGuestErrors(errs);
     return Object.keys(errs).length === 0;
+  }
+
+  function validateAddress(): boolean {
+    if (orderType !== 'delivery') return true;
+    const { line1, city, state, zip } = address;
+    return !!(line1.trim() && city.trim() && state.trim() && zip.trim());
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
     if (!validateGuest()) {
-      // Scroll to the contact section so the user sees the errors
       document.querySelector('[data-section="contact"]')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    if (!validateAddress()) {
+      document.querySelector('[data-section="address"]')?.scrollIntoView({ behavior: 'smooth' });
+      setError(t('checkout.addressRequired', 'Preencha o endereço de entrega.'));
       return;
     }
     setLoading(true);
@@ -181,11 +269,9 @@ export default function Checkout() {
         comment: comment || undefined,
         scheduledAt: scheduledAt || undefined,
         couponCode: couponCode || undefined,
+        idempotencyKey,
       };
 
-      body.idempotencyKey = idempotencyKey;
-
-      // Sales attribution: link this order to the session's first/last touch
       const attribution = getAttributionData();
       if (attribution) {
         body.attribution = {
@@ -204,17 +290,15 @@ export default function Checkout() {
       }
 
       if (orderType === 'delivery') {
-        body.address = address;
+        body.address = { ...address, country: 'US' };
       }
 
-      // Guest info
       if (!user) {
         body.guestName = guestName;
         body.guestEmail = guestEmail;
         body.guestPhone = guestPhone;
       }
 
-      // Loyalty points
       if (loyaltyRedeem > 0) {
         body.loyaltyPointsRedeem = loyaltyRedeem;
       }
@@ -229,13 +313,13 @@ export default function Checkout() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to place order');
+      if (!res.ok) {
+        const msg = data.error || t('common.error', 'Algo deu errado');
+        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+      }
 
       const orderId = data.data.id as string;
 
-      // Stripe path: hand the user off to the hosted Checkout page. Stripe
-      // brings them back to /order/:id?paid=true on success (the webhook
-      // is what actually flips Order.status). Cancel falls back to /checkout.
       if (paymentMethod === 'stripe') {
         const sessRes = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
           method: 'POST',
@@ -244,11 +328,8 @@ export default function Checkout() {
         });
         const sessData = await sessRes.json();
         if (!sessRes.ok || !sessData.data?.url) {
-          throw new Error(sessData.error || 'Failed to start Stripe checkout');
+          throw new Error(sessData.error || t('checkout.stripeError', 'Falha ao iniciar pagamento'));
         }
-        // Don't clear the cart yet — only after Stripe confirms. If the
-        // user backs out of the hosted page, they return to a still-loaded
-        // checkout and can retry without re-typing everything.
         window.location.href = sessData.data.url as string;
         return;
       }
@@ -262,403 +343,489 @@ export default function Checkout() {
     }
   }
 
-  return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('checkout.title')}</h1>
+  function getDefaultScheduleTime(): string {
+    const d = new Date();
+    d.setHours(d.getHours() + 1, 0, 0, 0);
+    return d.toISOString().slice(0, 16);
+  }
 
-      {isBusy && (
-        <div className="bg-amber-50 border border-amber-300 text-amber-800 p-4 rounded-lg mb-6">
-          <p className="font-semibold">Currently Unavailable</p>
-          <p className="text-sm mt-1">{busyMessage}</p>
+  if (items.length === 0) {
+    return (
+      <div className="min-h-screen bg-kf-bg px-4 py-16 text-center">
+        <div className="mx-auto max-w-md">
+          <div className="mb-4 text-6xl">🛒</div>
+          <h1 className="text-xl font-bold text-kf-foreground mb-2">{t('checkout.emptyCart', 'Seu carrinho está vazio')}</h1>
+          <p className="text-kf-muted mb-6">{t('checkout.emptyCartDesc', 'Adicione algo delicioso para começar.')}</p>
+          <Link to="/menu" className="inline-flex items-center justify-center rounded-kf-md bg-kf-primary px-4 py-2.5 text-sm font-semibold text-kf-ink hover:bg-kf-primary/90 transition-colors min-h-[44px]">
+            {t('checkout.browseMenu', 'Ver cardápio')}
+          </Link>
         </div>
-      )}
+      </div>
+    );
+  }
 
-      <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-8">
-        {/* Left: Form */}
-        <div className="flex-1 space-y-6">
-          {error && (
-            <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">{error}</div>
-          )}
+  const ctaText = isBusy
+    ? t('checkout.currentlyUnavailable', 'Indisponível no momento')
+    : loading
+    ? t('checkout.processing', 'Processando...')
+    : t('checkout.placeOrderTotal', 'Finalizar pedido — {{total}}').replace('{{total}}', `$${total.toFixed(2)}`);
 
-          {/* Guest info or login prompt */}
-          {!user && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-section="contact">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Seus dados</h2>
-              {!user && (
-                <p className="text-sm text-gray-600 mb-3">
-                  <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium underline">
-                    {t('nav.login')}
-                  </Link>{' '}
-                  para checkout mais rápido, ou continue como convidado:
+  return (
+    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+8rem)]">
+      <main className="mx-auto max-w-3xl px-4 pt-[72px] pb-6 pb-[calc(var(--kf-nav-h)+5rem)] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-10">
+        <h1 className="text-2xl font-extrabold text-kf-foreground mb-6">{t('checkout.title', 'Finalizar Pedido')}</h1>
+
+        {isBusy && (
+          <div className="mb-6 rounded-kf-lg border border-kf-warning/30 bg-kf-warning/10 p-4 text-kf-warning">
+            <p className="font-semibold">{t('checkout.currentlyUnavailable')}</p>
+            <p className="text-sm mt-1">{busyMessage}</p>
+          </div>
+        )}
+
+        {error && (
+          <div className="mb-6 rounded-kf-lg border border-kf-danger/20 bg-kf-danger/10 p-4 text-sm text-kf-danger" data-testid="checkout-error">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} noValidate className="flex flex-col lg:flex-row gap-6">
+          {/* LEFT: progressive form */}
+          <div className="flex-1 space-y-5">
+            {/* 1. Seus dados */}
+            {!user && (
+              <Card data-section="contact" className="p-5">
+                <h2 className="text-lg font-bold text-kf-foreground mb-3">{t('checkout.yourData', 'Seus dados')}</h2>
+                <p className="text-sm text-kf-muted mb-4">
+                  <Link to="/login" className="text-kf-primary font-medium underline">{t('checkout.loginForFaster', 'Entre')}</Link>{' '}
+                  {t('checkout.continueAsGuest', 'para checkout mais rápido, ou continue como convidado:')}
                 </p>
-              )}
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Seu nome"
+                <div className="space-y-3">
+                  <Input
+                    label={`${t('checkout.name', 'Nome')} *`}
+                    placeholder={t('checkout.name', 'Nome')}
                     value={guestName}
-                    onChange={(e) => { setGuestName(e.target.value); setGuestErrors({ ...guestErrors, name: undefined }); }}
+                    onChange={(e) => { setGuestName(e.target.value); setGuestErrors((p) => ({ ...p, name: undefined })); }}
+                    autoComplete="name"
+                    error={guestErrors.name}
                     aria-invalid={!!guestErrors.name}
-                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.name ? 'border-red-400' : 'border-gray-300'}`}
+                    errorTestId="guest-name-error"
+                    data-testid="guest-name"
                   />
-                  {guestErrors.name && <p className="text-xs text-red-600 mt-1">{guestErrors.name}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Email *</label>
-                  <input
+                  <Input
+                    label={`${t('checkout.email', 'Email')} *`}
                     type="email"
-                    required
                     placeholder="seu@email.com"
                     value={guestEmail}
-                    onChange={(e) => { setGuestEmail(e.target.value); setGuestErrors({ ...guestErrors, email: undefined }); }}
+                    onChange={(e) => { setGuestEmail(e.target.value); setGuestErrors((p) => ({ ...p, email: undefined })); }}
+                    autoComplete="email"
+                    error={guestErrors.email}
                     aria-invalid={!!guestErrors.email}
-                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.email ? 'border-red-400' : 'border-gray-300'}`}
+                    errorTestId="guest-email-error"
+                    data-testid="guest-email"
                   />
-                  {guestErrors.email && <p className="text-xs text-red-600 mt-1">{guestErrors.email}</p>}
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">Telefone *</label>
-                  <input
+                  <Input
+                    label={`${t('checkout.phone', 'Telefone')} *`}
                     type="tel"
-                    required
                     placeholder="(614) 555-0123"
                     value={guestPhone}
-                    onChange={(e) => { setGuestPhone(e.target.value); setGuestErrors({ ...guestErrors, phone: undefined }); }}
+                    onChange={(e) => { setGuestPhone(e.target.value); setGuestErrors((p) => ({ ...p, phone: undefined })); }}
+                    autoComplete="tel"
+                    error={guestErrors.phone}
                     aria-invalid={!!guestErrors.phone}
-                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.phone ? 'border-red-400' : 'border-gray-300'}`}
+                    errorTestId="guest-phone-error"
+                    data-testid="guest-phone"
                   />
-                  {guestErrors.phone && <p className="text-xs text-red-600 mt-1">{guestErrors.phone}</p>}
                 </div>
+              </Card>
+            )}
+
+            {/* 2. Como receber */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.howToReceive', 'Como receber?')}</h2>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setOrderType('delivery')}
+                  data-testid="order-type-delivery"
+                  className={`flex flex-col items-center justify-center gap-2 rounded-kf-lg border-2 p-4 text-sm font-semibold transition-colors min-h-[80px] ${
+                    orderType === 'delivery'
+                      ? 'border-kf-primary bg-kf-primary/10 text-kf-foreground'
+                      : 'border-kf-border text-kf-muted hover:border-kf-primary/40'
+                  }`}
+                >
+                  <span className="text-2xl">🚗</span>
+                  <span>{t('checkout.delivery', 'Entrega')}</span>
+                  <span className="text-xs font-normal opacity-80">{t('checkout.deliveryDesc', 'Receba no seu endereço')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderType('pickup')}
+                  data-testid="order-type-pickup"
+                  className={`flex flex-col items-center justify-center gap-2 rounded-kf-lg border-2 p-4 text-sm font-semibold transition-colors min-h-[80px] ${
+                    orderType === 'pickup'
+                      ? 'border-kf-primary bg-kf-primary/10 text-kf-foreground'
+                      : 'border-kf-border text-kf-muted hover:border-kf-primary/40'
+                  }`}
+                >
+                  <span className="text-2xl">🏪</span>
+                  <span>{t('checkout.pickup', 'Retirada')}</span>
+                  <span className="text-xs font-normal opacity-80">{t('checkout.pickupDesc', 'Pegue seu pedido no King Food')}</span>
+                </button>
               </div>
-            </div>
-          )}
+            </Card>
 
-          {/* Order type */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.orderType')}</h2>
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setOrderType('delivery')}
-                className={`flex-1 py-3 rounded-lg font-medium text-sm border-2 transition-colors ${
-                  orderType === 'delivery'
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {t('checkout.delivery')}
-              </button>
-              <button
-                type="button"
-                onClick={() => setOrderType('pickup')}
-                className={`flex-1 py-3 rounded-lg font-medium text-sm border-2 transition-colors ${
-                  orderType === 'pickup'
-                    ? 'border-primary-600 bg-primary-50 text-primary-700'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
-                }`}
-              >
-                {t('checkout.pickup')}
-              </button>
-            </div>
-          </div>
-
-          {/* Delivery address */}
-          {orderType === 'delivery' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.deliveryAddress')}</h2>
-              {zoneError && (
-                <div className="bg-red-50 text-red-700 p-3 rounded-lg text-sm mb-3">{zoneError}</div>
-              )}
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  required
-                  placeholder={t('checkout.addressLine1')}
-                  value={address.line1}
-                  onChange={(e) => setAddress({ ...address, line1: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-                <input
-                  type="text"
-                  placeholder={t('checkout.addressLine2')}
-                  value={address.line2}
-                  onChange={(e) => setAddress({ ...address, line2: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-                <div className="grid grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('checkout.city')}
-                    value={address.city}
-                    onChange={(e) => setAddress({ ...address, city: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+            {/* 3. Endereço */}
+            {orderType === 'delivery' && (
+              <Card data-section="address" className="p-5">
+                <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.deliveryAddress', 'Endereço de Entrega')}</h2>
+                {zoneError && (
+                  <div className="mb-3 rounded-kf-md bg-kf-danger/10 p-3 text-sm text-kf-danger">{zoneError}</div>
+                )}
+                <div className="space-y-3">
+                  <Input
+                    label={`${t('checkout.addressLine1', 'Endereço')} *`}
+                    placeholder={t('checkout.addressLine1', 'Rua e número')}
+                    value={address.line1}
+                    onChange={(e) => setAddress((p) => ({ ...p, line1: e.target.value }))}
+                    data-testid="address-line1"
+                    autoComplete="street-address"
                   />
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('checkout.state')}
-                    value={address.state}
-                    onChange={(e) => setAddress({ ...address, state: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+                  <Input
+                    label={t('checkout.addressLine2', 'Apartamento / Unidade')}
+                    placeholder={t('checkout.addressLine2', 'Apto, sala, etc. (opcional)')}
+                    value={address.line2}
+                    onChange={(e) => setAddress((p) => ({ ...p, line2: e.target.value }))}
+                    data-testid="address-line2"
+                    autoComplete="address-line2"
                   />
-                  <input
-                    type="text"
-                    required
-                    placeholder={t('checkout.zipCode')}
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      label={`${t('checkout.city', 'Cidade')} *`}
+                      placeholder={t('checkout.city', 'Cidade')}
+                      value={address.city}
+                      onChange={(e) => setAddress((p) => ({ ...p, city: e.target.value }))}
+                      autoComplete="address-level2"
+                    data-testid="address-city"
+                    />
+                    <Input
+                      label={`${t('checkout.state', 'Estado')} *`}
+                      placeholder={t('checkout.state', 'Estado')}
+                      value={address.state}
+                      onChange={(e) => setAddress((p) => ({ ...p, state: e.target.value }))}
+                      autoComplete="address-level1"
+                    data-testid="address-state"
+                    />
+                  </div>
+                  <Input
+                    label={`${t('checkout.zipCode', 'CEP')} *`}
+                    placeholder={t('checkout.zipCode', 'CEP')}
                     value={address.zip}
-                    onChange={(e) => setAddress({ ...address, zip: e.target.value })}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
+                    onChange={(e) => setAddress((p) => ({ ...p, zip: e.target.value }))}
+                    data-testid="address-zip"
+                    autoComplete="postal-code"
                   />
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Schedule */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.scheduling')}</h2>
-            <div className="space-y-3">
-              <label className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="schedule"
-                  checked={!scheduledAt}
-                  onChange={() => setScheduledAt('')}
-                  className="accent-primary-600"
-                />
-                <span className="text-sm text-gray-700">{t('checkout.asap')}</span>
-              </label>
-              <label className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="schedule"
-                  checked={!!scheduledAt}
-                  onChange={() => setScheduledAt(getDefaultScheduleTime())}
-                  className="accent-primary-600"
-                />
-                <span className="text-sm text-gray-700">{t('checkout.scheduled')}</span>
-              </label>
-              {scheduledAt && (
-                <input
-                  type="datetime-local"
-                  value={scheduledAt}
-                  onChange={(e) => setScheduledAt(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Notes */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.orderNotes')}</h2>
-            <textarea
-              value={comment}
-              onChange={(e) => setComment(e.target.value)}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm resize-none"
-            />
-          </div>
-
-          {/* Coupon */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.couponCode')}</h2>
-            {couponApplied ? (
-              <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-green-800">
-                    {couponApplied.code} — -${couponApplied.discount.toFixed(2)}
-                    {couponApplied.freeDelivery ? ' + Free Delivery' : ''}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={removeCoupon}
-                  className="text-sm text-red-600 hover:text-red-700 font-medium"
-                >
-                  {t('checkout.remove')}
-                </button>
-              </div>
-            ) : (
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={couponCode}
-                  onChange={(e) => setCouponCode(e.target.value)}
-                  placeholder="e.g. SAVE10"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-                <button
-                  type="button"
-                  onClick={applyCoupon}
-                  className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-                >
-                  {t('checkout.apply')}
-                </button>
-              </div>
+              </Card>
             )}
-            {couponError && (
-              <p className="text-sm text-red-600 mt-2">{couponError}</p>
-            )}
-          </div>
 
-          {/* Loyalty Points Redemption */}
-          {user && loyaltyBalance > 0 && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Loyalty Points</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                You have <span className="font-bold text-primary-600">{loyaltyBalance}</span> points available
-                (100 points = $1.00)
-              </p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="number"
-                  min={0}
-                  max={Math.min(loyaltyBalance, Math.floor(subtotal * 100))}
-                  step={100}
-                  value={loyaltyRedeem}
-                  onChange={(e) => setLoyaltyRedeem(Math.max(0, parseInt(e.target.value) || 0))}
-                  className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                  placeholder="0"
-                />
-                <span className="text-sm text-gray-600">points to redeem</span>
-                {loyaltyRedeem > 0 && (
-                  <span className="text-sm font-medium text-green-600">
-                    -${loyaltyDiscount.toFixed(2)}
-                  </span>
+            {/* 4. Quando receber */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.whenToReceive', 'Quando receber?')}</h2>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 rounded-kf-md border border-kf-border p-3 cursor-pointer has-[:checked]:border-kf-primary has-[:checked]:bg-kf-primary/10">
+                  <input
+                    type="radio"
+                    name="schedule"
+                    checked={!scheduledAt}
+                    onChange={() => setScheduledAt('')}
+                    className="h-4 w-4 accent-kf-primary"
+                  />
+                  <span className="text-sm text-kf-foreground">⚡ {t('checkout.asap', 'O mais rápido possível')}</span>
+                </label>
+                <label className="flex items-center gap-3 rounded-kf-md border border-kf-border p-3 cursor-pointer has-[:checked]:border-kf-primary has-[:checked]:bg-kf-primary/10">
+                  <input
+                    type="radio"
+                    name="schedule"
+                    checked={!!scheduledAt}
+                    onChange={() => setScheduledAt(getDefaultScheduleTime())}
+                    className="h-4 w-4 accent-kf-primary"
+                  />
+                  <span className="text-sm text-kf-foreground">📅 {t('checkout.scheduled', 'Agendar')}</span>
+                </label>
+                {scheduledAt && (
+                  <Input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                  />
                 )}
               </div>
-            </div>
-          )}
+            </Card>
 
-          {/* Payment method */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.paymentMethod')}</h2>
-            <div className="space-y-2">
-              <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                paymentMethod === 'cash'
-                  ? 'border-primary-600 bg-primary-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'cash'}
-                  onChange={() => setPaymentMethod('cash')}
-                  className="accent-primary-600"
-                />
-                <span className="text-sm font-medium text-gray-900">{t('checkout.cashOnDelivery')}</span>
-              </label>
-              <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                paymentMethod === 'stripe'
-                  ? 'border-primary-600 bg-primary-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'stripe'}
-                  onChange={() => setPaymentMethod('stripe')}
-                  className="accent-primary-600"
-                />
-                <span className="text-sm font-medium text-gray-900">{t('checkout.creditCard')}</span>
-              </label>
-              <label className={`flex items-center gap-3 p-3 rounded-lg border-2 cursor-pointer transition-colors ${
-                paymentMethod === 'paypal'
-                  ? 'border-primary-600 bg-primary-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}>
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === 'paypal'}
-                  onChange={() => setPaymentMethod('paypal')}
-                  className="accent-primary-600"
-                />
-                <span className="text-sm font-medium text-gray-900">PayPal</span>
-              </label>
-            </div>
-          </div>
-        </div>
+            {/* 5. Observação */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-3">{t('checkout.note', 'Alguma observação?')}</h2>
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                rows={3}
+                placeholder={t('checkout.notePlaceholder', 'Ex.: sem cebola, tocar campainha...')}
+                className="w-full rounded-kf-md border border-kf-border bg-kf-surface px-3 py-2 text-sm text-kf-foreground placeholder:text-kf-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kf-primary/50 resize-none"
+              />
+            </Card>
 
-        {/* Right: Order summary */}
-        <div className="lg:w-80 shrink-0">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sticky top-24">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('checkout.orderSummary')}</h2>
-
-            <div className="space-y-3 mb-4">
-              {items.map((item) => {
-                const optionsTotal = item.options.reduce((s, o) => s + o.priceModifier, 0);
-                return (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <div>
-                      <span className="text-gray-400 mr-1">{item.quantity}x</span>
-                      <span className="text-gray-700">{item.name}</span>
-                      {item.options.length > 0 && (
-                        <p className="text-xs text-gray-400 ml-5">
-                          {item.options.map((o) => o.valueName).join(', ')}
-                        </p>
-                      )}
-                    </div>
-                    <span className="text-gray-900 font-medium">
-                      ${((item.price + optionsTotal) * item.quantity).toFixed(2)}
-                    </span>
+            {/* 6. Cupom */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-3">{t('checkout.couponCode', 'Cupom')}</h2>
+              {couponApplied ? (
+                <div className="flex items-center justify-between rounded-kf-lg bg-kf-success/10 border border-kf-success/20 px-4 py-3" data-testid="coupon-success">
+                  <div>
+                    <p className="text-sm font-semibold text-kf-foreground">
+                      {couponApplied.code} — <Price data-testid="discount-amount" value={couponApplied.discount} size="sm" />
+                    </p>
+                    {couponApplied.freeDelivery && <Badge variant="success" className="mt-1">{t('checkout.freeDelivery', 'Entrega grátis')}</Badge>}
                   </div>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-gray-200 pt-3 space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('checkout.subtotal')}</span>
-                <span className="text-gray-900">${subtotal.toFixed(2)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-600">{t('checkout.tax')}</span>
-                <span className="text-gray-900">${tax.toFixed(2)}</span>
-              </div>
-              {orderType === 'delivery' && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600">{t('checkout.deliveryFee')}</span>
-                  <span className="text-gray-900">${currentDeliveryFee.toFixed(2)}</span>
+                  <Button type="button" variant="ghost" size="sm" onClick={removeCoupon}>{t('checkout.remove', 'Remover')}</Button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    placeholder={t('checkout.couponPlaceholder', 'Digite o código')}
+                    value={couponCode}
+                    data-testid="coupon-code"
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" onClick={applyCoupon}
+                  data-testid="apply-coupon" disabled={couponLoading}>
+                    {couponLoading ? t('common.loading', 'Carregando...') : t('checkout.apply', 'Aplicar')}
+                  </Button>
                 </div>
               )}
-              {loyaltyDiscount > 0 && (
-                <div className="flex justify-between text-green-600">
-                  <span>Loyalty Discount</span>
-                  <span>-${loyaltyDiscount.toFixed(2)}</span>
+              {couponError && <p className="mt-2 text-xs text-kf-danger" data-testid="coupon-error">{couponError}</p>}
+            </Card>
+
+            {/* 7. Fidelidade */}
+            {user && loyaltyBalance > 0 && (
+              <Card data-testid="loyalty-section" className="p-5">
+                <h2 className="text-lg font-bold text-kf-foreground mb-3">{t('checkout.loyalty', 'Fidelidade')}</h2>
+                <p className="text-sm text-kf-muted mb-3">
+                  {t('checkout.pointsAvailable', 'Você tem {{points}} pontos').replace('{{points}}', String(loyaltyBalance))}
+                </p>
+                <div className="flex items-center gap-3">
+                  <Input
+                    type="number"
+                    min={0}
+                    max={Math.min(loyaltyBalance, Math.floor(subtotal * 100))}
+                    step={100}
+                    value={loyaltyRedeem}
+                    onChange={(e) => setLoyaltyRedeem(Math.max(0, parseInt(e.target.value) || 0))}
+                    className="w-32"
+                  />
+                  <span className="text-sm text-kf-muted">{t('checkout.pointsToRedeem', 'pontos para usar')}</span>
+                  {loyaltyRedeem > 0 && <Price value={loyaltyDiscount} size="sm" className="text-kf-success" />}
+                </div>
+              </Card>
+            )}
+
+            {/* 8. Pagamento */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.paymentMethod', 'Forma de Pagamento')}</h2>
+              <div className="space-y-2">
+                <PaymentOption
+                  selected={paymentMethod === 'cash'}
+                  onSelect={() => setPaymentMethod('cash')}
+                  icon="💵"
+                  label={t('checkout.cash', 'Dinheiro')}
+                  data-testid="payment-cash"
+                  sublabel={t('checkout.cashOnDelivery', 'Pagamento na entrega / retirada')}
+                />
+                <PaymentOption
+                  selected={paymentMethod === 'stripe'}
+                  onSelect={() => setPaymentMethod('stripe')}
+                  icon="💳"
+                  label={t('checkout.card', 'Cartão')}
+                  sublabel={t('checkout.creditCard', 'Cartão de crédito via Stripe')}
+                />
+              </div>
+            </Card>
+
+            {/* 9. Upsell */}
+            <Card className="p-5">
+              <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.upsellTitle', 'Quer adicionar mais alguma coisa?')}</h2>
+              {upsellLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-16 rounded-kf-lg" />
+                  <Skeleton className="h-16 rounded-kf-lg" />
+                </div>
+              ) : upsellItems.length === 0 ? null : (
+                <div className="space-y-3">
+                  {upsellItems.map((item) => (
+                    <UpsellRow key={item.id} item={item} />
+                  ))}
                 </div>
               )}
-              <div className="flex justify-between border-t border-gray-200 pt-2 font-bold text-base">
-                <span>{t('checkout.total')}</span>
-                <span className="text-primary-600">${total.toFixed(2)}</span>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading || isBusy}
-              className="w-full mt-4 bg-primary-600 text-white py-3 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
-            >
-              {isBusy
-                ? 'Currently Unavailable'
-                : loading
-                  ? t('checkout.processing')
-                  : `${t('checkout.placeOrder')} — $${total.toFixed(2)}`}
-            </button>
+            </Card>
           </div>
+
+          {/* RIGHT / BOTTOM: Order summary + sticky CTA */}
+          <div className="lg:w-80 shrink-0">
+            <div className="lg:sticky lg:top-6">
+              <Card className="p-5">
+                <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.orderSummary', 'Resumo do Pedido')}</h2>
+                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto pr-1">
+                  {items.map((item) => {
+                    const optionsTotal = item.options.reduce((s, o) => s + o.priceModifier, 0);
+                    return (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <div className="flex-1 pr-2">
+                          <span className="text-kf-muted mr-1">{item.quantity}x</span>
+                          <span className="text-kf-foreground">{item.name}</span>
+                          {item.options.length > 0 && (
+                            <p className="text-xs text-kf-muted ml-5">{item.options.map((o) => o.valueName).join(', ')}</p>
+                          )}
+                        </div>
+                        <Price value={(item.price + optionsTotal) * item.quantity} size="sm" />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="space-y-2 border-t border-kf-border pt-3 text-sm">
+                  <SummaryRow label={t('checkout.subtotal', 'Subtotal')} value={subtotal} />
+                  <SummaryRow label={t('checkout.tax', 'Impostos')} value={tax} />
+                  {orderType === 'delivery' && <SummaryRow label={t('checkout.deliveryFee', 'Taxa de entrega')} value={currentDeliveryFee} />}
+                  {couponApplied && couponApplied.discount > 0 && (
+                    <SummaryRow label={t('checkout.discount', 'Desconto')} value={-couponApplied.discount} className="text-kf-success" />
+                  )}
+                  {loyaltyDiscount > 0 && (
+                    <SummaryRow label={t('checkout.loyalty', 'Fidelidade')} value={-loyaltyDiscount} className="text-kf-success" />
+                  )}
+                  <div className="flex items-center justify-between border-t border-kf-border pt-2 text-base font-bold">
+                    <span className="text-kf-foreground">{t('checkout.total', 'Total')}</span>
+                    <Price value={total} size="lg" />
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={loading || isBusy}
+                  className="mt-5 w-full min-h-[52px] hidden lg:flex"
+                  data-testid="submit-order-desktop"
+                >
+                  {ctaText}
+                </Button>
+
+                <p className="mt-3 text-center text-xs text-kf-muted">
+                  {t('checkout.totalDisclaimer', 'O total final será confirmado no pedido.')}
+                </p>
+              </Card>
+            </div>
+          </div>
+        </form>
+      </main>
+
+      {/* Sticky CTA mobile */}
+      <div className="fixed inset-x-0 bottom-[var(--kf-nav-h)] z-kf-cart-bar border-t border-kf-border bg-kf-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.08)] lg:hidden">
+        <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
+          <div className="text-left">
+            <p className="text-xs text-kf-muted">{t('checkout.total', 'Total')}</p>
+            <Price value={total} size="lg" />
+          </div>
+          <Button
+            type="button"
+            disabled={loading || isBusy}
+            onClick={handleSubmit}
+            className="flex-1 min-h-[52px]"
+            data-testid="submit-order-mobile"
+          >
+            {ctaText}
+          </Button>
         </div>
-      </form>
+      </div>
     </div>
   );
 }
 
-function getDefaultScheduleTime(): string {
-  const d = new Date();
-  d.setHours(d.getHours() + 1, 0, 0, 0);
-  return d.toISOString().slice(0, 16);
+function PaymentOption({
+  selected,
+  onSelect,
+  icon,
+  label,
+  sublabel,
+  'data-testid': testId,
+}: {
+  selected: boolean;
+  onSelect: () => void;
+  icon: string;
+  label: string;
+  sublabel: string;
+  'data-testid'?: string;
+}) {
+  return (
+    <label
+      data-testid={testId}
+      onClick={onSelect}
+      className={`flex cursor-pointer items-center gap-3 rounded-kf-lg border-2 p-3 transition-colors ${
+        selected ? 'border-kf-primary bg-kf-primary/10' : 'border-kf-border hover:border-kf-primary/40'
+      }`}
+    >
+      <input type="radio" checked={selected} onChange={onSelect} className="h-4 w-4 accent-kf-primary" />
+      <span className="text-2xl">{icon}</span>
+      <div className="flex-1">
+        <p className="text-sm font-semibold text-kf-foreground">{label}</p>
+        <p className="text-xs text-kf-muted">{sublabel}</p>
+      </div>
+    </label>
+  );
+}
+
+function SummaryRow({
+  label,
+  value,
+  className = '',
+}: {
+  label: string;
+  value: number;
+  className?: string;
+}) {
+  return (
+    <div className={`flex items-center justify-between ${className}`}>
+      <span className="text-kf-muted">{label}</span>
+      <Price value={Math.abs(value)} size="sm" className={value < 0 ? 'text-kf-success' : ''} />
+    </div>
+  );
+}
+
+function UpsellRow({ item }: { item: MenuItem }) {
+  const { addItem } = useCart();
+  const { t } = useTranslation();
+  const [added, setAdded] = useState(false);
+
+  function handleAdd() {
+    addItem({
+      menuItemId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      options: [],
+    });
+    setAdded(true);
+    setTimeout(() => setAdded(false), 1500);
+  }
+
+  return (
+    <div className="flex items-center gap-3 rounded-kf-lg border border-kf-border bg-kf-surface p-3">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-kf-md bg-kf-surface-muted text-xl">
+        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover rounded-kf-md" /> : '🍔'}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-kf-foreground truncate">{item.name}</p>
+        <Price value={item.price} size="sm" />
+      </div>
+      <Button type="button" size="sm" onClick={handleAdd} disabled={added}>
+        {added ? '✓' : t('common.add', 'Adicionar')}
+      </Button>
+    </div>
+  );
 }
