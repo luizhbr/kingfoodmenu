@@ -107,3 +107,29 @@ CTA Checkout nunca mais coberto pela nav; último item do carrinho sempre acess�
 - packages/storefront/src/components/CartDrawer.tsx
 
 ---
+
+## 2026-08-13 — Home: header sem logo + remoção de "Mais pedidos" (Hero Moment)
+
+### Contexto
+A home exibia o logo 3× (header, hero, splash) e a seção "Mais pedidos" duplicava o cardápio logo abaixo do CTA — redundância visual e desvio do foco (pedir).
+
+### Opções Consideradas
+- **Opção A: Manter tudo** — Prós: familiar. Contras: logo repetido 3×, conteúdo empurra o CTA para baixo.
+- **Opção B: Header só texto + remover destaques da home** (escolhida) — Prós: 1 logo só (hero), CTA dominante na 1ª viewport, respiro visual. Contras: home mais curta (mitigado: produtos continuam no /cardapio com FeaturedItems).
+- **Opção C: Remover o logo do hero** — Prós: menos repetição. Contras: perde identidade no momento principal.
+
+### Decisão
+Header com texto "King Food" apenas (sem img); hero mantém o logo grande (único); seção "Mais pedidos" removida da home (permanece no topo do /cardapio); paddings verticais aumentados.
+
+### Justificativa
+- **Material 3 (Hero moment):** CTA "Pedir agora →" dominante, sem competir com produtos.
+- **Apple HIG (Clarity):** 1 logo por viewport; remover redundância.
+- **GNOME (Make it simple):** foco em UMA tarefa — pedir.
+
+### Impacto
+Hero mobile 447→479px, desktop 519→551px; home mais curta e focada; zero overflow (5 viewports).
+
+### Arquivos Afetados
+- packages/storefront/src/pages/Home.tsx
+
+---

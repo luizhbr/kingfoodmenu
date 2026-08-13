@@ -53,3 +53,20 @@ CTA sempre visível/tocável; zero sobreposição (medido: footer bottom 776 ≤
 ### Breaking Changes
 Nenhum (classes Tailwind, sem contrato de API).
 
+
+## 2026-08-13 — Home v2: header sem logo + home focada no CTA
+
+### Mudanças
+- Header: logo removido, texto "King Food" apenas (status à esquerda, botão Pedir à direita)
+- "Mais pedidos" removido da home (permanece no /cardapio)
+- Paddings verticais do hero e seção "sobre" aumentados (respiro)
+
+### Motivo
+Logo repetido 3× (header/hero/splash) + destaques competindo com o CTA principal.
+
+### Impacto
+Hero moment dominante; home mais curta e focada; hero 447→479px mobile.
+
+### Breaking Changes
+Nenhum (visual apenas).
+

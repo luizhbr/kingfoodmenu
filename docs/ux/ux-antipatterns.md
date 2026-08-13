@@ -25,3 +25,10 @@
 - **Alternativa:** footer do drawer ancorado acima da nav (`bottom: nav-height + safe-area`) com padding reservado no scroll.
 - **Exemplo:** CartDrawer.tsx antes (footer no fluxo, coberto) vs. depois (footer fixo acima do dock).
 
+
+## Logo repetido em múltiplas camadas
+- **Problema:** mesmo logo no header, hero e splash (3× na mesma viewport) — redundância visual.
+- **Por que é ruim:** dilui a identidade, empurra o CTA para baixo, polui a hierarquia.
+- **Alternativa:** 1 logo por viewport — header texto quando o hero tem a imagem.
+- **Exemplo:** Home.tsx antes (img no header + hero) vs. depois (só hero).
+

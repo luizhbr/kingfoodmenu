@@ -79,3 +79,19 @@ Nunca deixar dois elementos fixed com o mesmo z-index competindo — o footer do
 ### Validação
 390px: footer bottom 776 ≤ dock top 781; último item visível após scroll; zero erros.
 
+
+## HomeHero (padrão de landing focada)
+
+### Uso
+Página de entrada com CTA principal dominante.
+
+### Regras
+- 1 logo por viewport (header texto OU hero imagem, nunca ambos)
+- CTA primário: `min-h-[52px]`, cor gold, sombra, `active:scale-[0.98]`
+- Links secundários em grid 2×2 compacto (44px)
+- Sem seções de produto antes do CTA (vão para /cardapio)
+- Padding vertical generoso (pt-10/16) para respiro
+
+### Validação
+360-1440px zero overflow; hero 479px mobile / 551px desktop.
+
