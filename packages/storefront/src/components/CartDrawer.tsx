@@ -49,7 +49,7 @@ export default function CartDrawer() {
         </div>
 
         {/* Items */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pb-[calc(9.5rem+env(safe-area-inset-bottom))]">
           {items.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -111,9 +111,9 @@ export default function CartDrawer() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer — fixo acima do bottom dock (Apple HIG Depth + Safe Area) */}
         {items.length > 0 && (
-          <div className="border-t border-gray-200 px-6 py-4 space-y-3">
+          <div className="absolute bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-0 right-0 border-t border-gray-200 bg-white px-6 py-4 space-y-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
             <div className="flex justify-between text-sm">
               <span className="text-gray-600">{t('cart.subtotal')}</span>
               <span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span>
