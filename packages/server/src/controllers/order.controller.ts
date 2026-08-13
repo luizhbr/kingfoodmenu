@@ -156,10 +156,10 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
 
   if (!customerId) {
-    if (!guestName || !guestEmail) {
+    if (!guestName || !guestEmail || !guestPhone) {
       res
         .status(400)
-        .json({ success: false, error: 'Guest name and email are required for guest checkout' });
+        .json({ success: false, error: 'Guest name, email, and phone are required for guest checkout' });
       return;
     }
   }

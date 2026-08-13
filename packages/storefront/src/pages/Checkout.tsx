@@ -34,6 +34,7 @@ export default function Checkout() {
   const [guestName, setGuestName] = useState('');
   const [guestEmail, setGuestEmail] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
+  const [guestErrors, setGuestErrors] = useState<{ name?: string; email?: string; phone?: string }>({});
 
   // Dynamic delivery fee from zone check
   const [deliveryFee, setDeliveryFee] = useState(4.99);
@@ -134,9 +135,30 @@ export default function Checkout() {
     );
   }
 
+  function validateGuest(): boolean {
+    if (user) return true; // logged-in users don't need guest fields
+    const errs: typeof guestErrors = {};
+    if (!guestName.trim()) errs.name = 'Nome é obrigatório';
+    if (!guestEmail.trim()) {
+      errs.email = 'Email é obrigatório';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+      errs.email = 'Digite um email válido';
+    }
+    if (!guestPhone.trim()) {
+      errs.phone = 'Telefone é obrigatório';
+    }
+    setGuestErrors(errs);
+    return Object.keys(errs).length === 0;
+  }
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError('');
+    if (!validateGuest()) {
+      // Scroll to the contact section so the user sees the errors
+      document.querySelector('[data-section="contact"]')?.scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
     setLoading(true);
 
     try {
@@ -189,7 +211,7 @@ export default function Checkout() {
       if (!user) {
         body.guestName = guestName;
         body.guestEmail = guestEmail;
-        body.guestPhone = guestPhone || undefined;
+        body.guestPhone = guestPhone;
       }
 
       // Loyalty points
@@ -241,7 +263,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-24" style={{ paddingBottom: "calc(5rem + env(safe-area-inset-bottom))" }}>
       <h1 className="text-3xl font-bold text-gray-900 mb-8">{t('checkout.title')}</h1>
 
       {isBusy && (
@@ -256,6 +278,62 @@ export default function Checkout() {
         <div className="flex-1 space-y-6">
           {error && (
             <div className="bg-red-50 text-red-700 p-4 rounded-lg text-sm">{error}</div>
+          )}
+
+          {/* Guest info or login prompt */}
+          {!user && (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6" data-section="contact">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Seus dados</h2>
+              {!user && (
+                <p className="text-sm text-gray-600 mb-3">
+                  <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium underline">
+                    {t('nav.login')}
+                  </Link>{' '}
+                  para checkout mais rápido, ou continue como convidado:
+                </p>
+              )}
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Nome *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Seu nome"
+                    value={guestName}
+                    onChange={(e) => { setGuestName(e.target.value); setGuestErrors({ ...guestErrors, name: undefined }); }}
+                    aria-invalid={!!guestErrors.name}
+                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.name ? 'border-red-400' : 'border-gray-300'}`}
+                  />
+                  {guestErrors.name && <p className="text-xs text-red-600 mt-1">{guestErrors.name}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Email *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="seu@email.com"
+                    value={guestEmail}
+                    onChange={(e) => { setGuestEmail(e.target.value); setGuestErrors({ ...guestErrors, email: undefined }); }}
+                    aria-invalid={!!guestErrors.email}
+                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.email ? 'border-red-400' : 'border-gray-300'}`}
+                  />
+                  {guestErrors.email && <p className="text-xs text-red-600 mt-1">{guestErrors.email}</p>}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Telefone *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="(614) 555-0123"
+                    value={guestPhone}
+                    onChange={(e) => { setGuestPhone(e.target.value); setGuestErrors({ ...guestErrors, phone: undefined }); }}
+                    aria-invalid={!!guestErrors.phone}
+                    className={`w-full min-h-[44px] px-3 py-2 border rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm ${guestErrors.phone ? 'border-red-400' : 'border-gray-300'}`}
+                  />
+                  {guestErrors.phone && <p className="text-xs text-red-600 mt-1">{guestErrors.phone}</p>}
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Order type */}
@@ -505,44 +583,6 @@ export default function Checkout() {
               </label>
             </div>
           </div>
-
-          {/* Guest info or login prompt */}
-          {!user && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h2>
-              <p className="text-sm text-gray-600 mb-3">
-                <Link to="/login" className="text-primary-600 hover:text-primary-700 font-medium underline">
-                  {t('nav.login')}
-                </Link>{' '}
-                for faster checkout, or continue as guest:
-              </p>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  required
-                  placeholder="Full name *"
-                  value={guestName}
-                  onChange={(e) => setGuestName(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-                <input
-                  type="email"
-                  required
-                  placeholder="Email address *"
-                  value={guestEmail}
-                  onChange={(e) => setGuestEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-                <input
-                  type="tel"
-                  placeholder="Phone number (optional)"
-                  value={guestPhone}
-                  onChange={(e) => setGuestPhone(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm"
-                />
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Right: Order summary */}
