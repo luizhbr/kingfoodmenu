@@ -114,3 +114,23 @@ Listas de produtos com categorias — substitui sidebar/toggle em mobile.
 ### Validação
 360-1440px zero overflow; filtro 1 toque; URL sync confirmada.
 
+
+## ProductModalCTA (padrão de CTA de produto)
+
+### Uso
+Modal de detalhe de produto — ação de adicionar ao carrinho.
+
+### Estrutura
+- Contador: botões −/+ 36px + qty com `aria-live="polite"`
+- CTA: `min-h-[56px] bg-[#FFD100] text-ink font-extrabold rounded-2xl` + ícone carrinho + preço total
+- Preço = (item + adicionais) × qty, atualizado em tempo real
+
+### Regras
+- Cor dourada (identidade), nunca azul primário
+- 1 controle por tarefa (contador + CTA na mesma linha)
+- `active:scale-[0.98]` para feedback tátil
+- Touch target ≥56px
+
+### Validação
+390px: CTA 56×218px, preço dinâmico confirmado, add-to-cart OK.
+

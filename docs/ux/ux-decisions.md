@@ -160,3 +160,29 @@ Produto na 1ª viewport (era abaixo do dobra); categorias 1 toque (era toggle es
 - packages/storefront/src/index.css (no-scrollbar)
 
 ---
+
+## 2026-08-13 — Modal de produto: CTA dourado compacto com contador integrado
+
+### Contexto
+O botão "Adicionar ao Carrinho — $X" era azul (primary-600), alto (~80px) e separado do contador de quantidade — dois controles competindo, visual agressivo.
+
+### Opções Consideradas
+- **Opção A: Botão azul grande + contador separado** (estado anterior) — Prós: familiar. Contras: 2 controles, cor fora da identidade, altura excessiva.
+- **Opção B: CTA dourado compacto com contador integrado** (escolhida) — Prós: 1 controle só, cor da marca, 56px, ícone + preço. Contras: menos texto explicativo (mitigado: ícone universal de carrinho).
+- **Opção C: Barra fixa inferior** — Prós: sempre visível. Contras: cobre conteúdo, mais complexo.
+
+### Decisão
+Contador (−/+) compacto à esquerda + CTA dourado `min-h-[56px]` com ícone de carrinho + preço total à direita. Preço atualiza em tempo real com quantidade e adicionais.
+
+### Justificativa
+- **Material 3 (Emotional design):** dourado convidativo (identidade King Food), não agressivo.
+- **Apple HIG (Deference):** UI suporta o conteúdo — botão compacto não domina o modal.
+- **GNOME (Be considerate):** 1 controle para a tarefa; respeito à atenção do usuário.
+
+### Impacto
+CTA 80→56px; contador e ação em 1 linha; preço dinâmico ($13.90 → $27.80 com qty 2); zero erros.
+
+### Arquivos Afetados
+- packages/storefront/src/components/MenuItemModal.tsx
+
+---

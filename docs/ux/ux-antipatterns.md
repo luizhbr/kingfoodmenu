@@ -39,3 +39,10 @@
 - **Alternativa:** chips horizontais sempre visíveis (scrollável), 1 toque.
 - **Exemplo:** Menu.tsx antes (toggle + sidebar) vs. depois (chips).
 
+
+## Botão gigante + contador separado no modal de produto
+- **Problema:** CTA de 80px azul + contador de quantidade em controles separados — 2 elementos para 1 tarefa, cor fora da identidade.
+- **Por que é ruim:** domina o modal (compete com o produto), usuário faz 2 interações mentais.
+- **Alternativa:** CTA dourado compacto (56px) com contador integrado na mesma linha + preço dinâmico.
+- **Exemplo:** MenuItemModal.tsx antes (azul + separado) vs. depois (dourado + integrado).
+

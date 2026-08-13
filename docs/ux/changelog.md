@@ -90,3 +90,20 @@ Produto na 1ª viewport (top 199px); filtro 1 toque com URL sync; zero overflow.
 ### Breaking Changes
 Nenhum (visual; API e rotas intactas).
 
+
+## 2026-08-13 — Modal produto: CTA dourado compacto + contador integrado
+
+### Mudanças
+- Botão azul "Adicionar ao Carrinho" → CTA dourado 56px com ícone 🛒 + preço
+- Contador de quantidade integrado na mesma linha (era separado)
+- Preço atualiza em tempo real (qty + adicionais)
+
+### Motivo
+Botão gigante azul competia com o conteúdo; 2 controles separados para 1 tarefa.
+
+### Impacto
+CTA 80→56px; 1 controle só; identidade dourada; preço dinâmico.
+
+### Breaking Changes
+Nenhum (visual; addItem API intacta).
+
