@@ -5,12 +5,21 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && npm run copy-assets",
+    "copy-assets": "cp src/tokens.css dist/tokens.css && cp tailwind-preset.js dist/tailwind-preset.js",
     "dev": "tsc --watch",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
     "vitest": "^4.0.18"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./tokens.css": "./dist/tokens.css",
+    "./tailwind-preset": "./dist/tailwind-preset.js"
   }
 }

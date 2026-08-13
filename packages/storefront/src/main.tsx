@@ -28,6 +28,7 @@ import DriverHistory from './pages/driver/History.js';
 import DriverProfile from './pages/driver/Profile.js';
 import './i18n/index.js';
 import './index.css';
+const DesignSystem = React.lazy(() => import('./pages/DesignSystem.js'));
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -52,7 +53,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/orders/:id" element={<OrderStatus />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/impressum" element={<Impressum />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="/design-system" element={<React.Suspense fallback={<div className="p-8">Carregando...</div>}><DesignSystem /></React.Suspense>} />
+        <Route path="*" element={<NotFound />} />
           </Route>
 
           {/* Driver app — standalone, mobile-first (own auth, no storefront layout) */}

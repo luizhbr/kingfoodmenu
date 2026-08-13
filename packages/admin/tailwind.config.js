@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+import kfPreset from '@kitchenasty/shared/tailwind-preset';
 export default {
+  presets: [kfPreset],
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {

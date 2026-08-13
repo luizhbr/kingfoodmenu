@@ -1,0 +1,78 @@
+/* King Food Design Tokens V2 — CSS variables */
+:root {
+  /* Color */
+  --kf-bg: #F5F3EF;
+  --kf-surface: #FFFFFF;
+  --kf-surface-muted: #FAF8F4;
+  --kf-foreground: #221D25;
+  --kf-muted: #6B6570;
+  --kf-border: #E8E4DC;
+  --kf-primary: #FFD100;
+  --kf-primary-hover: #E6BC00;
+  --kf-primary-fg: #1A1A1A;
+  --kf-secondary: #7B6DA8;
+  --kf-accent: #B8C438;
+  --kf-success: #16A34A;
+  --kf-warning: #D97706;
+  --kf-danger: #DC2626;
+  --kf-info: #2563EB;
+  --kf-cream: #E2DDCF;
+  --kf-ink: #221D25;
+
+  /* Typography */
+  --kf-font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --kf-font-display: var(--kf-font-sans);
+
+  /* Spacing */
+  --kf-space-0: 0rem;
+  --kf-space-1: 0.25rem;
+  --kf-space-2: 0.5rem;
+  --kf-space-3: 0.75rem;
+  --kf-space-4: 1rem;
+  --kf-space-5: 1.25rem;
+  --kf-space-6: 1.5rem;
+  --kf-space-8: 2rem;
+  --kf-space-10: 2.5rem;
+  --kf-space-12: 3rem;
+  --kf-space-16: 4rem;
+  --kf-space-20: 5rem;
+  --kf-space-24: 6rem;
+
+  /* Radius */
+  --kf-radius-sm: 0.375rem;
+  --kf-radius-md: 0.75rem;
+  --kf-radius-lg: 1rem;
+  --kf-radius-pill: 9999px;
+
+  /* Shadows */
+  --kf-shadow-none: none;
+  --kf-shadow-subtle: 0 1px 2px rgba(0,0,0,0.05);
+  --kf-shadow-card: 0 2px 8px rgba(0,0,0,0.06);
+  --kf-shadow-elevated: 0 4px 16px rgba(0,0,0,0.08);
+  --kf-shadow-modal: 0 8px 32px rgba(0,0,0,0.12);
+
+  /* Motion */
+  --kf-duration-fast: 150ms;
+  --kf-duration-normal: 250ms;
+  --kf-duration-slow: 400ms;
+
+  /* Bottom nav height */
+  --kf-nav-h: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+html.dark {
+  --kf-bg: #1A181C;
+  --kf-surface: #221E25;
+  --kf-surface-muted: #29252C;
+  --kf-foreground: #F5F3EF;
+  --kf-muted: #A39FA8;
+  --kf-border: #3A343D;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --kf-duration-fast: 0ms;
+    --kf-duration-normal: 0ms;
+    --kf-duration-slow: 0ms;
+  }
+}

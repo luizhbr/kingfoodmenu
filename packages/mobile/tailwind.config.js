@@ -1,5 +1,7 @@
 /** @type {import('tailwindcss').Config} */
+const kfPreset = require('@kitchenasty/shared/tailwind-preset');
 module.exports = {
+  presets: [kfPreset],
   content: [
     './app/**/*.{ts,tsx}',
     './src/**/*.{ts,tsx}',
