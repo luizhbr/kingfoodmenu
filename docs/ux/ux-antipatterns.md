@@ -11,3 +11,10 @@
 - **Por que é ruim:** Prisma client regenerado passa a exigir coluna que a migration não criou → P2022 em runtime (createOrder quebrou).
 - **Alternativa:** substituir com âncora única por modelo (ex: incluir nome do campo vizinho no old_string); validar migration vs. schema após cada alteração.
 - **Exemplo:** correção no commit UX-V5 (Location.images removida).
+
+## `return null` durante loading de seção assíncrona
+- **Problema:** componente que retorna `null` enquanto busca dados faz a página "crescer" quando os dados chegam → layout shift (CLS 0.2175 no FeaturedItems).
+- **Por que é ruim:** CLS acima de 0.1 penaliza Core Web Vitals; conteúdo abaixo (footer) pula visualmente; usuário perde referência de scroll.
+- **Alternativa:** skeleton com a mesma estrutura do estado final (grid, aspect ratio, linhas) + `aria-busy`.
+- **Exemplo:** FeaturedItems.tsx antes (`if (loading) return null`) vs. depois (skeleton 4 cards).
+

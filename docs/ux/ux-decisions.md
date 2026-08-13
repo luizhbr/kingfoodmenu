@@ -55,3 +55,29 @@ Material 3 (motion suave), Apple HIG (clareza), GNOME (esforço reduzido), COSMI
 - prisma/schema.prisma + migrations/20260812_v5_product_images
 
 ---
+
+## 2026-08-13 — FeaturedItems: skeleton reserva espaço (zero CLS)
+
+### Contexto
+A Home e o Cardápio carregam produtos reais via `GET /api/menu/items` (com fallback estático). Durante o fetch, `FeaturedItems` retornava `null` — quando os produtos chegavam, a seção inteira surgia e empurrava o footer (layout shift medido: CLS 0.2175, fontes = FOOTER + SECTION).
+
+### Opções Consideradas
+- **Opção A: `return null` durante loading** (estado anterior) — Prós: simples. Contras: CLS 0.2175 (acima do limite Google de 0.1), footer "pula" ao carregar.
+- **Opção B: Skeleton com espaço reservado** (escolhida) — Prós: zero shift, feedback de carregamento, `aria-busy`. Contras: +30 linhas, placeholders visíveis por ~300ms.
+- **Opção C: SSR/estático dos produtos** — Prós: zero loading. Contras: mudança de arquitetura fora do escopo UX.
+
+### Decisão
+Skeleton com a MESMA estrutura do grid real (2/3/4 colunas, aspect 4:3, linhas de texto) enquanto `loading`; `aria-busy="true"` + `aria-label`.
+
+### Justificativa
+- **Apple HIG (Clarity):** o usuário vê que a seção está carregando, não um vazio.
+- **Web Vitals:** CLS 0.2175 → 0.0000 (medido 2× com PerformanceObserver).
+- **COSMIC (Modularity):** mesmo grid/classes do estado real — sem duplicação de layout.
+
+### Impacto
+Zero layout shift na Home/Cardápio; skeleton ~300ms; acessibilidade melhorada (aria-busy).
+
+### Arquivos Afetados
+- packages/storefront/src/components/FeaturedItems.tsx (+30/−1)
+
+---

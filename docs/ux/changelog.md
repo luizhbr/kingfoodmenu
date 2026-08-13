@@ -20,3 +20,19 @@
 
 ### Corrigido durante validação
 - `locations.images` no schema (adicionada por acidente no replace) — removida do commit UX-V5; coluna só existe em menu_items (consistente com a migration)
+
+## 2026-08-13 — CLS fix: FeaturedItems skeleton
+
+### Mudanças
+- FeaturedItems: skeleton com espaço reservado durante fetch (era `return null`)
+- CLS medido: 0.2175 → 0.0000 (PerformanceObserver, 2 runs)
+
+### Motivo
+Seção de produtos surgia após o fetch e empurrava o footer (layout shift acima do limite Google de 0.1).
+
+### Impacto
+Zero layout shift na Home/Cardápio; feedback de carregamento visível; aria-busy.
+
+### Breaking Changes
+Nenhum (componente interno, sem contrato de API).
+

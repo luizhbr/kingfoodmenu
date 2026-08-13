@@ -43,3 +43,22 @@ Cards de produto e modal de detalhes quando há 2+ imagens.
 - Autoplay pausa ao tocar/hover e retoma após 6s
 - Aspect ratio fixo 4:3 (zero layout shift)
 - Lazy loading nas imagens secundárias
+
+## FeaturedItemsSkeleton
+
+### Uso
+Estado de carregamento de FeaturedItems (Home + topo do Cardápio) — reserva espaço para evitar CLS.
+
+### Estrutura
+- Mesmo grid do estado real: `grid-cols-2 md:grid-cols-3 lg:grid-cols-4`
+- Card placeholder: `aspect-[4/3]` + 3 linhas de texto `animate-pulse`
+- Header ("Mais pedidos" + "Ver cardápio →") renderizado desde o início
+
+### Acessibilidade
+- `aria-busy="true"` + `aria-label="Carregando produtos em destaque"` na section
+- Placeholders são `div` (sem leitura de conteúdo falso)
+
+### Responsividade
+- Mesmos breakpoints do grid real (2→3→4 colunas)
+- Zero overflow em 360-1440px (validado)
+
