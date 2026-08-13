@@ -3,6 +3,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../hooks/useApi.js';
 import MenuItemModal from '../components/MenuItemModal.js';
+import FeaturedItems from '../components/FeaturedItems.js';
+import ProductImageCarousel from '../components/ProductImageCarousel.js';
+import { resolveGallery } from '../lib/gallery.js';
 import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
 
 interface Category {
@@ -194,6 +197,11 @@ export default function Menu() {
 
         {/* Menu items grid */}
         <div className="flex-1">
+          {/* Destaques — produtos reais aparecem cedo */}
+          <div className="mb-8 -mx-4 sm:-mx-0">
+            <FeaturedItems limit={3} compact />
+          </div>
+
           {itemsLoading && (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
@@ -221,15 +229,10 @@ export default function Menu() {
                     onClick={() => setSelectedItemId(item.id)}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow text-left"
                   >
-                    {item.image ? (
-                      <img src={item.image} alt={item.name} className="h-40 w-full object-cover" />
-                    ) : (
-                      <div className="h-40 bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                        <svg className="w-12 h-12 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
-                    )}
+                    <ProductImageCarousel
+                      images={resolveGallery(item.image, (item as any).images)}
+                      alt={item.name}
+                    />
                     <div className="p-4">
                       <div className="flex items-start justify-between gap-2">
                         <h3 className="font-semibold text-gray-900">{item.name}</h3>

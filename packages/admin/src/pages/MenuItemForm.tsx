@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
+import ProductMediaManager from '../components/ProductMediaManager.js';
 
 interface OptionValue {
   name: string;
@@ -86,6 +87,7 @@ export default function MenuItemForm() {
   const [allergens, setAllergens] = useState<AllergenOption[]>([]);
   const [mealtimes, setMealtimes] = useState<MealtimeOption[]>([]);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [galleryImages, setGalleryImages] = useState<{ url: string; sortOrder: number; isPrimary: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
@@ -122,6 +124,11 @@ export default function MenuItemForm() {
           categoryId: item.categoryId,
         });
         if (item.image) setImageUrl(item.image);
+        if (Array.isArray((item as any).images) && (item as any).images.length > 0) {
+          setGalleryImages((item as any).images);
+        } else if (item.image) {
+          setGalleryImages([{ url: item.image, sortOrder: 0, isPrimary: true }]);
+        }
         if (item.options?.length) {
           setOptions(item.options.map((o: any) => ({
             name: o.name,
@@ -407,47 +414,17 @@ export default function MenuItemForm() {
           </div>
         </section>
 
-        {/* Image Upload */}
+        {/* Fotos do produto (UX-V5) */}
         {isEdit && (
           <section className="bg-white rounded-lg shadow p-6">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Imagem</h3>
-            <div className="flex items-start gap-6">
-              {imageUrl ? (
-                <div className="relative">
-                  <img
-                    src={imageUrl}
-                    alt={form.name}
-                    className="w-40 h-40 object-cover rounded-lg border border-gray-200"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleImageRemove}
-                    disabled={uploading}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 disabled:opacity-50"
-                    aria-label="Remove image"
-                  >
-                    X
-                  </button>
-                </div>
-              ) : (
-                <div className="w-40 h-40 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center">
-                  <span className="text-sm text-gray-400">No image</span>
-                </div>
-              )}
-              <div>
-                <label className="inline-flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 cursor-pointer disabled:opacity-50 transition-colors">
-                  {uploading ? 'Uploading...' : 'Upload Image'}
-                  <input
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    onChange={handleImageUpload}
-                    disabled={uploading}
-                    className="hidden"
-                  />
-                </label>
-                <p className="text-xs text-gray-400 mt-2">JPEG, PNG, WebP, or GIF. Max 5MB.</p>
-              </div>
-            </div>
+            <ProductMediaManager
+              itemId={id!}
+              images={galleryImages}
+              token={localStorage.getItem('token') || ''}
+              onChange={setGalleryImages}
+              apiUpload={(url, fd) => api.upload(url, fd)}
+              apiPut={(url, body) => api.put(url, body)}
+            />
           </section>
         )}
 

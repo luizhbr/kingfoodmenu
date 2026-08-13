@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
 import { FALLBACK_ITEMS } from '../data/menuFallback.js';
+import ProductImageCarousel from './ProductImageCarousel.js';
+import { resolveGallery } from '../lib/gallery.js';
 
 interface OptionValue {
   id: string;
@@ -33,6 +35,7 @@ interface MenuItemDetail {
   description: string | null;
   price: number;
   image: string | null;
+  images?: { url: string; sortOrder: number; isPrimary: boolean }[] | null;
   isActive: boolean;
   category: { id: string; name: string };
   options: MenuOption[];
@@ -193,21 +196,16 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
 
         {item && (
           <>
-            {/* Image */}
-            <div className="h-48 relative">
-              {item.image ? (
-                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center">
-                  <svg className="w-16 h-16 text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              )}
+            {/* Image — carrossel com galeria (UX-V5) */}
+            <div className="relative">
+              <ProductImageCarousel
+                images={resolveGallery(item.image, item.images)}
+                alt={item.name}
+              />
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 bg-white/80 hover:bg-white rounded-full p-1.5 transition-colors"
-                aria-label="Close"
+                className="absolute top-3 right-3 bg-white/80 hover:bg-white rounded-full p-2 transition-colors"
+                aria-label="Fechar"
               >
                 <svg className="w-5 h-5 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

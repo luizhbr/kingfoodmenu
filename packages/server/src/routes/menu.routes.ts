@@ -13,6 +13,7 @@ import {
   updateMenuItem,
   deleteMenuItem,
   uploadMenuItemImage,
+  updateMenuItemImages,
   deleteMenuItemImage,
 } from '../controllers/menu-item.controller.js';
 import { upload } from '../middleware/upload.js';
@@ -58,6 +59,7 @@ router.post('/items', authenticate, requireStaff, requireRole('SUPER_ADMIN', 'MA
 router.patch('/items/:id', authenticate, requireStaff, requireRole('SUPER_ADMIN', 'MANAGER'), updateMenuItem);
 router.delete('/items/:id', authenticate, requireStaff, requireRole('SUPER_ADMIN'), deleteMenuItem);
 router.post('/items/:id/image', authenticate, requireStaff, requireRole('SUPER_ADMIN', 'MANAGER'), upload.single('image'), uploadMenuItemImage);
+router.put('/items/:id/images', authenticate, requireStaff, requireRole('SUPER_ADMIN', 'MANAGER'), updateMenuItemImages);
 router.delete('/items/:id/image', authenticate, requireStaff, requireRole('SUPER_ADMIN', 'MANAGER'), deleteMenuItemImage);
 
 // Allergens - read is open, write requires Manager+

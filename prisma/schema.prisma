@@ -231,6 +231,7 @@ model MenuItem {
   sku         String?
   cost        Float?
   image       String?
+  images      Json? // [{ url, sortOrder, isPrimary }] — galeria multi-foto (retrocompatível: null = usa image)
   isActive    Boolean @default(true)
   sortOrder   Int     @default(0)
 

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
+import { Prisma } from '@prisma/client';
 import { auditLog } from '../lib/audit.js';
 
 const menuOptionValueSchema = z.object({
@@ -240,6 +241,31 @@ export async function deleteMenuItem(req: Request<{ id: string }>, res: Response
   res.json({ success: true, message: 'Menu item deleted' });
 }
 
+interface GalleryImage {
+  url: string;
+  sortOrder: number;
+  isPrimary: boolean;
+}
+
+function parseGallery(raw: unknown): GalleryImage[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter(
+      (g): g is GalleryImage =>
+        !!g && typeof g === 'object' && typeof (g as GalleryImage).url === 'string'
+    )
+    .map((g) => ({
+      url: g.url,
+      sortOrder: typeof g.sortOrder === 'number' ? g.sortOrder : 0,
+      isPrimary: !!g.isPrimary,
+    }))
+    .sort((a, b) => a.sortOrder - b.sortOrder);
+}
+
+/**
+ * Upload de imagem do produto — faz APPEND à galeria (retrocompatível).
+ * Produtos antigos (images=null) viram galeria de 1 foto com image preservado.
+ */
 export async function uploadMenuItemImage(req: Request<{ id: string }>, res: Response): Promise<void> {
   const { id } = req.params;
 
@@ -255,13 +281,85 @@ export async function uploadMenuItemImage(req: Request<{ id: string }>, res: Res
   }
 
   const imagePath = `/uploads/${req.file.filename}`;
+  const gallery = parseGallery(existing.images);
+
+  // Primeira foto do produto: vira a principal e atualiza image (compatibilidade)
+  if (gallery.length === 0) {
+    gallery.push({ url: imagePath, sortOrder: 0, isPrimary: true });
+  } else {
+    gallery.push({
+      url: imagePath,
+      sortOrder: gallery.length,
+      isPrimary: false,
+    });
+  }
+
+  const primary = gallery.find((g) => g.isPrimary) ?? gallery[0];
 
   const item = await prisma.menuItem.update({
     where: { id },
-    data: { image: imagePath },
+    data: {
+      images: gallery as unknown as Prisma.InputJsonValue,
+      image: primary.url,
+    },
     include: {
       category: { select: { id: true, name: true } },
     },
+  });
+
+  res.json({ success: true, data: item });
+}
+
+/**
+ * Salva a lista completa de imagens: ordem, principal e remoções.
+ * Body: { images: [{ url, sortOrder, isPrimary }] }
+ */
+export async function updateMenuItemImages(req: Request<{ id: string }>, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  const existing = await prisma.menuItem.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ success: false, error: 'Menu item not found' });
+    return;
+  }
+
+  const raw = (req.body?.images ?? null) as unknown;
+  if (raw === null) {
+    // Limpar galeria inteira (mantém image para compatibilidade)
+    const item = await prisma.menuItem.update({
+      where: { id },
+      data: { images: Prisma.DbNull },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    res.json({ success: true, data: item });
+    return;
+  }
+
+  const gallery = parseGallery(raw);
+  if (gallery.length === 0) {
+    const item = await prisma.menuItem.update({
+      where: { id },
+      data: { images: Prisma.DbNull, image: null },
+      include: { category: { select: { id: true, name: true } } },
+    });
+    res.json({ success: true, data: item });
+    return;
+  }
+
+  // Reindexar sortOrder e garantir exatamente uma principal (a primeira)
+  const normalized = gallery.map((g, i) => ({
+    url: g.url,
+    sortOrder: i,
+    isPrimary: i === 0,
+  }));
+
+  const item = await prisma.menuItem.update({
+    where: { id },
+    data: {
+      images: normalized as unknown as Prisma.InputJsonValue,
+      image: normalized[0].url,
+    },
+    include: { category: { select: { id: true, name: true } } },
   });
 
   res.json({ success: true, data: item });
@@ -278,7 +376,7 @@ export async function deleteMenuItemImage(req: Request<{ id: string }>, res: Res
 
   const item = await prisma.menuItem.update({
     where: { id },
-    data: { image: null },
+    data: { image: null, images: Prisma.DbNull },
     include: {
       category: { select: { id: true, name: true } },
     },
