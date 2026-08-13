@@ -50,7 +50,36 @@ export default function FeaturedItems({ limit = 4, compact = false }: { limit?: 
     };
   }, [limit]);
 
-  if (loading) return null;
+  // Skeleton reserva espaço durante o fetch → zero CLS quando os produtos chegam
+  if (loading) {
+    const cols = 'grid-cols-2 md:grid-cols-3 lg:grid-cols-4';
+    const placeholders = [0, 1, 2, 3];
+    return (
+      <section className="px-4 sm:px-6" aria-busy="true" aria-label="Carregando produtos em destaque">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-extrabold text-gray-900">Mais pedidos</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Os favoritos de quem já pediu</p>
+            </div>
+            <span className="text-sm font-bold text-primary-600 shrink-0">Ver cardápio →</span>
+          </div>
+          <div className={`grid ${cols} gap-3 sm:gap-5`}>
+            {placeholders.map((i) => (
+              <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div className="w-full aspect-[4/3] bg-gray-200 animate-pulse" />
+                <div className="p-3 sm:p-4 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+                  <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3 mt-2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (items.length === 0) return null;
 
