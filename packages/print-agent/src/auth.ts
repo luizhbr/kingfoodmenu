@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import crypto from 'crypto';
 
 export interface DeviceCredentials {
   deviceId: string;
@@ -45,6 +46,5 @@ export function clearCredentials(): void {
 export function generateDeviceId(): string {
   // Stable per-machine id: hostname + machine guid hash (no PII in logs)
   const host = os.hostname();
-  const crypto = require('crypto') as typeof import('crypto');
   return crypto.createHash('sha256').update(`king-print:${host}`).digest('hex').slice(0, 16);
 }

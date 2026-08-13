@@ -25,6 +25,16 @@ function fail(msg: string): never {
 }
 
 async function cmdStart(cfg: AgentConfig): Promise<void> {
+  // Load saved credentials from pairing (credentials.json) when env vars are absent
+  const creds = loadCredentials();
+  if (creds) {
+    cfg = {
+      ...cfg,
+      deviceId: cfg.deviceId || creds.deviceId,
+      deviceToken: cfg.deviceToken || creds.deviceToken,
+      printerId: cfg.printerId || creds.printerId,
+    };
+  }
   const errors = validateConfig(cfg);
   if (errors.length) fail(errors.join('; '));
   const api = new ApiClient({ baseUrl: cfg.apiBaseUrl, deviceToken: cfg.deviceToken });
