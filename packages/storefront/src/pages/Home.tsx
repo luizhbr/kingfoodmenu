@@ -3,9 +3,13 @@
  * Menu CTA routes to native /menu (no OlaClick iframe).
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.js';
 import Footer from '../components/Footer.js';
+import { CategoryPills } from '../components/CategoryPills.js';
+import { QuickSearch } from '../components/QuickSearch.js';
+import { PromoBanner } from '../components/PromoBanner.js';
+import { FeaturedProductGrid } from '../components/FeaturedProductGrid.js';
 
 const WA_URL = 'https://wa.me/12673107535';
 const GROUP_URL = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
@@ -182,15 +186,24 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
   const [showHours, setShowHours] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [scrolled, setScrolled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const loadingDone = useRef(false);
   const today = useMemo(() => getColumbusNow().day, []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     setOpenStatus(computeOpenStatus());
     const id = window.setInterval(() => setOpenStatus(computeOpenStatus()), 60_000);
     return () => window.clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/menu/categories')
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((d) => setCategories((d?.data || []).slice(0, 10)))
+      .catch(() => setCategories([]));
   }, []);
 
   // Splash (v3 timing)
@@ -418,81 +431,51 @@ export default function Home() {
         </div>
       </aside>
 
-      {/* Main home content — hero compacto + destaques */}
-      <main className="max-w-5xl mx-auto w-full">
+      {/* Main home content — hero compacto + navegação rápida + destaques */}
+      <main className="max-w-5xl mx-auto w-full pb-[calc(var(--kf-nav-h)+2rem)]">
         {/* Hero compacto */}
-        <section className="px-4 sm:px-6 pt-10 sm:pt-16 pb-6 text-center">
-          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-3">
-            Delivery · Columbus, OH
-          </p>
+        <section className="px-4 sm:px-6 pt-8 sm:pt-12 pb-4 text-center">
           <div className="flex justify-center mb-3">
             <img
               src={logo}
               alt="King Food"
-              className="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-3xl bg-[#FFD100] shadow-lg shadow-[#FFD100]/20"
+              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-2xl bg-kf-primary shadow-lg shadow-kf-primary/20"
             />
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold text-ink tracking-tight mb-2">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-ink tracking-tight mb-1">
             King Food
           </h1>
-          <p className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Açaí brasileiro de verdade</p>
-          <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto mb-6">
-            Sabor do Brasil pra sua casa. Peça agora.
+          <p className="text-base sm:text-lg font-semibold text-kf-foreground mb-1">Açaí brasileiro de verdade</p>
+          <p className="text-sm text-kf-muted max-w-md mx-auto mb-4">
+            Delivery · Columbus, OH
           </p>
 
-          {/* CTA principal — dominante */}
+          {/* CTA principal */}
           <Link
             to="/menu"
-            className="w-full sm:w-auto sm:min-w-[280px] min-h-[52px] inline-flex items-center justify-center bg-[#FFD100] hover:bg-[#FFD100]/90 text-ink font-extrabold text-base px-8 py-3.5 rounded-2xl shadow-lg shadow-[#FFD100]/30 active:scale-[0.98] transition"
+            className="w-full sm:w-auto sm:min-w-[260px] min-h-[48px] inline-flex items-center justify-center bg-kf-primary hover:bg-kf-primary-hover text-kf-primary-fg font-extrabold text-sm px-6 py-3 rounded-kf-lg shadow-kf-card active:scale-[0.98] transition"
           >
             Pedir agora →
           </Link>
-
-          {/* Links secundários compactos */}
-          <div className="grid grid-cols-2 gap-2.5 max-w-md mx-auto mt-5">
-            <a
-              href={GROUP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
-            >
-              💬 Grupo WA
-            </a>
-            <a
-              href={MAPS_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
-            >
-              📍 Maps
-            </a>
-            <button
-              type="button"
-              onClick={() => setShowHours(true)}
-              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
-            >
-              🕐 Horários
-            </button>
-            <a
-              href={INSTAGRAM_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
-            >
-              📸 Instagram
-            </a>
-          </div>
         </section>
 
+        <QuickSearch />
+        <CategoryPills categories={categories} />
+        <PromoBanner />
+        <FeaturedProductGrid
+          onAdd={(p) => navigate('/menu')}
+          onClick={(p) => navigate('/menu')}
+        />
+
         {/* Sobre rápido */}
-        <section className="px-4 sm:px-6 pt-12 pb-14 text-center">
-          <div className="max-w-md mx-auto">
-            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-emerald-600' : 'text-gray-500'}`}>
+        <section className="px-4 sm:px-6 pt-8 pb-10 text-center">
+          <div className="max-w-md mx-auto rounded-kf-lg border border-kf-border bg-kf-surface p-4">
+            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-kf-success' : 'text-kf-muted'}`}>
               {openStatus.open ? '● ' : '○ '}
               {openStatus.label}
               {openStatus.detail ? ` · ${openStatus.detail}` : ''}
             </p>
-            <p className="text-sm text-gray-500 leading-relaxed">
+            <p className="text-sm text-kf-muted leading-relaxed">
               Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
             </p>
           </div>
