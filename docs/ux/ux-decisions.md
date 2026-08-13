@@ -133,3 +133,30 @@ Hero mobile 447→479px, desktop 519→551px; home mais curta e focada; zero ove
 - packages/storefront/src/pages/Home.tsx
 
 ---
+
+## 2026-08-13 — Cardápio v2: busca prominente + chips de categoria + produtos imediatos
+
+### Contexto
+O /cardapio abria com título grande + texto descritivo + busca discreta + sidebar de categorias escondida no mobile (toggle) + "Mais pedidos" antes dos produtos — o usuário precisava de 2-3 interações para ver um produto.
+
+### Opções Consideradas
+- **Opção A: Layout atual** — Prós: familiar. Contras: produtos tarde (abaixo do dobra), categorias escondidas no mobile, título redundante com o header.
+- **Opção B: Busca prominente + chips horizontais + grid imediato** (escolhida) — Prós: produto visível na 1ª viewport (firstCardTop 199px), categorias 1 toque, busca no topo. Contras: sidebar desktop perdida (mitigado: chips funcionam em todos os breakpoints).
+- **Opção C: Abas de categoria** — Prós: padrão conhecido. Contras: menos escalável com 7+ categorias.
+
+### Decisão
+Título/descrição removidos; busca full-width logo abaixo do header; categorias em chips horizontais scrolláveis (gold ativo); grid 2 colunas mobile (3 desktop); "Mais pedidos" removido (produtos já são imediatos); paddings reduzidos.
+
+### Justificativa
+- **Material 3 (Containment for emphasis):** chip dourado destaca a categoria ativa.
+- **Apple HIG (Progressive disclosure):** busca e categorias no topo, produtos revelados imediatamente.
+- **GNOME (Reduce user effort):** produto visível sem scroll (firstCardTop 199px em 800px de viewport).
+
+### Impacto
+Produto na 1ª viewport (era abaixo do dobra); categorias 1 toque (era toggle escondido); zero overflow 360-1440px; filtro com URL sync.
+
+### Arquivos Afetados
+- packages/storefront/src/pages/Menu.tsx
+- packages/storefront/src/index.css (no-scrollbar)
+
+---

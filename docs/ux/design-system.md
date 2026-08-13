@@ -95,3 +95,22 @@ Página de entrada com CTA principal dominante.
 ### Validação
 360-1440px zero overflow; hero 479px mobile / 551px desktop.
 
+
+## CategoryChips (padrão de filtro horizontal)
+
+### Uso
+Listas de produtos com categorias — substitui sidebar/toggle em mobile.
+
+### Estrutura
+- Container: `overflow-x-auto no-scrollbar` + `w-max` (scroll horizontal sem barra)
+- Chip: `min-h-[40px] px-4 py-2 rounded-full` — ativo `bg-[#FFD100] text-ink`, inativo `bg-white border`
+- `role="tablist"` + `aria-label` para acessibilidade
+
+### Regras
+- Chip ativo sempre visível (gold = containment)
+- Filtro sincroniza com URL (`?category=`) para deep-link
+- Touch target ≥40px (44px recomendado)
+
+### Validação
+360-1440px zero overflow; filtro 1 toque; URL sync confirmada.
+

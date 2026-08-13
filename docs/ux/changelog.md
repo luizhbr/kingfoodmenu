@@ -70,3 +70,23 @@ Hero moment dominante; home mais curta e focada; hero 447→479px mobile.
 ### Breaking Changes
 Nenhum (visual apenas).
 
+
+## 2026-08-13 — Cardápio v2: busca prominente + chips + grid imediato
+
+### Mudanças
+- Título "Nosso Cardápio" + descrição removidos
+- Busca full-width abaixo do header (era max-w-md discreta)
+- Categorias: sidebar → chips horizontais scrolláveis (gold ativo)
+- Grid: 1 coluna → 2 colunas mobile (3 desktop)
+- "Mais pedidos" removido do topo (produtos já imediatos)
+- Paddings reduzidos (py-8 → py-4)
+
+### Motivo
+Produtos apareciam abaixo do dobra; categorias escondidas no mobile.
+
+### Impacto
+Produto na 1ª viewport (top 199px); filtro 1 toque com URL sync; zero overflow.
+
+### Breaking Changes
+Nenhum (visual; API e rotas intactas).
+

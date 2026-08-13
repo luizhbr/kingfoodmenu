@@ -32,3 +32,10 @@
 - **Alternativa:** 1 logo por viewport — header texto quando o hero tem a imagem.
 - **Exemplo:** Home.tsx antes (img no header + hero) vs. depois (só hero).
 
+
+## Sidebar de categorias escondida atrás de toggle no mobile
+- **Problema:** sidebar desktop `hidden md:block` + toggle manual — categorias invisíveis sem interação extra.
+- **Por que é ruim:** usuário não sabe que pode filtrar; 2 toques para filtrar.
+- **Alternativa:** chips horizontais sempre visíveis (scrollável), 1 toque.
+- **Exemplo:** Menu.tsx antes (toggle + sidebar) vs. depois (chips).
+
