@@ -1297,8 +1297,8 @@ model Printer {
 
 model PrintJob {
   id            String         @id @default(cuid())
-  orderId       String
-  order         Order          @relation(fields: [orderId], references: [id])
+  orderId       String?
+  order         Order?         @relation(fields: [orderId], references: [id])
   printerId     String
   printer       Printer        @relation(fields: [printerId], references: [id])
   type          String         @default("AUTO") // AUTO | REPRINT

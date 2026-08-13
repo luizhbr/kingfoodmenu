@@ -11,7 +11,7 @@ import {
   renderTicketText,
   PrintError,
 } from '../lib/print-service.js';
-import { renderReceipt } from '../lib/receipt-renderer.js';
+import { renderReceipt, buildPreviewOrder } from '../lib/receipt-renderer.js';
 import { effectiveTemplate } from '../lib/receipt-template.js';
 
 // ── Printers (MANAGER+) ────────────────────────────────────────────────────
@@ -61,12 +61,32 @@ export async function generatePairing(req: Request, res: Response): Promise<void
 
 export async function createJob(req: Request, res: Response): Promise<void> {
   const { orderId, printerId, type } = req.body;
-  if (!orderId || !printerId) { res.status(400).json({ success: false, error: 'orderId and printerId are required' }); return; }
+  if (!printerId) { res.status(400).json({ success: false, error: 'printerId is required' }); return; }
+  const jobType = type || 'AUTO';
+  // TEST jobs have no order (printer self-test renders a preview ticket)
+  if (jobType === 'TEST' && !orderId) {
+    try {
+      const job = await prisma.printJob.create({
+        data: {
+          printerId,
+          type: 'TEST',
+          idempotencyKey: `test:${printerId}:${Date.now()}`,
+          requestedById: (req.user as any)?.id,
+        },
+      });
+      res.status(201).json({ success: true, data: job, created: true });
+      return;
+    } catch (e) {
+      if (e instanceof PrintError) { res.status(e.status).json({ success: false, error: e.message }); return; }
+      throw e;
+    }
+  }
+  if (!orderId) { res.status(400).json({ success: false, error: 'orderId is required for order print jobs' }); return; }
   try {
     const result = await createPrintJob({
       orderId,
       printerId,
-      type: type || 'AUTO',
+      type: jobType,
       requestedById: (req.user as any)?.id,
     });
     res.status(result.created ? 201 : 200).json({ success: true, data: result.job, created: result.created });
@@ -172,6 +192,14 @@ export async function agentTicket(req: Request, res: Response): Promise<void> {
   const jobId = req.params.jobId as string;
   const job = await prisma.printJob.findUnique({ where: { id: jobId } });
   if (!job) { res.status(404).json({ success: false, error: 'Job not found' }); return; }
+  // TEST jobs have no order — render the preview ticket (buildPreviewOrder)
+  if (!job.orderId) {
+    const printer = await prisma.printer.findUnique({ where: { id: job.printerId } });
+    const preview = buildPreviewOrder();
+    const result = renderReceipt(preview, effectiveTemplate(undefined));
+    res.json({ success: true, data: { ticket: preview, text: result.text, template: 'TEST-PREVIEW' } });
+    return;
+  }
   const ticket = await buildKitchenTicket(job.orderId);
   const printer = await prisma.printer.findUnique({ where: { id: job.printerId } });
 
