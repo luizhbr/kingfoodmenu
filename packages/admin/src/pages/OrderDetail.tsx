@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { usePrintOrder } from '../lib/usePrintOrder.js';
 
 interface OrderItem {
   id: string;
@@ -51,6 +52,7 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
+  const { printState, printOrder } = usePrintOrder();
 
   const token = localStorage.getItem('token') || '';
 
@@ -124,7 +126,25 @@ export default function OrderDetailPage() {
         <span className={`ml-auto text-sm px-3 py-1 rounded-full font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
           {order.status.replace(/_/g, ' ')}
         </span>
+        <button
+          onClick={() => void printOrder(order.id, 'REPRINT')}
+          disabled={printState.status === 'sending'}
+          className="min-h-[44px] px-4 py-2 rounded-lg bg-ink text-cream text-sm font-bold hover:bg-ink/90 disabled:opacity-50 inline-flex items-center gap-2"
+          aria-label={`Imprimir pedido ${order.orderNumber}`}
+        >
+          <span aria-hidden>🖨</span>
+          {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir'}
+        </button>
       </div>
+
+      {printState.status !== 'idle' && (
+        <div className={`mb-4 px-4 py-2 rounded-lg text-sm font-medium ${
+          printState.status === 'printed' ? 'bg-emerald-50 text-emerald-700' :
+          printState.status === 'failed' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'
+        }`} role="status">
+          {printState.message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main content */}

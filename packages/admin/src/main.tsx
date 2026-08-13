@@ -52,6 +52,7 @@ import SettingsPayments from './pages/SettingsPayments.js';
 import SettingsReviews from './pages/SettingsReviews.js';
 import SettingsAdvanced from './pages/SettingsAdvanced.js';
 import SettingsPrint from './pages/SettingsPrint.js';
+import SettingsPrinters from './pages/SettingsPrinters.js';
 import './index.css';
 
 function AppRoutes() {
@@ -131,6 +132,7 @@ function AppRoutes() {
         <Route path="/settings/review" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsReviews /></RequireRole>} />
         <Route path="/settings/advanced" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsAdvanced /></RequireRole>} />
   <Route path="/settings/print" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrint /></RequireRole>} />
+        <Route path="/settings/printers" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrinters /></RequireRole>} />
 
         {/* Developer — MANAGER+ for metrics, SUPER_ADMIN for audit */}
         <Route path="/developer" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/developer/metrics" replace /></RequireRole>} />

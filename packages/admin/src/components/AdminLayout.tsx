@@ -84,6 +84,7 @@ const navItems: NavItem[] = [
       { path: '/settings/general', label: 'Geral' },
       { path: '/settings/order', label: 'Pedidos' },
       { path: '/settings/print', label: 'Modelos de Impressão/Recibo' },
+      { path: '/settings/printers', label: 'Impressoras' },
       { path: '/settings/review', label: 'Avaliações' },
     ],
   },

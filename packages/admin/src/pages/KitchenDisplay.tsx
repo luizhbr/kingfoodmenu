@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { api } from '../lib/api.js';
+import { usePrintOrder } from '../lib/usePrintOrder.js';
 
 interface OrderItem {
   id: string;
@@ -41,6 +42,7 @@ export default function KitchenDisplay() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const { printState, printOrder } = usePrintOrder();
 
   const fetchOrders = useCallback(() => {
     // Fetch pedidos ativos (non-completed, non-cancelled)
@@ -270,6 +272,14 @@ export default function KitchenDisplay() {
                             {order.orderType === 'DELIVERY' ? 'Em entrega' : 'Retirado'}
                           </button>
                         )}
+                        <button
+                          onClick={() => void printOrder(order.id, 'REPRINT')}
+                          disabled={updating === order.id || printState.status === 'sending'}
+                          className="text-gray-600 hover:text-gray-900 text-xs font-medium px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
+                          aria-label={`Imprimir comanda ${order.orderNumber}`}
+                        >
+                          🖨
+                        </button>
                         <button
                           onClick={() => handleStatusUpdate(order.id, 'CANCELADO')}
                           disabled={updating === order.id}

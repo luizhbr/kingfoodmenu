@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { usePrintOrder } from '../lib/usePrintOrder.js';
 
 // ── Tipos (espelham a API existente — NENHUM contrato alterado) ─────────────
 interface OrderItem {
@@ -97,6 +98,7 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
   const [detailError, setDetailError] = useState('');
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState('');
+  const { printState, printOrder } = usePrintOrder();
 
   const isPending = order.status === 'PENDING';
   const action = NEXT_ACTION[order.status];
@@ -213,6 +215,28 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
         )}
         {actionError && (
           <p className="text-xs text-red-600 mt-1.5" role="alert">{actionError}</p>
+        )}
+
+        {/* Impressão — ação operacional (PRINT-V1) */}
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            onClick={() => void printOrder(order.id, 'REPRINT')}
+            disabled={printState.status === 'sending'}
+            className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50"
+            aria-label={`Imprimir pedido ${order.orderNumber}`}
+          >
+            <span aria-hidden>🖨</span>
+            {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir'}
+          </button>
+        </div>
+        {printState.status !== 'idle' && (
+          <p className={`text-xs mt-1.5 font-medium ${
+            printState.status === 'printed' ? 'text-emerald-600' :
+            printState.status === 'failed' ? 'text-red-600' : 'text-blue-600'
+          }`} role="status">
+            {printState.message}
+          </p>
         )}
       </div>
 
