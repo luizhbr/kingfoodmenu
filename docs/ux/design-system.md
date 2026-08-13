@@ -1,0 +1,45 @@
+# Design System — Padrões King Food
+
+## OrderCard
+
+### Uso
+Lista de pedidos (admin) — substitui linhas de tabela por cards operacionais.
+
+### Props
+- `order: OrderSummary` — { id, orderNumber, orderType, status, total, createdAt, scheduledAt, customer, location, _count }
+- `token: string` — Bearer token para GET /orders/:id (expansão) e PATCH /orders/:id/status (ação)
+- `onStatusChange: (orderId, newStatus) => void` — callback após ação bem-sucedida
+
+### Estados
+- **PENDING:** borda dourada + pulso (hero moment) + botão "Aceitar pedido"
+- **CONFIRMED/PREPARING/READY:** botão contextual escuro (próximo passo do fluxo)
+- **OUT_FOR_DELIVERY/DELIVERED/PICKED_UP:** link "Ver detalhes" (terminal)
+- **Expansão:** loading spinner, erro com mensagem PT-BR, itens + totais + metadados
+- **Ação:** estado "Atualizando..." com disabled (evita duplo submit)
+
+### Acessibilidade
+- Botão do preview com `aria-expanded` + `aria-label` descritivo
+- Touch targets: 48px (ações), 44px (links)
+- `prefers-reduced-motion`: desativa animações
+
+### Responsividade
+- Mobile (1 coluna) / md (2) / xl (3)
+- Zero overflow em 360-1440px (validado)
+
+## ProductImageCarousel
+
+### Uso
+Cards de produto e modal de detalhes quando há 2+ imagens.
+
+### Props
+- `images: string[]` — URLs em ordem de exibição
+- `alt: string` — texto alternativo base
+- `autoPlayMs?: number` — intervalo (default 4500)
+- `className?`, `imgClassName?`
+
+### Comportamento
+- 1 imagem → sem carrossel, sem indicadores (comportamento antigo)
+- Swipe horizontal não bloqueia scroll vertical
+- Autoplay pausa ao tocar/hover e retoma após 6s
+- Aspect ratio fixo 4:3 (zero layout shift)
+- Lazy loading nas imagens secundárias
