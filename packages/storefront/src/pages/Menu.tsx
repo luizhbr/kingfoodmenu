@@ -1,10 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useApi } from '../hooks/useApi.js';
+import { useCart } from '../context/CartContext.js';
+import {
+  Button,
+  EmptyState,
+  ErrorState,
+  ProductCard,
+  Skeleton,
+} from '@kitchenasty/shared-ui';
+import { QuickSearch } from '../components/QuickSearch.js';
+import { CategoryPills } from '../components/CategoryPills.js';
 import MenuItemModal from '../components/MenuItemModal.js';
-import ProductImageCarousel from '../components/ProductImageCarousel.js';
-import { resolveGallery } from '../lib/gallery.js';
 import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
 
 interface Category {
@@ -38,24 +45,21 @@ interface MenuResponse {
 
 export default function Menu() {
   const { t } = useTranslation();
+  const { addItem } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    searchParams.get('category')
-  );
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [page, setPage] = useState(1);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
-  const { data: apiCategories, isLoading: categoriesLoading, error: categoriesError } = useApi<Category[]>('/api/menu/categories');
-  const categories = apiCategories || FALLBACK_CATEGORIES;
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
 
-  // Build items URL with filters
-  const itemsUrl = buildItemsUrl(selectedCategory, debouncedSearch, page);
   const [items, setItems] = useState<MenuItem[]>([]);
   const [pagination, setPagination] = useState<MenuResponse['pagination'] | null>(null);
   const [itemsLoading, setItemsLoading] = useState(true);
-  const [itemsError, setItemsError] = useState<string | null>(null);
+  const [itemsError, setItemsError] = useState<Error | null>(null);
 
   // Debounce search
   useEffect(() => {
@@ -66,35 +70,50 @@ export default function Menu() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // Fetch categories
+  useEffect(() => {
+    fetch('/api/menu/categories')
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+      .then((d) => setCategories((d?.data || []).filter((c: Category) => c.isActive && !c.parentId)))
+      .catch(() => setCategories(FALLBACK_CATEGORIES.filter((c) => c.isActive && !c.parentId) as Category[]))
+      .finally(() => setCategoriesLoading(false));
+  }, []);
+
+  // Build items URL
+  const itemsUrl = useMemo(() => {
+    const params = new URLSearchParams();
+    if (selectedCategory) params.set('categoryId', selectedCategory);
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (page > 1) params.set('page', String(page));
+    params.set('limit', '12');
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    return `${apiBase}/api/menu/items?${params}`;
+  }, [selectedCategory, debouncedSearch, page]);
+
   // Fetch items
   useEffect(() => {
+    let mounted = true;
     setItemsLoading(true);
     setItemsError(null);
-    fetch(itemsUrl.startsWith('http') ? itemsUrl : `${import.meta.env.VITE_API_URL || ''}${itemsUrl}`)
-      .then((res) => {
-        if (!res.ok) throw new Error('Failed to load menu');
-        const contentType = res.headers.get('content-type') || '';
-        if (!contentType.includes('application/json')) {
-          throw new Error('API returned non-JSON response');
-        }
-        return res.json();
-      })
+    fetch(itemsUrl)
+      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((json) => {
-        setItems(json.data);
-        setPagination(json.pagination);
+        if (!mounted) return;
+        setItems(json.data || []);
+        setPagination(json.pagination || null);
       })
       .catch((err) => {
-          // Fallback to static data when API is not available
-          console.warn('Menu API unavailable, using fallback data:', err.message);
-          const filtered = selectedCategory
-            ? FALLBACK_ITEMS.filter((i: { category: { id: string } }) => i.category.id === selectedCategory)
-            : FALLBACK_ITEMS;
-          setItems(filtered);
-          setPagination({ page: 1, limit: 100, total: filtered.length, totalPages: 1 });
-          setItemsError(null);
-        })
-      .finally(() => setItemsLoading(false));
-  }, [itemsUrl]);
+        if (!mounted) return;
+        console.warn('Menu API unavailable, using fallback:', err.message);
+        const filtered = selectedCategory
+          ? FALLBACK_ITEMS.filter((i: any) => i.category.id === selectedCategory)
+          : FALLBACK_ITEMS;
+        setItems(filtered);
+        setPagination({ page: 1, limit: 100, total: filtered.length, totalPages: 1 });
+      })
+      .finally(() => { if (mounted) setItemsLoading(false); });
+    return () => { mounted = false; };
+  }, [itemsUrl, selectedCategory]);
 
   // Sync URL params
   useEffect(() => {
@@ -105,162 +124,132 @@ export default function Menu() {
     setSearchParams(params, { replace: true });
   }, [selectedCategory, debouncedSearch, page, setSearchParams]);
 
-  const activeCategories = categories?.filter((c) => c.isActive && !c.parentId) || [];
-  const activeItems = items.filter((i) => i.isActive && (!i.trackStock || i.stockQty > 0));
+  const categoryList = useMemo(
+    () => (categoriesLoading ? [] : categories.map((c) => ({ id: c.id, name: c.name }))),
+    [categories, categoriesLoading]
+  );
+
+  const activeItems = useMemo(
+    () => items.filter((i) => i.isActive && (!i.trackStock || i.stockQty > 0)),
+    [items]
+  );
 
   function handleCategoryClick(catId: string | null) {
     setSelectedCategory(catId);
     setPage(1);
   }
 
+  function handleSearch(q: string) {
+    setSearch(q);
+  }
+
+  function handleQuickAdd(item: MenuItem) {
+    if (item._count.options > 0) {
+      setSelectedItemId(item.id);
+    } else {
+      addItem({
+        menuItemId: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: 1,
+        options: [],
+      });
+    }
+  }
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-      {/* Busca prominente — logo abaixo do header (Apple HIG: clarity) */}
-      <div className="mb-4">
-        <div className="relative">
-          <svg
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-            />
-          </svg>
-          <input
-            type="text"
-            placeholder={t('menu.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
-          />
-        </div>
-      </div>
+    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+2.5rem)]">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        {/* Header compacto */}
+        <header className="mb-4">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-kf-foreground">{t('menu.title', 'Cardápio')}</h1>
+          <p className="text-sm text-kf-muted">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
+        </header>
 
-      {/* Categorias — chips horizontais scrolláveis (Material 3: containment) */}
-      <div className="mb-4 -mx-4 sm:-mx-0 px-4 sm:px-0 overflow-x-auto no-scrollbar" role="tablist" aria-label="Categorias">
-        <div className="flex gap-2 w-max">
-          <button
-            onClick={() => handleCategoryClick(null)}
-            className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-              !selectedCategory
-                ? 'bg-[#FFD100] text-ink shadow-sm'
-                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            {t('menu.allCategories')}
-          </button>
-          {categoriesLoading && (
-            <span className="shrink-0 px-4 py-2 text-sm text-gray-400">{t('common.loading')}</span>
-          )}
-          {activeCategories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategoryClick(cat.id)}
-              className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
-                selectedCategory === cat.id
-                  ? 'bg-[#FFD100] text-ink shadow-sm'
-                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {cat.name}
-            </button>
-          ))}
-        </div>
-      </div>
+        {/* Busca */}
+        <QuickSearch initialValue={search} />
 
-      <div className="flex flex-col md:flex-row gap-6">
-        {/* Menu items grid — produtos imediatos */}
-        <div className="flex-1">
+        {/* Categorias */}
+        <CategoryPills
+          categories={categoryList}
+          selected={selectedCategory}
+          onSelect={handleCategoryClick}
+          loading={categoriesLoading}
+        />
+
+        {/* Grid de produtos */}
+        <div className="mt-4">
           {itemsLoading && (
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5" aria-busy="true" aria-label="Carregando cardápio">
-              {[0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  <div className="w-full aspect-[4/3] bg-gray-200 animate-pulse" />
-                  <div className="p-4 space-y-2">
-                    <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
-                    <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3 mt-2" />
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-busy="true" aria-label={t('menu.loading', 'Carregando cardápio')}>
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="rounded-kf-lg border border-kf-border bg-kf-surface p-3">
+                  <Skeleton className="aspect-[4/3] rounded-kf-md" />
+                  <Skeleton className="mt-3 h-4 w-3/4" />
+                  <Skeleton className="mt-2 h-3 w-1/2" />
+                  <div className="mt-3 flex items-center justify-between">
+                    <Skeleton className="h-4 w-16" />
+                    <Skeleton className="h-8 w-8 rounded-kf-md" />
                   </div>
                 </div>
               ))}
             </div>
           )}
 
-          {itemsError && (
-            <div className="bg-red-50 text-red-700 p-4 rounded-lg">
-              {t('common.error')}
-            </div>
+          {!itemsLoading && itemsError && (
+            <ErrorState
+              title={t('menu.errorTitle', 'Erro ao carregar cardápio')}
+              description={t('menu.errorDesc', 'Tente novamente em instantes.')}
+              retry={() => window.location.reload()}
+            />
           )}
 
           {!itemsLoading && !itemsError && activeItems.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-500">{t('menu.noItems')}</p>
-            </div>
+            <EmptyState
+              title={t('menu.noItemsTitle', 'Nenhum produto encontrado')}
+              description={t('menu.noItemsDesc', 'Tente outra busca ou categoria.')}
+              action={{ label: t('menu.clearFilters', 'Limpar filtros'), onClick: () => { setSelectedCategory(null); setSearch(''); } }}
+            />
           )}
 
           {!itemsLoading && activeItems.length > 0 && (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {activeItems.map((item) => (
-                  <button
+                  <ProductCard
                     key={item.id}
+                    id={item.id}
+                    name={item.name}
+                    description={item.description || undefined}
+                    price={item.price}
+                    image={item.image || undefined}
+                    badge={item._count.options > 0 ? t('menu.options', 'Opções') : undefined}
                     onClick={() => setSelectedItemId(item.id)}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow text-left"
-                  >
-                    <ProductImageCarousel
-                      images={resolveGallery(item.image, (item as any).images)}
-                      alt={item.name}
-                    />
-                    <div className="p-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                        <span className="text-primary-600 font-bold whitespace-nowrap">
-                          ${item.price.toFixed(2)}
-                        </span>
-                      </div>
-                      {item.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
-                      )}
-                      <div className="flex items-center gap-2 mt-3">
-                        <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                          {item.category.name}
-                        </span>
-                        {item._count.options > 0 && (
-                          <span className="text-xs text-primary-500 bg-primary-50 px-2 py-0.5 rounded-full">
-                            {t('menu.options')}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
+                    onAdd={() => handleQuickAdd(item)}
+                  />
                 ))}
               </div>
 
-              {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
-                <div className="flex justify-center items-center gap-2 mt-8">
-                  <button
+                <div className="mt-6 flex items-center justify-center gap-3">
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
                   >
-                    {t('locations.previous')}
-                  </button>
-                  <span className="text-sm text-gray-600">
+                    {t('common.previous', 'Anterior')}
+                  </Button>
+                  <span className="text-sm text-kf-muted">
                     {pagination.page} / {pagination.totalPages}
                   </span>
-                  <button
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={page >= pagination.totalPages}
                     onClick={() => setPage((p) => p + 1)}
-                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
                   >
-                    {t('locations.next')}
-                  </button>
+                    {t('common.next', 'Próximo')}
+                  </Button>
                 </div>
               )}
             </>
@@ -268,22 +257,9 @@ export default function Menu() {
         </div>
       </div>
 
-      {/* Item detail modal */}
       {selectedItemId && (
-        <MenuItemModal
-          itemId={selectedItemId}
-          onClose={() => setSelectedItemId(null)}
-        />
+        <MenuItemModal itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
       )}
     </div>
   );
-}
-
-function buildItemsUrl(categoryId: string | null, search: string, page: number): string {
-  const params = new URLSearchParams();
-  if (categoryId) params.set('categoryId', categoryId);
-  if (search) params.set('search', search);
-  if (page > 1) params.set('page', String(page));
-  params.set('limit', '12');
-  return `/api/menu/items?${params}`;
 }

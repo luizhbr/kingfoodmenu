@@ -11,7 +11,11 @@
     "search": "Pesquisar",
     "noResults": "Nenhum resultado encontrado",
     "viewAll": "Ver Tudo",
-    "required": "Obrigatório"
+    "required": "Obrigatório",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "retry": "Tentar novamente",
+    "close": "Fechar"
   },
   "nav": {
     "home": "Início",
@@ -238,5 +242,24 @@
     "title": "Página Não Encontrada",
     "message": "Desculpe, não conseguimos encontrar a página que você está procurando.",
     "backHome": "Voltar ao Início"
-  }
+  },
+  "menu.title": "Cardápio",
+  "menu.subtitle": "Escolha seus favoritos",
+  "menu.options": "Opções",
+  "menu.loading": "Carregando cardápio...",
+  "menu.errorTitle": "Erro ao carregar cardápio",
+  "menu.errorDesc": "Tente novamente em instantes.",
+  "menu.noItemsTitle": "Nenhum produto encontrado",
+  "menu.noItemsDesc": "Tente outra busca ou categoria.",
+  "menu.clearFilters": "Limpar filtros",
+  "menu.product": "Produto",
+  "menu.itemNotFound": "Produto não encontrado",
+  "menu.added": "Adicionado ✓",
+  "menu.addToCart": "Adicionar",
+  "menu.selectRequired": "Selecione as opções obrigatórias para continuar",
+  "common.required": "Obrigatório",
+  "common.close": "Fechar",
+  "common.retry": "Tentar novamente",
+  "common.previous": "Anterior",
+  "common.next": "Próximo"
 }

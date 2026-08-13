@@ -1,23 +1,35 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
-export function QuickSearch() {
-  const [q, setQ] = useState('');
+interface Props {
+  initialValue?: string;
+  onChange?: (value: string) => void;
+}
+
+export function QuickSearch({ initialValue = '', onChange }: Props) {
+  const [q, setQ] = useState(initialValue);
   const navigate = useNavigate();
+  const [params] = useSearchParams();
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (q.trim()) navigate(`/menu?search=${encodeURIComponent(q.trim())}`);
-    else navigate('/menu');
+    const category = params.get('category');
+    const query = new URLSearchParams();
+    if (q.trim()) query.set('search', q.trim());
+    if (category) query.set('category', category);
+    navigate(`/menu?${query}`);
   }
 
   return (
-    <form onSubmit={submit} className="px-4 sm:px-6 py-3">
+    <form onSubmit={submit} className="py-2">
       <div className="relative">
         <input
           type="search"
           value={q}
-          onChange={(e) => setQ(e.target.value)}
+          onChange={(e) => {
+            setQ(e.target.value);
+            onChange?.(e.target.value);
+          }}
           placeholder="Buscar no cardápio..."
           className="w-full min-h-[48px] rounded-kf-lg border border-kf-border bg-kf-surface pl-11 pr-4 text-sm text-kf-foreground placeholder:text-kf-muted focus:outline-none focus:ring-2 focus:ring-kf-primary/50"
           aria-label="Buscar no cardápio"

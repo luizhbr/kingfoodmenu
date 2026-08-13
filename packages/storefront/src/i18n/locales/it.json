@@ -11,7 +11,11 @@
     "search": "Cerca",
     "noResults": "Nessun risultato trovato",
     "viewAll": "Vedi Tutto",
-    "required": "Obbligatorio"
+    "required": "Obrigatório",
+    "previous": "Anterior",
+    "next": "Próximo",
+    "retry": "Tentar novamente",
+    "close": "Fechar"
   },
   "nav": {
     "home": "Home",

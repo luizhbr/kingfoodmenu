@@ -18,7 +18,7 @@ export const SUPPORTED_LANGUAGES = [
 
 export type LanguageCode = (typeof SUPPORTED_LANGUAGES)[number]['code'];
 
-const savedLanguage = localStorage.getItem('language') || 'en';
+const savedLanguage = localStorage.getItem('language') || 'pt';
 
 i18n.use(initReactI18next).init({
   resources: {
@@ -30,7 +30,7 @@ i18n.use(initReactI18next).init({
     pt: { translation: pt },
   },
   lng: savedLanguage,
-  fallbackLng: 'en',
+  fallbackLng: 'pt',
   interpolation: {
     escapeValue: false,
   },
