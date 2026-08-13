@@ -10,6 +10,7 @@ import {
   Skeleton,
 } from '@kitchenasty/shared-ui';
 import { QuickSearch } from '../components/QuickSearch.js';
+import CartBar from '../components/CartBar.js';
 import { CategoryPills } from '../components/CategoryPills.js';
 import MenuItemModal from '../components/MenuItemModal.js';
 import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
@@ -260,6 +261,7 @@ export default function Menu() {
       {selectedItemId && (
         <MenuItemModal itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
       )}
+      <CartBar />
     </div>
   );
 }

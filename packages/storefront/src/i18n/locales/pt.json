@@ -111,21 +111,32 @@
     "categories": "Categorias",
     "noItems": "Nenhum item encontrado.",
     "outOfStock": "Esgotado",
-    "addToCart": "Adicionar ao Carrinho",
+    "addToCart": "Adicionar ao carrinho",
     "options": "Opções",
     "quantity": "Quantidade",
     "selectOption": "Selecionar {{name}}",
     "itemAdded": "Adicionado ao carrinho!",
-    "allergens": "Alérgenos"
+    "allergens": "Alérgenos",
+    "maxSelect": "máx {{max}}",
+    "comment": "Observação (opcional)",
+    "commentPlaceholder": "Ex: sem cebola, bem passado..."
   },
   "cart": {
-    "title": "Seu Carrinho",
+    "title": "Seu carrinho",
     "empty": "Seu carrinho está vazio",
     "browsMenu": "Ver Cardápio",
     "subtotal": "Subtotal",
-    "checkout": "Finalizar",
+    "checkout": "Continuar para o checkout",
     "remove": "Remover",
-    "close": "Fechar carrinho"
+    "close": "Fechar carrinho",
+    "emptyDesc": "Adicione algo delicioso para começar.",
+    "browseMenu": "Ver cardápio",
+    "items": "itens",
+    "itemSingular": "item",
+    "clear": "Esvaziar carrinho",
+    "removed": "Produto removido",
+    "undo": "Desfazer",
+    "open": "Ver carrinho"
   },
   "checkout": {
     "title": "Finalizar Pedido",
@@ -242,24 +253,5 @@
     "title": "Página Não Encontrada",
     "message": "Desculpe, não conseguimos encontrar a página que você está procurando.",
     "backHome": "Voltar ao Início"
-  },
-  "menu.title": "Cardápio",
-  "menu.subtitle": "Escolha seus favoritos",
-  "menu.options": "Opções",
-  "menu.loading": "Carregando cardápio...",
-  "menu.errorTitle": "Erro ao carregar cardápio",
-  "menu.errorDesc": "Tente novamente em instantes.",
-  "menu.noItemsTitle": "Nenhum produto encontrado",
-  "menu.noItemsDesc": "Tente outra busca ou categoria.",
-  "menu.clearFilters": "Limpar filtros",
-  "menu.product": "Produto",
-  "menu.itemNotFound": "Produto não encontrado",
-  "menu.added": "Adicionado ✓",
-  "menu.addToCart": "Adicionar",
-  "menu.selectRequired": "Selecione as opções obrigatórias para continuar",
-  "common.required": "Obrigatório",
-  "common.close": "Fechar",
-  "common.retry": "Tentar novamente",
-  "common.previous": "Anterior",
-  "common.next": "Próximo"
+  }
 }

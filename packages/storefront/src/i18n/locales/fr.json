@@ -116,7 +116,10 @@
     "quantity": "Quantité",
     "selectOption": "Choisir {{name}}",
     "itemAdded": "Ajouté au panier !",
-    "allergens": "Allergènes"
+    "allergens": "Allergènes",
+    "maxSelect": "max {{max}}",
+    "comment": "Note (optional)",
+    "commentPlaceholder": "E.g.: no onion, well done..."
   },
   "cart": {
     "title": "Votre Panier",
@@ -125,7 +128,15 @@
     "subtotal": "Sous-total",
     "checkout": "Commander",
     "remove": "Supprimer",
-    "close": "Fermer le panier"
+    "close": "Fermer le panier",
+    "emptyDesc": "Add something delicious to get started.",
+    "browseMenu": "Browse menu",
+    "items": "items",
+    "itemSingular": "item",
+    "clear": "Empty cart",
+    "removed": "Item removed",
+    "undo": "Undo",
+    "open": "View cart"
   },
   "checkout": {
     "title": "Paiement",

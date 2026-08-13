@@ -11,11 +11,11 @@
     "search": "Buscar",
     "noResults": "No se encontraron resultados",
     "viewAll": "Ver todo",
-    "required": "Obrigatório",
+    "required": "Obligatorio",
     "previous": "Anterior",
-    "next": "Próximo",
-    "retry": "Tentar novamente",
-    "close": "Fechar"
+    "next": "Siguiente",
+    "retry": "Intentar de nuevo",
+    "close": "Cerrar"
   },
   "nav": {
     "home": "Inicio",
@@ -111,21 +111,32 @@
     "categories": "Categorías",
     "noItems": "No se encontraron elementos del menú.",
     "outOfStock": "Agotado",
-    "addToCart": "Agregar al Carrito",
+    "addToCart": "Añadir al carrito",
     "options": "Opciones",
     "quantity": "Cantidad",
     "selectOption": "Seleccionar {{name}}",
     "itemAdded": "¡Agregado al carrito!",
-    "allergens": "Alérgenos"
+    "allergens": "Alérgenos",
+    "maxSelect": "máx {{max}}",
+    "comment": "Nota (opcional)",
+    "commentPlaceholder": "Ej.: sin cebolla, bien cocido..."
   },
   "cart": {
-    "title": "Tu Carrito",
+    "title": "Tu carrito",
     "empty": "Tu carrito está vacío",
     "browsMenu": "Ver Menú",
     "subtotal": "Subtotal",
-    "checkout": "Pagar",
+    "checkout": "Continuar al pago",
     "remove": "Eliminar",
-    "close": "Cerrar carrito"
+    "close": "Cerrar carrito",
+    "emptyDesc": "Agrega algo delicioso para empezar.",
+    "browseMenu": "Ver menú",
+    "items": "artículos",
+    "itemSingular": "artículo",
+    "clear": "Vaciar carrito",
+    "removed": "Artículo eliminado",
+    "undo": "Deshacer",
+    "open": "Ver carrito"
   },
   "checkout": {
     "title": "Pagar",

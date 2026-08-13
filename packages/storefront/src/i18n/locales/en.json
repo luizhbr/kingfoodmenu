@@ -111,21 +111,32 @@
     "categories": "Categories",
     "noItems": "No menu items found.",
     "outOfStock": "Out of stock",
-    "addToCart": "Add to Cart",
+    "addToCart": "Add to cart",
     "options": "Options",
     "quantity": "Quantity",
     "selectOption": "Select {{name}}",
     "itemAdded": "Added to cart!",
-    "allergens": "Allergens"
+    "allergens": "Allergens",
+    "maxSelect": "max {{max}}",
+    "comment": "Note (optional)",
+    "commentPlaceholder": "E.g.: no onion, well done..."
   },
   "cart": {
-    "title": "Your Cart",
+    "title": "Your cart",
     "empty": "Your cart is empty",
     "browsMenu": "Browse Menu",
     "subtotal": "Subtotal",
-    "checkout": "Checkout",
+    "checkout": "Continue to checkout",
     "remove": "Remove",
-    "close": "Close cart"
+    "close": "Close cart",
+    "emptyDesc": "Add something delicious to get started.",
+    "browseMenu": "Browse menu",
+    "items": "items",
+    "itemSingular": "item",
+    "clear": "Empty cart",
+    "removed": "Item removed",
+    "undo": "Undo",
+    "open": "View cart"
   },
   "checkout": {
     "title": "Checkout",
@@ -242,24 +253,5 @@
     "title": "Page Not Found",
     "message": "Sorry, we couldn't find the page you're looking for.",
     "backHome": "Back to Home"
-  },
-  "menu.title": "Menu",
-  "menu.subtitle": "Choose your favorites",
-  "menu.options": "Options",
-  "menu.loading": "Loading menu...",
-  "menu.errorTitle": "Error loading menu",
-  "menu.errorDesc": "Please try again in a moment.",
-  "menu.noItemsTitle": "No products found",
-  "menu.noItemsDesc": "Try another search or category.",
-  "menu.clearFilters": "Clear filters",
-  "menu.product": "Product",
-  "menu.itemNotFound": "Product not found",
-  "menu.added": "Added ✓",
-  "menu.addToCart": "Add to cart",
-  "menu.selectRequired": "Select required options to continue",
-  "common.required": "Required",
-  "common.close": "Close",
-  "common.retry": "Try again",
-  "common.previous": "Previous",
-  "common.next": "Next"
+  }
 }

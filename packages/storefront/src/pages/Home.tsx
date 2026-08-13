@@ -10,6 +10,7 @@ import { CategoryPills } from '../components/CategoryPills.js';
 import { QuickSearch } from '../components/QuickSearch.js';
 import { PromoBanner } from '../components/PromoBanner.js';
 import { FeaturedProductGrid } from '../components/FeaturedProductGrid.js';
+import CartBar from '../components/CartBar.js';
 
 const WA_URL = 'https://wa.me/12673107535';
 const GROUP_URL = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';

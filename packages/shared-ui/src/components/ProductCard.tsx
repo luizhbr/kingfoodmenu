@@ -47,8 +47,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
         <p className="mt-0.5 text-xs text-kf-muted line-clamp-2">{description}</p>
       )}
       <div className="mt-auto flex items-center justify-between pt-3">
-        <Price value={price} size="sm" />
-        <Button size="sm" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
+        <Price value={price} size="md" />
+        <Button size="md" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
           +
         </Button>
       </div>

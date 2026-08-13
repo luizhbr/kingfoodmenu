@@ -116,7 +116,10 @@
     "quantity": "Menge",
     "selectOption": "{{name}} auswählen",
     "itemAdded": "Zum Warenkorb hinzugefügt!",
-    "allergens": "Allergene"
+    "allergens": "Allergene",
+    "maxSelect": "max {{max}}",
+    "comment": "Note (optional)",
+    "commentPlaceholder": "E.g.: no onion, well done..."
   },
   "cart": {
     "title": "Ihr Warenkorb",
@@ -125,7 +128,15 @@
     "subtotal": "Zwischensumme",
     "checkout": "Zur Kasse",
     "remove": "Entfernen",
-    "close": "Warenkorb schließen"
+    "close": "Warenkorb schließen",
+    "emptyDesc": "Add something delicious to get started.",
+    "browseMenu": "Browse menu",
+    "items": "items",
+    "itemSingular": "item",
+    "clear": "Empty cart",
+    "removed": "Item removed",
+    "undo": "Undo",
+    "open": "View cart"
   },
   "checkout": {
     "title": "Kasse",

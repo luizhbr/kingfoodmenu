@@ -8,6 +8,8 @@ import {
   Price,
   QuantitySelector,
   Skeleton,
+  Input,
+  IconButton,
 } from '@kitchenasty/shared-ui';
 import { FALLBACK_ITEMS } from '../data/menuFallback.js';
 import ProductImageCarousel from './ProductImageCarousel.js';
@@ -63,12 +65,15 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selections, setSelections] = useState<Record<string, string[]>>({});
+  const [comment, setComment] = useState('');
   const [added, setAdded] = useState(false);
 
   useEffect(() => {
     setLoading(true);
     setError(null);
     setAdded(false);
+    setQuantity(1);
+    setComment('');
     const apiBase = import.meta.env.VITE_API_URL || '';
     fetch(`${apiBase}/api/menu/items/${itemId}`)
       .then((res) => {
@@ -174,9 +179,9 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
       price: item.price,
       quantity,
       options: cartOptions,
+      comment,
     });
-    setAdded(true);
-    setTimeout(() => onClose(), 900);
+    onClose();
   }
 
   return (
@@ -201,76 +206,48 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
       )}
 
       {!loading && item && (
-        <div className="space-y-4">
-          <div className="rounded-kf-lg overflow-hidden bg-kf-surface-muted">
-            <ProductImageCarousel images={resolveGallery(item.image, item.images)} alt={item.name} />
-          </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <h2 className="text-xl font-extrabold text-kf-foreground">{item.name}</h2>
-              <p className="text-sm text-kf-muted">{item.category.name}</p>
+        <>
+          <div className="max-h-[60vh] overflow-y-auto pr-1 pb-4 space-y-4">
+            <div className="rounded-kf-lg overflow-hidden bg-kf-surface-muted">
+              <ProductImageCarousel images={resolveGallery(item.image, item.images)} alt={item.name} />
             </div>
-            <Price value={item.price} size="lg" />
-          </div>
 
-          {item.description && (
-            <p className="text-sm text-kf-muted">{item.description}</p>
-          )}
-
-          {item.allergens.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {item.allergens.map((a) => (
-                <Badge key={a.allergen.id} variant="warning">
-                  {a.allergen.name}
-                </Badge>
-              ))}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-extrabold text-kf-foreground">{item.name}</h2>
+                <p className="text-sm text-kf-muted">{item.category.name}</p>
+              </div>
+              <Price value={item.price} size="lg" />
             </div>
-          )}
 
-          {item.options.length > 0 && (
-            <div className="space-y-5 rounded-kf-lg border border-kf-border bg-kf-surface p-4">
-              {item.options.map((opt) => (
-                <div key={opt.id}>
-                  <div className="mb-2 flex items-center gap-2">
-                    <h3 className="text-sm font-semibold text-kf-foreground">{opt.name}</h3>
-                    {opt.isRequired && <Badge variant="danger">{t('common.required', 'Obrigatório')}</Badge>}
-                    {opt.maxSelect > 1 && <span className="text-xs text-kf-muted">máx {opt.maxSelect}</span>}
-                  </div>
+            {item.description && <p className="text-sm text-kf-muted">{item.description}</p>}
 
-                  {opt.displayType === 'SELECT' ? (
-                    <div className="space-y-2">
-                      {opt.values.map((val) => {
-                        const selected = (selections[opt.id] || []).includes(val.id);
-                        return (
-                          <label
-                            key={val.id}
-                            className={`flex cursor-pointer items-center gap-3 rounded-kf-md border p-3 transition-colors ${
-                              selected
-                                ? 'border-kf-primary bg-kf-primary/10'
-                                : 'border-kf-border hover:border-kf-primary/50'
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name={`option-${opt.id}`}
-                              checked={selected}
-                              onChange={() => handleSelect(opt.id, val.id, opt.displayType, opt.maxSelect)}
-                              className="h-4 w-4 accent-kf-primary"
-                            />
-                            <span className="flex-1 text-sm text-kf-foreground">{val.name}</span>
-                            {val.priceModifier !== 0 && (
-                              <span className="text-xs text-kf-muted">+{t('currency', '${{amount}}').replace('{{amount}}', val.priceModifier.toFixed(2))}</span>
-                            )}
-                          </label>
-                        );
-                      })}
+            {item.allergens.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {item.allergens.map((a) => (
+                  <Badge key={a.allergen.id} variant="warning">
+                    {a.allergen.name}
+                  </Badge>
+                ))}
+              </div>
+            )}
+
+            {item.options.length > 0 && (
+              <div className="space-y-5 rounded-kf-lg border border-kf-border bg-kf-surface p-4">
+                {item.options.map((opt) => (
+                  <div key={opt.id}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h3 className="text-sm font-semibold text-kf-foreground">{opt.name}</h3>
+                      {opt.isRequired && <Badge variant="danger">{t('common.required', 'Obrigatório')}</Badge>}
+                      {opt.maxSelect > 1 && !opt.isRequired && (
+                        <span className="text-xs text-kf-muted">{t('menu.maxSelect', 'máx {{max}}').replace('{{max}}', String(opt.maxSelect))}</span>
+                      )}
                     </div>
-                  ) : (
+
                     <div className="space-y-2">
                       {opt.values.map((val) => {
                         const selected = (selections[opt.id] || []).includes(val.id);
-                        const isRadio = opt.displayType === 'RADIO';
+                        const isRadio = opt.displayType === 'SELECT' || opt.displayType === 'RADIO';
                         return (
                           <label
                             key={val.id}
@@ -289,38 +266,51 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
                             />
                             <span className="flex-1 text-sm text-kf-foreground">{val.name}</span>
                             {val.priceModifier !== 0 && (
-                              <span className="text-xs text-kf-muted">+${val.priceModifier.toFixed(2)}</span>
+                              <span className="text-xs text-kf-muted">
+                                +<Price value={val.priceModifier} size="sm" />
+                              </span>
                             )}
                           </label>
                         );
                       })}
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
 
-          <div className="flex items-center justify-between gap-4 rounded-kf-lg border border-kf-border bg-kf-surface p-4">
-            <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={99} />
-            <Button onClick={handleAddToCart} disabled={!canAdd} className="flex-1 min-h-[52px]">
+            <Input
+              label={t('menu.comment', 'Observação (opcional)')}
+              placeholder={t('menu.commentPlaceholder', 'Ex: sem cebola, bem passado...')}
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+          </div>
+
+          <div className="sticky bottom-0 mt-4 -mx-5 -mb-5 border-t border-kf-border bg-kf-surface p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+            <div className="mb-3 flex items-center justify-between">
+              <QuantitySelector value={quantity} onChange={setQuantity} min={1} max={99} />
+              <div className="text-right">
+                <p className="text-xs text-kf-muted">{t('cart.subtotal', 'Subtotal')}</p>
+                <Price value={total} size="lg" />
+              </div>
+            </div>
+            <Button onClick={handleAddToCart} disabled={!canAdd} className="w-full min-h-[52px]">
               {added ? (
                 t('menu.added', 'Adicionado ✓')
               ) : (
-                <span className="flex items-center gap-2">
-                  {t('menu.addToCart', 'Adicionar')}
-                  <Price value={total} size="sm" />
+                <span className="flex items-center justify-center gap-2">
+                  {t('menu.addToCart', 'Adicionar ao carrinho')}
                 </span>
               )}
             </Button>
+            {!canAdd && item.options.some((o) => o.isRequired) && (
+              <p className="mt-2 text-center text-xs text-kf-danger">
+                {t('menu.selectRequired', 'Selecione as opções obrigatórias para continuar')}
+              </p>
+            )}
           </div>
-
-          {!canAdd && item.options.some((o) => o.isRequired) && (
-            <p className="text-center text-xs text-kf-danger">
-              {t('menu.selectRequired', 'Selecione as opções obrigatórias para continuar')}
-            </p>
-          )}
-        </div>
+        </>
       )}
     </Modal>
   );

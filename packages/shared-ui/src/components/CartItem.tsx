@@ -4,7 +4,7 @@ import { Price } from './Price.js';
 import { QuantitySelector } from './QuantitySelector.js';
 
 export interface CartItemProps {
-  id: string;
+  id?: string;
   name: string;
   quantity: number;
   unitPrice: number;

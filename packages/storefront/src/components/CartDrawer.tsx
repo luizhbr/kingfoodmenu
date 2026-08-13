@@ -1,11 +1,21 @@
-import { useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useCallback, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
+import {
+  Button,
+  CartItem,
+  Drawer,
+  EmptyState,
+  Price,
+  IconButton,
+} from '@kitchenasty/shared-ui';
 
 export default function CartDrawer() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, clear, subtotal } = useCart();
+  const [removedItem, setRemovedItem] = useState<{ id: string; snapshot: typeof items } | null>(null);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -25,115 +35,93 @@ export default function CartDrawer() {
     };
   }, [isOpen, handleKeyDown]);
 
-  if (!isOpen) return null;
+  function handleRemove(id: string) {
+    if (removedItem) removeItem(removedItem.id);
+    setRemovedItem({ id, snapshot: items });
+    // Auto-dismiss undo after 4s
+    setTimeout(() => {
+      setRemovedItem((current) => {
+        if (current?.id === id) {
+          removeItem(id);
+          return null;
+        }
+        return current;
+      });
+    }, 4000);
+  }
+
+  function handleUndo() {
+    if (removedItem) {
+      setRemovedItem(null);
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setIsOpen(false)}>
-      <div className="absolute inset-0 bg-black/40" />
-      <div
-        className="relative w-full max-w-md bg-white h-full shadow-xl flex flex-col"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">{t('cart.title')}</h2>
-          <button
-            onClick={() => setIsOpen(false)}
-            className="p-1.5 rounded-md hover:bg-gray-100 text-gray-500"
-            aria-label={t('cart.close')}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Items */}
-        <div className="flex-1 overflow-y-auto px-6 py-4 pb-[calc(9.5rem+env(safe-area-inset-bottom))]">
+    <Drawer open={isOpen} onClose={() => setIsOpen(false)} title={t('cart.title', 'Seu carrinho')} position="bottom">
+      <div className="flex flex-col h-full">
+        <div className="flex-1 overflow-y-auto p-5 pb-[calc(11rem+env(safe-area-inset-bottom))]">
           {items.length === 0 ? (
-            <div className="text-center py-12">
-              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-              </svg>
-              <p className="text-gray-500">{t('cart.empty')}</p>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="mt-4 text-primary-600 hover:text-primary-700 text-sm font-medium"
-              >
-                {t('cart.browsMenu')}
-              </button>
-            </div>
+            <EmptyState
+              icon="🛒"
+              title={t('cart.empty', 'Seu carrinho está vazio')}
+              description={t('cart.emptyDesc', 'Adicione algo delicioso para começar.')}
+              action={{ label: t('cart.browseMenu', 'Ver cardápio'), onClick: () => { setIsOpen(false); navigate('/menu'); } }}
+            />
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {items.map((item) => {
-                const optionsTotal = item.options.reduce((s, o) => s + o.priceModifier, 0);
-                const lineTotal = (item.price + optionsTotal) * item.quantity;
+                const isPendingRemoval = removedItem?.id === item.id;
                 return (
-                  <div key={item.id} className="flex gap-3 pb-4 border-b border-gray-100">
-                    {/* Item info */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 text-sm">{item.name}</h3>
-                      {item.options.length > 0 && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {item.options.map((o) => o.valueName).join(', ')}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50"
-                        >
-                          -
-                        </button>
-                        <span className="text-sm font-medium w-6 text-center">{item.quantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                          className="w-6 h-6 flex items-center justify-center border border-gray-300 rounded text-xs text-gray-600 hover:bg-gray-50"
-                        >
-                          +
-                        </button>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className="ml-2 text-xs text-red-500 hover:text-red-700"
-                        >
-                          {t('cart.remove')}
-                        </button>
-                      </div>
-                    </div>
-                    {/* Price */}
-                    <div className="text-sm font-medium text-gray-900">
-                      ${lineTotal.toFixed(2)}
-                    </div>
+                  <div
+                    key={item.id}
+                    className={`transition-all duration-300 ${isPendingRemoval ? 'opacity-50 scale-95' : ''}`}
+                  >
+                    <CartItem
+                      name={item.name}
+                      quantity={item.quantity}
+                      unitPrice={item.price}
+                      options={item.options.map((o) => o.valueName)}
+                      image={undefined}
+                      onQuantityChange={(qty) => updateQuantity(item.id, qty)}
+                      onRemove={() => handleRemove(item.id)}
+                    />
                   </div>
                 );
               })}
+
+              {removedItem && (
+                <div className="flex items-center justify-between rounded-kf-lg bg-kf-ink/5 px-3 py-2">
+                  <span className="text-sm text-kf-foreground">{t('cart.removed', 'Produto removido')}</span>
+                  <Button variant="ghost" size="sm" onClick={handleUndo}>{t('cart.undo', 'Desfazer')}</Button>
+                </div>
+              )}
             </div>
           )}
         </div>
 
-        {/* Footer — fixo acima do bottom dock (Apple HIG Depth + Safe Area) */}
         {items.length > 0 && (
-          <div className="absolute bottom-[calc(4.25rem+env(safe-area-inset-bottom))] left-0 right-0 border-t border-gray-200 bg-white px-6 py-4 space-y-3 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">{t('cart.subtotal')}</span>
-              <span className="font-semibold text-gray-900">${subtotal.toFixed(2)}</span>
+          <div className="absolute inset-x-0 bottom-2 border-t border-kf-border bg-kf-surface p-5 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.06)] rounded-t-kf-lg">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-kf-muted">
+                {(() => { const n = items.reduce((sum, i) => sum + i.quantity, 0); return `${t('cart.subtotal', 'Subtotal')} · ${n} ${n === 1 ? t('cart.itemSingular', 'item') : t('cart.items', 'itens')}`; })()}
+              </span>
+              <Price value={subtotal} size="lg" />
             </div>
             <Link
               to="/checkout"
               onClick={() => setIsOpen(false)}
-              className="block text-center bg-primary-600 text-white py-2.5 rounded-lg font-semibold hover:bg-primary-700 transition-colors"
             >
-              {t('cart.checkout')}
+              <Button className="w-full min-h-[52px]">{t('cart.checkout', 'Continuar para o checkout')}</Button>
             </Link>
             <button
               onClick={clear}
-              className="block w-full text-center text-sm text-gray-500 hover:text-gray-700"
+              className="mt-3 block w-full text-center text-sm text-kf-danger hover:text-kf-danger-hover"
             >
-              {t('common.delete')}
+              {t('cart.clear', 'Esvaziar carrinho')}
             </button>
           </div>
         )}
       </div>
-    </div>
+    </Drawer>
   );
 }
