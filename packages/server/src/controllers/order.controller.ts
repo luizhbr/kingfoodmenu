@@ -692,6 +692,7 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
           options: true,
         },
       },
+      payments: { orderBy: { createdAt: 'desc' }, take: 1 },
     },
   });
 

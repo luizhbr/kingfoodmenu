@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
+import DriverWhatsAppModal from './DriverWhatsAppModal.js';
+import type { DriverOrder } from '../lib/formatDriverMessage.js';
 
 // ── Tipos (espelham a API existente — NENHUM contrato alterado) ─────────────
 interface OrderItem {
@@ -99,6 +101,7 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState('');
   const { printState, printOrder } = usePrintOrder();
+  const [driverOrder, setDriverOrder] = useState<DriverOrder | null>(null);
 
   const isPending = order.status === 'PENDING';
   const action = NEXT_ACTION[order.status];
@@ -144,6 +147,49 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
   }
 
   const isTerminal = ['DELIVERED', 'PICKED_UP', 'CANCELLED'].includes(order.status);
+
+  async function handleSendToDriver() {
+    try {
+      const token = localStorage.getItem('token') || '';
+      const res = await fetch(`/api/orders/${order.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Falha ao carregar pedido');
+      const data = await res.json();
+      const fullOrder = data.data;
+      // Map to DriverOrder interface
+      setDriverOrder({
+        orderNumber: fullOrder.orderNumber,
+        orderType: fullOrder.orderType,
+        status: fullOrder.status,
+        total: fullOrder.total,
+        comment: fullOrder.comment,
+        guestName: fullOrder.guestName,
+        guestPhone: fullOrder.guestPhone,
+        customer: fullOrder.customer ? {
+          name: fullOrder.customer.name,
+          phone: fullOrder.customer.phone,
+        } : null,
+        deliveryLine1: fullOrder.deliveryLine1,
+        deliveryLine2: fullOrder.deliveryLine2,
+        deliveryCity: fullOrder.deliveryCity,
+        deliveryState: fullOrder.deliveryState,
+        deliveryPostalCode: fullOrder.deliveryPostalCode,
+        items: (fullOrder.items || []).map((it: any) => ({
+          name: it.menuItem?.name || it.name,
+          quantity: it.quantity,
+          comment: it.comment,
+          options: (it.options || []).map((o: any) => ({
+            name: o.name,
+            value: o.value,
+          })),
+        })),
+      });
+    } catch (e) {
+      // Silently fail — the print flow is independent
+      console.error('driver modal:', e);
+    }
+  }
 
   return (
     <div
@@ -229,6 +275,17 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
             <span aria-hidden>🖨</span>
             {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir'}
           </button>
+          {order.orderType === 'DELIVERY' && (
+            <button
+              type="button"
+              onClick={() => void handleSendToDriver()}
+              className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl border border-[#25D366]/30 text-[#075E54] text-sm font-semibold hover:bg-[#25D366]/10 transition-colors"
+              aria-label={`Enviar comanda para o entregador ${order.orderNumber}`}
+            >
+              <span aria-hidden>🚗</span>
+              Entregar
+            </button>
+          )}
         </div>
         {printState.status !== 'idle' && (
           <p className={`text-xs mt-1.5 font-medium ${
@@ -239,6 +296,10 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
           </p>
         )}
       </div>
+
+      {driverOrder && (
+        <DriverWhatsAppModal order={driverOrder} onClose={() => setDriverOrder(null)} />
+      )}
 
       {/* Expansão — detalhes essenciais (Apple HIG: progressive disclosure) */}
       {expanded && (
