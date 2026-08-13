@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.js';
-import FeaturedItems from '../components/FeaturedItems.js';
 import Footer from '../components/Footer.js';
 
 const WA_URL = 'https://wa.me/12673107535';
@@ -277,16 +276,8 @@ export default function Home() {
               <span className="block w-5 h-0.5 bg-ink rounded" />
               <span className="block w-5 h-0.5 bg-ink rounded" />
             </button>
-            <Link to="/" className="flex items-center gap-2 min-w-0">
-              <img
-                src={logo}
-                alt="King Food"
-                className="w-9 h-9 object-cover rounded-xl shrink-0 bg-[#FFD100]"
-              />
-              <div className="leading-tight text-left min-w-0">
-                <p className="font-extrabold text-base tracking-tight truncate text-ink">King Food</p>
-                <p className="text-[10px] text-gray-500 truncate">Delivery · Columbus, OH</p>
-              </div>
+            <Link to="/" className="flex items-center min-w-0" aria-label="King Food — início">
+              <p className="font-extrabold text-base tracking-tight truncate text-ink">King Food</p>
             </Link>
           </div>
 
@@ -430,7 +421,7 @@ export default function Home() {
       {/* Main home content — hero compacto + destaques */}
       <main className="max-w-5xl mx-auto w-full">
         {/* Hero compacto */}
-        <section className="px-4 sm:px-6 pt-6 sm:pt-12 pb-2 text-center">
+        <section className="px-4 sm:px-6 pt-10 sm:pt-16 pb-6 text-center">
           <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-3">
             Delivery · Columbus, OH
           </p>
@@ -493,13 +484,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Destaques — produtos reais aparecem cedo */}
-        <section className="pt-8 pb-2">
-          <FeaturedItems limit={4} />
-        </section>
-
         {/* Sobre rápido */}
-        <section className="px-4 sm:px-6 pt-8 pb-10 text-center">
+        <section className="px-4 sm:px-6 pt-12 pb-14 text-center">
           <div className="max-w-md mx-auto">
             <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-emerald-600' : 'text-gray-500'}`}>
               {openStatus.open ? '● ' : '○ '}
