@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useApi } from '../hooks/useApi.js';
 import MenuItemModal from '../components/MenuItemModal.js';
-import FeaturedItems from '../components/FeaturedItems.js';
 import ProductImageCarousel from '../components/ProductImageCarousel.js';
 import { resolveGallery } from '../lib/gallery.js';
 import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
@@ -47,7 +46,6 @@ export default function Menu() {
   const [debouncedSearch, setDebouncedSearch] = useState(search);
   const [page, setPage] = useState(1);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
-  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
 
   const { data: apiCategories, isLoading: categoriesLoading, error: categoriesError } = useApi<Category[]>('/api/menu/categories');
   const categories = apiCategories || FALLBACK_CATEGORIES;
@@ -113,20 +111,13 @@ export default function Menu() {
   function handleCategoryClick(catId: string | null) {
     setSelectedCategory(catId);
     setPage(1);
-    setMobileCategoriesOpen(false);
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">{t('menu.title')}</h1>
-        <p className="mt-2 text-gray-600">{t('home.heroDescription').split('.')[0]}.</p>
-      </div>
-
-      {/* Search bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      {/* Busca prominente — logo abaixo do header (Apple HIG: clarity) */}
+      <div className="mb-4">
+        <div className="relative">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
             fill="none"
@@ -150,58 +141,41 @@ export default function Menu() {
         </div>
       </div>
 
-      {/* Mobile category toggle */}
-      <button
-        className="md:hidden flex items-center gap-2 mb-4 text-sm font-medium text-primary-600 hover:text-primary-700"
-        onClick={() => setMobileCategoriesOpen(!mobileCategoriesOpen)}
-      >
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h7" />
-        </svg>
-        {mobileCategoriesOpen ? t('menu.categories') : t('menu.categories')}
-      </button>
-
-      <div className="flex flex-col md:flex-row gap-8">
-        {/* Category sidebar */}
-        <aside className={`md:w-56 shrink-0 ${mobileCategoriesOpen ? '' : 'hidden md:block'}`}>
-          <nav className="space-y-1">
+      {/* Categorias — chips horizontais scrolláveis (Material 3: containment) */}
+      <div className="mb-4 -mx-4 sm:-mx-0 px-4 sm:px-0 overflow-x-auto no-scrollbar" role="tablist" aria-label="Categorias">
+        <div className="flex gap-2 w-max">
+          <button
+            onClick={() => handleCategoryClick(null)}
+            className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+              !selectedCategory
+                ? 'bg-[#FFD100] text-ink shadow-sm'
+                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {t('menu.allCategories')}
+          </button>
+          {categoriesLoading && (
+            <span className="shrink-0 px-4 py-2 text-sm text-gray-400">{t('common.loading')}</span>
+          )}
+          {activeCategories.map((cat) => (
             <button
-              onClick={() => handleCategoryClick(null)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                !selectedCategory
-                  ? 'bg-primary-50 text-primary-700'
-                  : 'text-gray-600 hover:bg-gray-100'
+              key={cat.id}
+              onClick={() => handleCategoryClick(cat.id)}
+              className={`shrink-0 min-h-[40px] px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+                selectedCategory === cat.id
+                  ? 'bg-[#FFD100] text-ink shadow-sm'
+                  : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
               }`}
             >
-              {t('menu.allCategories')}
+              {cat.name}
             </button>
-            {categoriesLoading && (
-              <div className="px-3 py-2 text-sm text-gray-400">{t('common.loading')}</div>
-            )}
-            {activeCategories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  selectedCategory === cat.id
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {cat.name}
-                <span className="text-gray-400 ml-1 text-xs">({cat._count.menuItems})</span>
-              </button>
-            ))}
-          </nav>
-        </aside>
+          ))}
+        </div>
+      </div>
 
-        {/* Menu items grid */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* Menu items grid — produtos imediatos */}
         <div className="flex-1">
-          {/* Destaques — produtos reais aparecem cedo */}
-          <div className="mb-8 -mx-4 sm:-mx-0">
-            <FeaturedItems limit={3} compact />
-          </div>
-
           {itemsLoading && (
             <div className="flex justify-center py-12">
               <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
@@ -222,7 +196,7 @@ export default function Menu() {
 
           {!itemsLoading && activeItems.length > 0 && (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
                 {activeItems.map((item) => (
                   <button
                     key={item.id}

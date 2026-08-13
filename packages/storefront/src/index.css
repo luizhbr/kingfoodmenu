@@ -142,3 +142,12 @@ html.dark {
     transform: scaleX(1);
   }
 }
+
+/* Esconde scrollbar em chips horizontais (categorias do cardápio) */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
