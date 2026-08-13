@@ -5,6 +5,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.js';
+import FeaturedItems from '../components/FeaturedItems.js';
+import Footer from '../components/Footer.js';
 
 const WA_URL = 'https://wa.me/12673107535';
 const GROUP_URL = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
@@ -254,79 +256,54 @@ export default function Home() {
   }, [loading]);
 
   return (
-    <div
-      className="kf-app-shell flex flex-col overflow-hidden relative text-white"
-      style={{
-        background: `linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.7) 30%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.15) 100%), url('${BG}') center/cover no-repeat`,
-      }}
-    >
+    <div className="min-h-screen bg-[#F5F1E8] text-gray-900 relative pb-[var(--kf-nav-h)] md:pb-0">
       {loading && <SplashScreen exiting={splashExiting} />}
 
-      {/* Header v3 */}
+      {/* Header limpo */}
       <header
-        className={`shrink-0 z-40 text-white border-b transition-all duration-300 ${
-          scrolled
-            ? 'bg-black/60 backdrop-blur-md border-white/10'
-            : 'bg-transparent border-transparent'
+        className={`sticky top-0 z-40 bg-[#F5F1E8]/95 backdrop-blur-md border-b border-ink/5 transition-all duration-300 ${
+          scrolled ? 'shadow-sm' : ''
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full gap-2">
-          <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center justify-between px-4 py-2.5 max-w-5xl mx-auto w-full gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-white/10 transition active:scale-90 shrink-0"
+              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-ink/5 transition active:scale-90 shrink-0"
               aria-label="Abrir menu"
             >
-              <span className="block w-5 h-0.5 bg-white rounded" />
-              <span className="block w-5 h-0.5 bg-white rounded" />
-              <span className="block w-5 h-0.5 bg-white rounded" />
+              <span className="block w-5 h-0.5 bg-ink rounded" />
+              <span className="block w-5 h-0.5 bg-ink rounded" />
+              <span className="block w-5 h-0.5 bg-ink rounded" />
             </button>
-            <Link to="/" className="flex items-center gap-2.5 min-w-0">
+            <Link to="/" className="flex items-center gap-2 min-w-0">
               <img
                 src={logo}
                 alt="King Food"
-                className="w-8 h-8 object-cover rounded-lg shrink-0 bg-[#FFD100]"
+                className="w-9 h-9 object-cover rounded-xl shrink-0 bg-[#FFD100]"
               />
               <div className="leading-tight text-left min-w-0">
-                <p className="font-bold text-sm tracking-tight truncate">King Food</p>
-                <p className="text-[10px] text-white/50 truncate">Açaí BR · Delivery</p>
+                <p className="font-extrabold text-base tracking-tight truncate text-ink">King Food</p>
+                <p className="text-[10px] text-gray-500 truncate">Delivery · Columbus, OH</p>
               </div>
             </Link>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setShowHours(true)}
-            className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-bold border ${
-              openStatus.open
-                ? 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300'
-                : 'bg-white/10 border-white/15 text-white/70'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                openStatus.open ? 'bg-emerald-400 animate-pulse' : 'bg-white/40'
-              }`}
-            />
-            <span className="sm:hidden">{openStatus.open ? 'Aberto' : 'Fechado'}</span>
-            <span className="hidden sm:inline">{openStatus.label}</span>
-          </button>
-
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
-            <Link to="/" className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-[#FFD100]">
+            <Link to="/" className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-bold text-primary-600">
               Início
             </Link>
             <Link
               to="/menu"
-              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10"
+              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-ink/5"
             >
               Cardápio
             </Link>
             <button
               type="button"
               onClick={() => setShowHours(true)}
-              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-white/60 hover:text-white hover:bg-white/10"
+              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-ink/5"
             >
               Horários
             </button>
@@ -334,40 +311,66 @@ export default function Home() {
               href={WA_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-1 min-h-[44px] px-4 py-2 rounded-lg text-sm font-bold bg-[#25D366] text-white"
+              className="ml-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold bg-[#25D366] text-white"
             >
               WhatsApp
             </a>
           </nav>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setShowHours(true)}
+              className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold border ${
+                openStatus.open
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                  : 'bg-gray-100 border-gray-300 text-gray-600'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  openStatus.open ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
+                }`}
+              />
+              <span className="sm:hidden">{openStatus.open ? 'Aberto' : 'Fechado'}</span>
+              <span className="hidden sm:inline">{openStatus.label}</span>
+            </button>
+            <Link
+              to="/menu"
+              className="shrink-0 min-h-[44px] px-4 py-2 rounded-xl bg-[#FFD100] text-ink text-sm font-extrabold shadow-sm active:scale-[0.98] transition"
+            >
+              Pedir
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* Drawer overlay */}
       <div
-        className={`fixed inset-0 z-50 bg-black/60 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 bg-ink/50 transition-opacity duration-300 ${
           drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setDrawerOpen(false)}
       />
 
-      {/* Drawer v3 */}
+      {/* Drawer */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-black border-r border-white/10 shadow-2xl transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#F5F1E8] border-r border-ink/10 shadow-2xl transition-transform duration-300 ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="px-4 py-5 flex items-center justify-between border-b border-white/10">
+        <div className="px-4 py-5 flex items-center justify-between border-b border-ink/10">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="King Food" className="w-10 h-10 object-cover rounded-lg bg-[#FFD100]" />
+            <img src={logo} alt="King Food" className="w-10 h-10 object-cover rounded-xl bg-[#FFD100]" />
             <div>
-              <p className="font-bold text-white">King Food</p>
-              <p className="text-xs text-white/40">Menu</p>
+              <p className="font-bold text-ink">King Food</p>
+              <p className="text-xs text-gray-500">Menu</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="w-11 h-11 rounded-full bg-white/10 text-white"
+            className="w-11 h-11 rounded-full bg-ink/5 text-ink"
             aria-label="Fechar"
           >
             ✕
@@ -377,7 +380,7 @@ export default function Home() {
           <Link
             to="/menu"
             onClick={() => setDrawerOpen(false)}
-            className="block w-full text-left px-5 py-4 text-sm font-medium text-white/80 hover:bg-[#FFD100] hover:text-black border-b border-white/5"
+            className="block w-full text-left px-5 py-4 text-sm font-medium text-ink hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
           >
             <span className="mr-3">🛒</span>
             Pedir agora
@@ -391,7 +394,7 @@ export default function Home() {
                   setDrawerOpen(false);
                   setShowHours(true);
                 }}
-                className="w-full text-left px-5 py-4 text-sm font-medium text-white/80 hover:bg-[#FFD100] hover:text-black border-b border-white/5"
+                className="w-full text-left px-5 py-4 text-sm font-medium text-ink/80 hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
               >
                 <span className="mr-3">{link.icon}</span>
                 {link.label}
@@ -403,7 +406,7 @@ export default function Home() {
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setDrawerOpen(false)}
-                className="block w-full text-left px-5 py-4 text-sm font-medium text-white/80 hover:bg-[#FFD100] hover:text-black border-b border-white/5"
+                className="block w-full text-left px-5 py-4 text-sm font-medium text-ink/80 hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
               >
                 <span className="mr-3">{link.icon}</span>
                 {link.label}
@@ -411,126 +414,107 @@ export default function Home() {
             )
           )}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-white/10">
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-ink/10">
           <p
             className={`text-xs text-center font-semibold ${
-              openStatus.open ? 'text-emerald-400' : 'text-white/50'
+              openStatus.open ? 'text-emerald-600' : 'text-gray-500'
             }`}
           >
             {openStatus.open ? '● ' : '○ '}
             {openStatus.label} · {openStatus.detail}
           </p>
-          <p className="text-xs text-white/30 text-center mt-1">Delivery · Columbus, OH</p>
+          <p className="text-xs text-gray-400 text-center mt-1">Delivery · Columbus, OH</p>
         </div>
       </aside>
 
-      {/* Main home content */}
-      <div className="relative flex-1 min-h-0 w-full max-w-5xl mx-auto pb-[var(--kf-nav-h)] md:pb-0">
-        <main ref={mainRef} className="absolute inset-0 overflow-y-auto pb-6">
-          <div className="max-w-sm md:max-w-4xl mx-auto flex flex-col md:flex-row md:items-center md:gap-12 text-center md:text-left px-5 pt-4 pb-4 md:pt-16">
-            <div className="flex flex-col items-center md:items-start flex-1 w-full">
-              <img
-                src={logo}
-                alt="King Food"
-                className="w-20 h-20 md:w-32 md:h-32 object-cover mb-3 rounded-2xl bg-[#FFD100]"
-              />
-              <h1 className="text-2xl md:text-4xl font-extrabold text-white mb-1 tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)]">
-                King Food
-              </h1>
-              <p className="text-sm md:text-base font-semibold text-white/90 mb-2 drop-shadow">
-                O açaí BR da saudade · Columbus, OH
-              </p>
-              <p
-                className={`text-xs font-bold mb-3 ${
-                  openStatus.open ? 'text-emerald-300' : 'text-white/85'
-                }`}
-              >
-                {openStatus.open ? '● ' : '○ '}
-                {openStatus.label}
-                {openStatus.detail ? ` · ${openStatus.detail}` : ''}
-              </p>
-              <p className="text-sm md:text-base font-medium text-white/95 leading-relaxed mb-5 max-w-md drop-shadow">
-                Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
-              </p>
-              <Link
-                to="/menu"
-                className="w-full md:w-auto md:min-w-[240px] min-h-[52px] inline-flex items-center justify-center bg-[#FFD100] hover:bg-[#FFD100]/90 text-black font-bold py-3.5 rounded-2xl text-base shadow-lg shadow-[#FFD100]/20 active:scale-[0.98] transition"
-              >
-                {openStatus.open ? 'Pedir agora →' : 'Ver cardápio →'}
-              </Link>
-              <a
-                href={GROUP_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-3 min-h-[44px] inline-flex items-center text-sm font-bold text-white/90 underline-offset-4 hover:underline"
-              >
-                Entrar no grupo e pegar novidade
-              </a>
-            </div>
-
-            <div className="hidden md:flex flex-col gap-4 flex-1">
-              <a
-                href={MAPS_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-4 hover:bg-white/10 min-h-[72px]"
-              >
-                <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center">
-                  <GoogleGIcon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Google Business</p>
-                  <p className="text-[#FFD100] text-sm">★★★★★</p>
-                  <p className="text-sm text-[#FFD100]">Ver no Google o que a galera fala →</p>
-                </div>
-              </a>
-              <div className="grid grid-cols-2 gap-3">
-                <a
-                  href={WA_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 min-h-[64px]"
-                >
-                  <WhatsAppIcon className="w-5 h-5 text-[#25D366]" />
-                  <div>
-                    <p className="text-xs font-bold">WhatsApp</p>
-                    <p className="text-[10px] text-white/75">Chamar agora</p>
-                  </div>
-                </a>
-                <a
-                  href={INSTAGRAM_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2.5 rounded-2xl border border-white/10 bg-white/5 p-3.5 min-h-[64px]"
-                >
-                  <span aria-hidden>📸</span>
-                  <div>
-                    <p className="text-xs font-bold">Instagram</p>
-                    <p className="text-[10px] text-white/75">@king.food_delivery</p>
-                  </div>
-                </a>
-              </div>
-            </div>
+      {/* Main home content — hero compacto + destaques */}
+      <main className="max-w-5xl mx-auto w-full">
+        {/* Hero compacto */}
+        <section className="px-4 sm:px-6 pt-6 sm:pt-12 pb-2 text-center">
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-gray-500 mb-3">
+            Delivery · Columbus, OH
+          </p>
+          <div className="flex justify-center mb-3">
+            <img
+              src={logo}
+              alt="King Food"
+              className="w-20 h-20 sm:w-28 sm:h-28 object-cover rounded-3xl bg-[#FFD100] shadow-lg shadow-[#FFD100]/20"
+            />
           </div>
+          <h1 className="text-3xl sm:text-5xl font-extrabold text-ink tracking-tight mb-2">
+            King Food
+          </h1>
+          <p className="text-lg sm:text-xl font-bold text-gray-800 mb-2">Açaí brasileiro de verdade</p>
+          <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto mb-6">
+            Sabor do Brasil pra sua casa. Peça agora.
+          </p>
 
-          <div className="md:hidden px-5 mt-5 space-y-3 pb-4">
+          {/* CTA principal — dominante */}
+          <Link
+            to="/menu"
+            className="w-full sm:w-auto sm:min-w-[280px] min-h-[52px] inline-flex items-center justify-center bg-[#FFD100] hover:bg-[#FFD100]/90 text-ink font-extrabold text-base px-8 py-3.5 rounded-2xl shadow-lg shadow-[#FFD100]/30 active:scale-[0.98] transition"
+          >
+            Pedir agora →
+          </Link>
+
+          {/* Links secundários compactos */}
+          <div className="grid grid-cols-2 gap-2.5 max-w-md mx-auto mt-5">
+            <a
+              href={GROUP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
+            >
+              💬 Grupo WA
+            </a>
             <a
               href={MAPS_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 p-3"
+              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
             >
-              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                <GoogleGIcon className="w-5 h-5" />
-              </div>
-              <div>
-                <p className="text-sm font-bold">Google Business</p>
-                <p className="text-[#FFD100] text-sm">Ver avaliações →</p>
-              </div>
+              📍 Maps
+            </a>
+            <button
+              type="button"
+              onClick={() => setShowHours(true)}
+              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
+            >
+              🕐 Horários
+            </button>
+            <a
+              href={INSTAGRAM_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 min-h-[44px] rounded-xl border border-ink/10 bg-white/70 text-sm font-semibold text-gray-700 hover:bg-white active:scale-[0.98] transition"
+            >
+              📸 Instagram
             </a>
           </div>
-        </main>
-      </div>
+        </section>
+
+        {/* Destaques — produtos reais aparecem cedo */}
+        <section className="pt-8 pb-2">
+          <FeaturedItems limit={4} />
+        </section>
+
+        {/* Sobre rápido */}
+        <section className="px-4 sm:px-6 pt-8 pb-10 text-center">
+          <div className="max-w-md mx-auto">
+            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-emerald-600' : 'text-gray-500'}`}>
+              {openStatus.open ? '● ' : '○ '}
+              {openStatus.label}
+              {openStatus.detail ? ` · ${openStatus.detail}` : ''}
+            </p>
+            <p className="text-sm text-gray-500 leading-relaxed">
+              Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
+            </p>
+          </div>
+        </section>
+
+        {/* Footer compacto */}
+        <Footer />
+      </main>
 
       {/* Hours sheet */}
       {showHours && (
