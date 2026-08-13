@@ -107,3 +107,19 @@ CTA 80→56px; 1 controle só; identidade dourada; preço dinâmico.
 ### Breaking Changes
 Nenhum (visual; addItem API intacta).
 
+
+## 2026-08-13 — Menu: skeleton do grid substitui spinner (CLS 0.3649 → 0.0000)
+
+### Mudanças
+- Loading do /menu: spinner py-12 → skeleton com a MESMA estrutura dos cards reais (2/3 colunas, aspect 4:3, linhas de texto)
+- `aria-busy` + `aria-label="Carregando cardápio"`
+
+### Motivo
+Spinner pequeno (~96px) era substituído por 12 cards (~1800px) quando a API respondia — footer empurrado, CLS 0.3649 em produção (limite Google: 0.1). Mesmo antipadrão do FeaturedItems (já documentado), agora corrigido no Menu.
+
+### Impacto
+CLS /menu: 0.3649 → 0.0000 (2 runs); zero overflow; zero erros.
+
+### Breaking Changes
+Nenhum (visual; API intacta).
+
