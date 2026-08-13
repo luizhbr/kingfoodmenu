@@ -187,3 +187,45 @@ html, body {
 input, select, textarea {
   max-width: 100%;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   UX LOOP — OrderCard: animações suaves (Material 3 motion)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Expansão do card (progressive disclosure — suave, 250ms) */
+@keyframes order-expand {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-order-expand {
+  animation: order-expand 0.25s ease-out;
+}
+
+/* Hero moment — pedido PENDENTE pulsa borda dourada discretamente.
+   Material 3: destaque do momento mais importante sem agressividade. */
+@keyframes kf-pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 209, 0, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 209, 0, 0.12);
+  }
+}
+
+.order-card-pulse {
+  animation: kf-pulse-gold 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-order-expand,
+  .order-card-pulse {
+    animation: none;
+  }
+}

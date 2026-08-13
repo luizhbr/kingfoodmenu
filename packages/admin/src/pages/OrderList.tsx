@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import OrderCard from '../components/OrderCard.js';
 
 interface Order {
   id: string;
@@ -22,17 +22,6 @@ interface Pagination {
   totalPages: number;
 }
 
-const STATUS_COLORS: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  CONFIRMED: 'bg-blue-100 text-blue-800',
-  PREPARING: 'bg-purple-100 text-purple-800',
-  READY: 'bg-green-100 text-green-800',
-  OUT_FOR_DELIVERY: 'bg-indigo-100 text-indigo-800',
-  DELIVERED: 'bg-green-200 text-green-900',
-  PICKED_UP: 'bg-green-200 text-green-900',
-  CANCELLED: 'bg-red-100 text-red-800',
-};
-
 export default function OrderList() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
@@ -44,7 +33,7 @@ export default function OrderList() {
 
   const token = localStorage.getItem('token') || '';
 
-  useEffect(() => {
+  const loadOrders = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (statusFilter) params.set('status', statusFilter);
@@ -54,7 +43,7 @@ export default function OrderList() {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to load orders');
+        if (!res.ok) throw new Error('Falha ao carregar pedidos');
         return res.json();
       })
       .then((data) => {
@@ -65,10 +54,22 @@ export default function OrderList() {
       .finally(() => setLoading(false));
   }, [page, statusFilter, typeFilter, token]);
 
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  // Atualização otimista pós-ação — refetch da lista para sincronizar status
+  const handleStatusChange = useCallback((_orderId: string, _newStatus: string) => {
+    loadOrders();
+  }, [loadOrders]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
+        {pagination && (
+          <span className="text-sm text-gray-500">{pagination.total} pedido{pagination.total !== 1 ? 's' : ''}</span>
+        )}
       </div>
 
       {/* Filters */}
@@ -77,7 +78,7 @@ export default function OrderList() {
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-          aria-label="Filter by status"
+          aria-label="Filtrar por status"
         >
           <option value="">Todos os status</option>
           <option value="PENDING">Pendente</option>
@@ -93,7 +94,7 @@ export default function OrderList() {
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-          aria-label="Filter by order type"
+          aria-label="Filtrar por tipo de pedido"
         >
           <option value="">Todos os tipos</option>
           <option value="DELIVERY">Entrega</option>
@@ -112,65 +113,21 @@ export default function OrderList() {
       )}
 
       {!loading && !error && orders.length === 0 && (
-        <p className="text-gray-500 text-center py-12">No orders found.</p>
+        <p className="text-gray-500 text-center py-12">Nenhum pedido encontrado.</p>
       )}
 
       {!loading && orders.length > 0 && (
         <>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="table-responsive"><table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Pedido #</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Cliente</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Tipo</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Itens</th>
-                  <th className="text-right px-4 py-3 font-medium text-gray-600">Total</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Data</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td data-label="Pedido #" className="px-4 py-3 font-mono text-xs">
-                      {order.orderNumber}
-                      {order.scheduledAt && (
-                        <span className="ml-1.5 inline-flex items-center text-indigo-600" title={`Scheduled: ${new Date(order.scheduledAt).toLocaleString()}`} aria-label={`Scheduled: ${new Date(order.scheduledAt).toLocaleString()}`}>
-                          &#128339;
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Cliente" className="px-4 py-3">
-                      {order.customer ? order.customer.name : <span className="text-gray-400">Convidado</span>}
-                    </td>
-                    <td data-label="Tipo" className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${order.orderType === 'DELIVERY' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
-                        }`}>
-                        {order.orderType}
-                      </span>
-                    </td>
-                    <td data-label="Status" className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
-                        {order.status.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td data-label="Itens" className="px-4 py-3 text-gray-600">{order._count.items}</td>
-                    <td data-label="Total" className="px-4 py-3 text-right font-medium">${order.total.toFixed(2)}</td>
-                    <td data-label="Data" className="px-4 py-3 text-gray-500 text-xs">
-                      {new Date(order.createdAt).toLocaleDateString()}
-                    </td>
-                    <td data-label="Ações" className="px-4 py-3">
-                      <Link
-                        to={`/orders/${order.id}`}
-                        className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                      >Ver</Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
+          {/* Grid de cards — mobile-first, expande no tablet/desktop */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {orders.map((order) => (
+              <OrderCard
+                key={order.id}
+                order={order}
+                token={token}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
           </div>
 
           {/* Pagination */}
@@ -182,7 +139,7 @@ export default function OrderList() {
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
               >Anterior</button>
               <span className="text-sm text-gray-600">
-                Page {pagination.page} of {pagination.totalPages}
+                Página {pagination.page} de {pagination.totalPages}
               </span>
               <button
                 disabled={page >= pagination.totalPages}
