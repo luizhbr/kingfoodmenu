@@ -177,8 +177,17 @@ export default function Menu() {
         {/* Menu items grid — produtos imediatos */}
         <div className="flex-1">
           {itemsLoading && (
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5" aria-busy="true" aria-label="Carregando cardápio">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="w-full aspect-[4/3] bg-gray-200 animate-pulse" />
+                  <div className="p-4 space-y-2">
+                    <div className="h-4 bg-gray-200 rounded animate-pulse" />
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
+                    <div className="h-5 bg-gray-200 rounded animate-pulse w-1/3 mt-2" />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 
