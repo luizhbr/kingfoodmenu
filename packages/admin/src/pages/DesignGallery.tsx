@@ -139,7 +139,7 @@ export default function DesignGallery() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Gallery</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Galeria</h2>
           <p className="text-sm text-gray-500 mt-1">Manage photos shown on the storefront gallery page</p>
         </div>
         <button
@@ -159,7 +159,7 @@ export default function DesignGallery() {
               filter === c ? 'bg-primary-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
             }`}
           >
-            {c === 'ALL' ? 'All' : CATEGORY_LABELS[c]}
+            {c === 'ALL' ? 'Todos' : CATEGORY_LABELS[c]}
             <span className="ml-1 opacity-70">
               ({c === 'ALL' ? images.length : images.filter((i) => i.category === c).length})
             </span>
@@ -196,9 +196,7 @@ export default function DesignGallery() {
                   <button
                     onClick={() => openEdit(img)}
                     className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded hover:bg-gray-50"
-                  >
-                    Edit
-                  </button>
+                  >Editar</button>
                   <button
                     onClick={() => toggleActive(img)}
                     className="flex-1 text-xs px-2 py-1.5 border border-gray-300 rounded hover:bg-gray-50"
@@ -256,7 +254,7 @@ export default function DesignGallery() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
                     <select
                       value={form.category}
                       onChange={(e) => setForm({ ...form, category: e.target.value as Category })}
@@ -293,15 +291,13 @@ export default function DesignGallery() {
                   onClick={closeForm}
                   className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-100"
                   disabled={saving}
-                >
-                  Cancel
-                </button>
+                >Cancelar</button>
                 <button
                   type="submit"
                   className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50"
                   disabled={saving}
                 >
-                  {saving ? 'Saving...' : editing ? 'Save Changes' : 'Add Image'}
+                  {saving ? 'Salvando...' : editing ? 'Save Changes' : 'Add Image'}
                 </button>
               </div>
             </form>

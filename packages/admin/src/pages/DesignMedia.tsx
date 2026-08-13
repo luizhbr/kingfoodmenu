@@ -102,7 +102,7 @@ export default function DesignMedia() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Media Library</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Biblioteca de mídia</h2>
           <p className="text-sm text-gray-500 mt-1">Upload and manage images used across your storefront</p>
         </div>
         <button

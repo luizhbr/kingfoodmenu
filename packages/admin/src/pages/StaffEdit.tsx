@@ -101,7 +101,7 @@ export default function StaffEdit() {
         <Link to="/staff" className="text-gray-400 hover:text-gray-600">
           ← Back
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Staff</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Editar funcionário</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
@@ -110,7 +110,7 @@ export default function StaffEdit() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
           <input
             type="email"
             value={staff.email}
@@ -120,7 +120,7 @@ export default function StaffEdit() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
           <input
             type="text"
             value={name}
@@ -131,20 +131,20 @@ export default function StaffEdit() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           >
-            <option value="STAFF">Staff</option>
+            <option value="STAFF">Funcionários</option>
             <option value="MANAGER">Manager</option>
             <option value="SUPER_ADMIN">Super Admin</option>
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
           <input
             type="text"
             value={phone}
@@ -154,13 +154,13 @@ export default function StaffEdit() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Local</label>
           <select
             value={locationId}
             onChange={(e) => setLocationId(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           >
-            <option value="">None</option>
+            <option value="">Nenhum</option>
             {locations.map((loc) => (
               <option key={loc.id} value={loc.id}>{loc.name}</option>
             ))}
@@ -175,7 +175,7 @@ export default function StaffEdit() {
             onChange={(e) => setIsActive(e.target.checked)}
             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
-          <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
+          <label htmlFor="isActive" className="text-sm text-gray-700">Ativo</label>
         </div>
 
         <div>
@@ -197,7 +197,7 @@ export default function StaffEdit() {
           disabled={saving}
           className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </form>
     </div>

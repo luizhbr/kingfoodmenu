@@ -65,7 +65,7 @@ export default function ConsentLog() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Consent Log</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Registro de consentimento</h1>
 
       {/* Stats cards */}
       {stats && (
@@ -104,29 +104,29 @@ export default function ConsentLog() {
 
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="table-responsive"><table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
             <tr>
-              <th className="px-6 py-3 text-left">Customer</th>
-              <th className="px-6 py-3 text-left">Category</th>
+              <th className="px-6 py-3 text-left">Cliente</th>
+              <th className="px-6 py-3 text-left">Categoria</th>
               <th className="px-6 py-3 text-center">Accepted</th>
               <th className="px-6 py-3 text-left">IP Address</th>
-              <th className="px-6 py-3 text-left">Date</th>
+              <th className="px-6 py-3 text-left">Data</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">Loading...</td>
+                <td data-label="Cliente" colSpan={5} className="px-6 py-8 text-center text-gray-500">Carregando...</td>
               </tr>
             ) : consents.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">No consent records.</td>
+                <td data-label="Cliente" colSpan={5} className="px-6 py-8 text-center text-gray-500">No consent records.</td>
               </tr>
             ) : (
               consents.map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
+                  <td data-label="Cliente" className="px-6 py-4">
                     {c.customer ? (
                       <div>
                         <span className="font-medium text-gray-900">{c.customer.name}</span>
@@ -136,27 +136,23 @@ export default function ConsentLog() {
                       <span className="text-gray-400">Anonymous</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-gray-700">{c.cookieCategory.label}</td>
-                  <td className="px-6 py-4 text-center">
+                  <td data-label="Categoria" className="px-6 py-4 text-gray-700">{c.cookieCategory.label}</td>
+                  <td data-label="Accepted" className="px-6 py-4 text-center">
                     {c.accepted ? (
-                      <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">
-                        Yes
-                      </span>
+                      <span className="inline-block px-2 py-0.5 bg-green-100 text-green-700 rounded text-xs font-medium">Sim</span>
                     ) : (
-                      <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">
-                        No
-                      </span>
+                      <span className="inline-block px-2 py-0.5 bg-red-100 text-red-700 rounded text-xs font-medium">Não</span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-gray-500 text-xs font-mono">{c.ipAddress || '-'}</td>
-                  <td className="px-6 py-4 text-gray-500">
+                  <td data-label="IP Address" className="px-6 py-4 text-gray-500 text-xs font-mono">{c.ipAddress || '-'}</td>
+                  <td data-label="Data" className="px-6 py-4 text-gray-500">
                     {new Date(c.createdAt).toLocaleString()}
                   </td>
                 </tr>
               ))
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Pagination */}
@@ -166,9 +162,7 @@ export default function ConsentLog() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-          >
-            Previous
-          </button>
+          >Anterior</button>
           <span className="px-3 py-1 text-sm text-gray-600">
             Page {page} of {totalPages}
           </span>
@@ -176,9 +170,7 @@ export default function ConsentLog() {
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-          >
-            Next
-          </button>
+          >Próximo</button>
         </div>
       )}
     </div>

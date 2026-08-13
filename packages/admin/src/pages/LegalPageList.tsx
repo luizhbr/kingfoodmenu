@@ -25,11 +25,11 @@ export default function LegalPageList() {
       .finally(() => setLoading(false));
   }, [token]);
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Legal Pages</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Páginas jurídicas</h1>
 
       {pages.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center text-gray-500">
@@ -45,35 +45,33 @@ export default function LegalPageList() {
         </div>
       ) : (
         <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="table-responsive"><table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
               <tr>
                 <th className="px-6 py-3 text-left">Title</th>
                 <th className="px-6 py-3 text-left">Slug</th>
                 <th className="px-6 py-3 text-left">Last Updated</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+                <th className="px-6 py-3 text-right">Ações</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {pages.map((page) => (
                 <tr key={page.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium text-gray-900">{page.title}</td>
-                  <td className="px-6 py-4 text-gray-500">{page.slug}</td>
-                  <td className="px-6 py-4 text-gray-500">
+                  <td data-label="Title" className="px-6 py-4 font-medium text-gray-900">{page.title}</td>
+                  <td data-label="Slug" className="px-6 py-4 text-gray-500">{page.slug}</td>
+                  <td data-label="Last Updated" className="px-6 py-4 text-gray-500">
                     {new Date(page.updatedAt).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td data-label="Ações" className="px-6 py-4 text-right">
                     <Link
                       to={`/legal/pages/${page.slug}`}
                       className="text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      Edit
-                    </Link>
+                    >Editar</Link>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

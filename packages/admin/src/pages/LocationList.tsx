@@ -58,7 +58,7 @@ export default function LocationList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Locations</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Locais</h2>
         <Link
           to="/locations/new"
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -84,68 +84,56 @@ export default function LocationList() {
 
       {!loading && locations.length > 0 && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
+          <div className="table-responsive"><table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Address
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Endereço</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Services
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Stats
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {locations.map((loc) => (
                 <tr key={loc.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td data-label="Nome" className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{loc.name}</div>
                     <div className="text-xs text-gray-400">{loc.slug}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  <td data-label="Endereço" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {loc.address}, {loc.city}{loc.state ? `, ${loc.state}` : ''}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td data-label="Services" className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
                       {loc.deliveryEnabled && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                          Delivery
-                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Entrega</span>
                       )}
                       {loc.pickupEnabled && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                          Pickup
-                        </span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Retirada</span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <td data-label="Status" className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${loc.isActive
                           ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
                         }`}
                     >
-                      {loc.isActive ? 'Active' : 'Inactive'}
+                      {loc.isActive ? 'Ativo' : 'Inactive'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                  <td data-label="Stats" className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                     {loc._count.orders} orders &middot; {loc._count.tables} tables &middot;{' '}
                     {loc._count.deliveryZones} zones
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
+                  <td data-label="Ações" className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
                     <button
                       onClick={() => toggleBusy(loc)}
                       disabled={togglingBusy === loc.id}
@@ -161,21 +149,17 @@ export default function LocationList() {
                       to={`/locations/${loc.id}/tables`}
                       className="text-gray-600 hover:text-gray-900 font-medium"
                       aria-label={`View tables for ${loc.name}`}
-                    >
-                      Tables
-                    </Link>
+                    >Mesas</Link>
                     <Link
                       to={`/locations/${loc.id}`}
                       className="text-primary-600 hover:text-primary-900 font-medium"
                       aria-label={`Edit ${loc.name}`}
-                    >
-                      Edit
-                    </Link>
+                    >Editar</Link>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

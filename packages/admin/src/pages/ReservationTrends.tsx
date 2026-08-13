@@ -99,7 +99,7 @@ export default function ReservationTrends() {
     <div>
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-semibold text-gray-800">Reservation Trends</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Tendências de reservas</h2>
           <p className="text-sm text-gray-500 mt-1">Booking patterns, peak days, and guest distribution</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -110,7 +110,7 @@ export default function ReservationTrends() {
               className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg bg-white"
               aria-label="Filter by location"
             >
-              <option value="">All locations</option>
+              <option value="">Todos os locais</option>
               {locations.map((l) => (
                 <option key={l.id} value={l.id}>{l.name}</option>
               ))}
@@ -134,7 +134,7 @@ export default function ReservationTrends() {
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -146,7 +146,7 @@ export default function ReservationTrends() {
         <div className="space-y-6">
           {/* Summary cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <SummaryCard label="Reservations" value={data.summary.totalReservations.toLocaleString()} />
+            <SummaryCard label="Reservas" value={data.summary.totalReservations.toLocaleString()} />
             <SummaryCard label="Guests" value={data.summary.totalGuests.toLocaleString()} />
             <SummaryCard label="Avg party size" value={data.summary.avgPartySize.toFixed(1)} />
             <SummaryCard label="Completion rate" value={`${(data.summary.completionRate * 100).toFixed(0)}%`} />
@@ -175,7 +175,7 @@ export default function ReservationTrends() {
                   <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                   <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }} />
                   <Legend />
-                  <Area type="monotone" dataKey="reservations" stroke="#ea580c" fill="url(#reservationsGradient)" strokeWidth={2} name="Reservations" />
+                  <Area type="monotone" dataKey="reservations" stroke="#ea580c" fill="url(#reservationsGradient)" strokeWidth={2} name="Reservas" />
                   <Area type="monotone" dataKey="guests" stroke="#7c3aed" fill="url(#guestsGradient)" strokeWidth={2} name="Guests" />
                 </AreaChart>
               </ResponsiveContainer>
@@ -201,7 +201,7 @@ export default function ReservationTrends() {
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }} />
                     <Legend />
-                    <Bar dataKey="reservations" fill="#ea580c" radius={[4, 4, 0, 0]} name="Reservations" />
+                    <Bar dataKey="reservations" fill="#ea580c" radius={[4, 4, 0, 0]} name="Reservas" />
                     <Bar dataKey="guests" fill="#7c3aed" radius={[4, 4, 0, 0]} name="Guests" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -221,7 +221,7 @@ export default function ReservationTrends() {
                     <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                     <Tooltip
                       contentStyle={{ borderRadius: 8, border: '1px solid #e5e7eb' }}
-                      formatter={(value) => [value, 'Reservations']}
+                      formatter={(value) => [value, 'Reservas']}
                       labelFormatter={(label) => `Party of ${label}`}
                     />
                     <Bar dataKey="count" fill="#fb923c" radius={[4, 4, 0, 0]} />

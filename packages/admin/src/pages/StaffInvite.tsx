@@ -76,7 +76,7 @@ export default function StaffInvite() {
         <Link to="/staff" className="text-gray-400 hover:text-gray-600">
           ← Back
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Invite Staff</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Convidar funcionário</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
@@ -107,13 +107,13 @@ export default function StaffInvite() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Função</label>
           <select
             value={role}
             onChange={(e) => setRole(e.target.value)}
             className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
           >
-            <option value="STAFF">Staff</option>
+            <option value="STAFF">Funcionários</option>
             <option value="MANAGER">Manager</option>
             <option value="SUPER_ADMIN">Super Admin</option>
           </select>

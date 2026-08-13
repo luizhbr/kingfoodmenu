@@ -77,7 +77,7 @@ export default function ReviewList() {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error('Failed to delete');
+      if (!res.ok) throw new Error('Falha ao excluir');
       setReviews((prev) => prev.filter((r) => r.id !== id));
     } catch (err: any) {
       setError(err.message);
@@ -87,7 +87,7 @@ export default function ReviewList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Reviews</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Avaliações</h1>
       </div>
 
       <div className="flex gap-3 mb-6">
@@ -99,13 +99,13 @@ export default function ReviewList() {
         >
           <option value="">All Reviews</option>
           <option value="true">Approved</option>
-          <option value="false">Pending</option>
+          <option value="false">Pendente</option>
         </select>
       </div>
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -132,7 +132,7 @@ export default function ReviewList() {
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${review.isApproved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
                     }`}>
-                    {review.isApproved ? 'Approved' : 'Pending'}
+                    {review.isApproved ? 'Approved' : 'Pendente'}
                   </span>
                 </div>
                 {review.comment && (
@@ -161,9 +161,7 @@ export default function ReviewList() {
                     onClick={() => deleteReview(review.id)}
                     className="text-xs px-3 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
                     aria-label={`Delete review by ${review.customer.name}`}
-                  >
-                    Delete
-                  </button>
+                  >Excluir</button>
                 </div>
               </div>
             ))}
@@ -175,9 +173,7 @@ export default function ReviewList() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Previous
-              </button>
+              >Anterior</button>
               <span className="text-sm text-gray-600">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
@@ -185,9 +181,7 @@ export default function ReviewList() {
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Next
-              </button>
+              >Próximo</button>
             </div>
           )}
         </>

@@ -91,7 +91,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
       </div>
     );
   }
@@ -99,9 +99,9 @@ export default function OrderDetailPage() {
   if (error || !order) {
     return (
       <div>
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">{error || 'Order not found'}</div>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">{error || 'Pedido não encontrado'}</div>
         <Link to="/orders" className="text-primary-600 hover:text-primary-700 text-sm">
-          Back to Orders
+          Voltar para Pedidos
         </Link>
       </div>
     );
@@ -110,13 +110,13 @@ export default function OrderDetailPage() {
   return (
     <div>
       <div className="flex items-center gap-4 mb-6">
-        <Link to="/orders" className="text-gray-400 hover:text-gray-600" aria-label="Back to orders">
+        <Link to="/orders" className="text-gray-400 hover:text-gray-600" aria-label="Voltar para pedidos">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Order {order.orderNumber}</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Pedido {order.orderNumber}</h1>
           <p className="text-sm text-gray-500">
             {new Date(order.createdAt).toLocaleString()}
           </p>
@@ -131,7 +131,7 @@ export default function OrderDetailPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Items */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Items</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Itens</h2>
             <div className="space-y-3">
               {order.items.map((item) => (
                 <div key={item.id} className="flex justify-between items-start py-2 border-b border-gray-100 last:border-0">
@@ -146,7 +146,7 @@ export default function OrderDetailPage() {
                       </div>
                     )}
                     {item.comment && (
-                      <div className="text-xs text-gray-400 mt-0.5 italic">Note: {item.comment}</div>
+                      <div className="text-xs text-gray-400 mt-0.5 italic">Observação: {item.comment}</div>
                     )}
                   </div>
                   <span className="font-medium text-gray-900">${item.subtotal.toFixed(2)}</span>
@@ -160,18 +160,18 @@ export default function OrderDetailPage() {
                 <span>${order.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Tax</span>
+                <span className="text-gray-600">Imposto</span>
                 <span>${order.tax.toFixed(2)}</span>
               </div>
               {order.deliveryFee > 0 && (
                 <div className="flex justify-between">
-                  <span className="text-gray-600">Delivery Fee</span>
+                  <span className="text-gray-600">Taxa de entrega</span>
                   <span>${order.deliveryFee.toFixed(2)}</span>
                 </div>
               )}
               {order.discount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount</span>
+                  <span>Desconto</span>
                   <span>-${order.discount.toFixed(2)}</span>
                 </div>
               )}
@@ -185,7 +185,7 @@ export default function OrderDetailPage() {
           {/* Notes */}
           {order.comment && (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-2">Order Notes</h2>
+              <h2 className="text-lg font-semibold text-gray-900 mb-2">Observações do Pedido</h2>
               <p className="text-gray-600 text-sm">{order.comment}</p>
             </div>
           )}
@@ -195,7 +195,7 @@ export default function OrderDetailPage() {
         <div className="space-y-6">
           {/* Status update */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Update Status</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Atualizar Status</h2>
             <div className="space-y-2">
               {STATUSES.map((status) => (
                 <button
@@ -206,7 +206,7 @@ export default function OrderDetailPage() {
                       ? STATUS_COLORS[status] + ' cursor-default'
                       : 'text-gray-600 hover:bg-gray-100 disabled:opacity-40'
                     }`}
-                  aria-label={`Set status to ${status.replace(/_/g, ' ')}`}
+                  aria-label={`Definir status para ${status.replace(/_/g, ' ')}`}
                 >
                   {status.replace(/_/g, ' ')}
                 </button>
@@ -216,18 +216,18 @@ export default function OrderDetailPage() {
 
           {/* Order info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Detalhes</h2>
             <dl className="space-y-3 text-sm">
               <div>
-                <dt className="text-gray-500">Order Type</dt>
+                <dt className="text-gray-500">Tipo do Pedido</dt>
                 <dd className="font-medium text-gray-900">{order.orderType}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Location</dt>
+                <dt className="text-gray-500">Local</dt>
                 <dd className="font-medium text-gray-900">{order.location.name}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Customer</dt>
+                <dt className="text-gray-500">Cliente</dt>
                 <dd className="font-medium text-gray-900">
                   {order.customer ? (
                     <>
@@ -238,13 +238,13 @@ export default function OrderDetailPage() {
                       )}
                     </>
                   ) : (
-                    <span className="text-gray-400">Guest</span>
+                    <span className="text-gray-400">Convidado</span>
                   )}
                 </dd>
               </div>
               {order.scheduledAt && (
                 <div>
-                  <dt className="text-gray-500">Scheduled For</dt>
+                  <dt className="text-gray-500">Agendado Para</dt>
                   <dd className="font-medium text-gray-900">
                     {new Date(order.scheduledAt).toLocaleString()}
                   </dd>

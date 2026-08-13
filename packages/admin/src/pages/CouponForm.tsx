@@ -75,7 +75,7 @@ export default function CouponForm() {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Failed to save');
+      if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       navigate('/coupons');
     } catch (err: any) {
       setError(err.message);
@@ -118,7 +118,7 @@ export default function CouponForm() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
             <select
               value={type}
               onChange={(e) => setType(e.target.value)}
@@ -228,7 +228,7 @@ export default function CouponForm() {
             onChange={(e) => setIsActive(e.target.checked)}
             className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
           />
-          <label htmlFor="isActive" className="text-sm text-gray-700">Active</label>
+          <label htmlFor="isActive" className="text-sm text-gray-700">Ativo</label>
         </div>
 
         {error && <div className="text-red-600 text-sm">{error}</div>}
@@ -239,14 +239,12 @@ export default function CouponForm() {
             disabled={saving}
             className="bg-primary-600 text-white px-6 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
-            {saving ? 'Saving...' : isEdit ? 'Update Coupon' : 'Create Coupon'}
+            {saving ? 'Salvando...' : isEdit ? 'Update Coupon' : 'Create Coupon'}
           </button>
           <Link
             to="/coupons"
             className="border border-gray-300 text-gray-700 px-6 py-2 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            Cancel
-          </Link>
+          >Cancelar</Link>
         </div>
       </form>
     </div>

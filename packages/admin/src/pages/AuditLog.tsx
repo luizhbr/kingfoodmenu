@@ -14,8 +14,8 @@ interface AuditEntry {
 }
 
 const ENTITIES = [
-  'MenuItem', 'Category', 'Order', 'Coupon', 'Location',
-  'Staff', 'SiteSettings', 'AutomationRule',
+  'MenuItem', 'Categoria', 'Order', 'Coupon', 'Local',
+  'Funcionários', 'SiteSettings', 'AutomationRule',
 ];
 
 const ACTIONS = ['create', 'update', 'delete'];
@@ -59,7 +59,7 @@ export default function AuditLog() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Audit Log</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Registro de auditoria</h1>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-4">
@@ -97,52 +97,52 @@ export default function AuditLog() {
 
       {/* Table */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="table-responsive"><table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
             <tr>
-              <th className="px-6 py-3 text-left">Date</th>
+              <th className="px-6 py-3 text-left">Data</th>
               <th className="px-6 py-3 text-left">User</th>
               <th className="px-6 py-3 text-left">Action</th>
               <th className="px-6 py-3 text-left">Entity</th>
               <th className="px-6 py-3 text-left">Entity ID</th>
               <th className="px-6 py-3 text-left">IP</th>
-              <th className="px-6 py-3 text-left">Details</th>
+              <th className="px-6 py-3 text-left">Detalhes</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">Loading...</td>
+                <td data-label="Data" colSpan={7} className="px-6 py-8 text-center text-gray-500">Carregando...</td>
               </tr>
             ) : logs.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">No audit log entries.</td>
+                <td data-label="Data" colSpan={7} className="px-6 py-8 text-center text-gray-500">No audit log entries.</td>
               </tr>
             ) : (
               logs.map((log) => (
                 <tr key={log.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-3 text-gray-500 whitespace-nowrap">
+                  <td data-label="Data" className="px-6 py-3 text-gray-500 whitespace-nowrap">
                     {new Date(log.createdAt).toLocaleString()}
                   </td>
-                  <td className="px-6 py-3 text-gray-700">{log.userEmail}</td>
-                  <td className="px-6 py-3">
+                  <td data-label="User" className="px-6 py-3 text-gray-700">{log.userEmail}</td>
+                  <td data-label="Action" className="px-6 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${ACTION_COLORS[log.action] || 'bg-gray-100 text-gray-700'}`}>
                       {log.action}
                     </span>
                   </td>
-                  <td className="px-6 py-3 text-gray-700">{log.entity}</td>
-                  <td className="px-6 py-3 text-gray-500 font-mono text-xs">
+                  <td data-label="Entity" className="px-6 py-3 text-gray-700">{log.entity}</td>
+                  <td data-label="Entity ID" className="px-6 py-3 text-gray-500 font-mono text-xs">
                     {log.entityId ? log.entityId.substring(0, 12) + '...' : '-'}
                   </td>
-                  <td className="px-6 py-3 text-gray-500 font-mono text-xs">{log.ipAddress || '-'}</td>
-                  <td className="px-6 py-3 text-gray-500 text-xs max-w-[200px] truncate">
+                  <td data-label="IP" className="px-6 py-3 text-gray-500 font-mono text-xs">{log.ipAddress || '-'}</td>
+                  <td data-label="Detalhes" className="px-6 py-3 text-gray-500 text-xs max-w-[200px] truncate">
                     {log.details ? JSON.stringify(log.details) : '-'}
                   </td>
                 </tr>
               ))
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Pagination */}
@@ -152,9 +152,7 @@ export default function AuditLog() {
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page === 1}
             className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-          >
-            Previous
-          </button>
+          >Anterior</button>
           <span className="px-3 py-1 text-sm text-gray-600">
             Page {page} of {totalPages}
           </span>
@@ -162,9 +160,7 @@ export default function AuditLog() {
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page === totalPages}
             className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50"
-          >
-            Next
-          </button>
+          >Próximo</button>
         </div>
       )}
     </div>

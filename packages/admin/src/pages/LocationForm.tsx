@@ -37,7 +37,7 @@ interface LocationData {
   pickupLeadTime: number;
 }
 
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAYS = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
 
 const defaultHours: OperatingHour[] = DAYS.map((_, i) => ({
   dayOfWeek: i,
@@ -164,7 +164,7 @@ export default function LocationForm() {
     setZones((prev) => prev.filter((_, i) => i !== index));
   };
 
-  if (loading) return <p className="text-gray-500">Loading...</p>;
+  if (loading) return <p className="text-gray-500">Carregando...</p>;
 
   return (
     <div>
@@ -213,7 +213,7 @@ export default function LocationForm() {
               />
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
               <textarea
                 value={form.description}
                 onChange={(e) => updateField('description', e.target.value)}
@@ -222,7 +222,7 @@ export default function LocationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
               <input
                 type="text"
                 value={form.phone}
@@ -231,7 +231,7 @@ export default function LocationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
               <input
                 type="email"
                 value={form.email}
@@ -244,7 +244,7 @@ export default function LocationForm() {
 
         {/* Address */}
         <section className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Endereço</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Street Address *</label>
@@ -267,7 +267,7 @@ export default function LocationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
               <input
                 type="text"
                 value={form.state}
@@ -286,7 +286,7 @@ export default function LocationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">País</label>
               <input
                 type="text"
                 value={form.country}
@@ -308,7 +308,7 @@ export default function LocationForm() {
                 onChange={(e) => updateField('isActive', e.target.checked)}
                 className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
               />
-              <span className="text-sm text-gray-700">Active</span>
+              <span className="text-sm text-gray-700">Ativo</span>
             </label>
             <label className="flex items-center gap-2">
               <input
@@ -380,7 +380,7 @@ export default function LocationForm() {
                     }}
                     className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                   />
-                  <span className="text-xs text-gray-500">Open</span>
+                  <span className="text-xs text-gray-500">Aberto</span>
                 </label>
                 <input
                   type="time"
@@ -475,9 +475,7 @@ export default function LocationForm() {
                   type="button"
                   onClick={() => removeZone(index)}
                   className="text-red-500 hover:text-red-700 text-sm"
-                >
-                  Remove
-                </button>
+                >Remover</button>
               </div>
             ))}
           </div>
@@ -489,15 +487,13 @@ export default function LocationForm() {
             type="button"
             onClick={() => navigate('/locations')}
             className="px-6 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
+          >Cancelar</button>
           <button
             type="submit"
             disabled={saving}
             className="px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors"
           >
-            {saving ? 'Saving...' : isEdit ? 'Update Location' : 'Create Location'}
+            {saving ? 'Salvando...' : isEdit ? 'Update Location' : 'Create Location'}
           </button>
         </div>
       </form>

@@ -82,7 +82,7 @@ export default function ReservationList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Reservations</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Reservas</h1>
       </div>
 
       {/* Filters */}
@@ -93,12 +93,12 @@ export default function ReservationList() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           aria-label="Filter by status"
         >
-          <option value="">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="CONFIRMED">Confirmed</option>
-          <option value="SEATED">Seated</option>
-          <option value="COMPLETED">Completed</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="">Todos os status</option>
+          <option value="PENDING">Pendente</option>
+          <option value="CONFIRMED">Confirmado</option>
+          <option value="SEATED">Sentado</option>
+          <option value="COMPLETED">Concluído</option>
+          <option value="CANCELLED">Cancelado</option>
         </select>
         <input
           type="date"
@@ -119,7 +119,7 @@ export default function ReservationList() {
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -134,53 +134,51 @@ export default function ReservationList() {
       {!loading && reservations.length > 0 && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="table-responsive"><table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Date & Time</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Party Size</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Table</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Cliente</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Número de pessoas</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Mesa</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {reservations.map((r) => (
                   <tr key={r.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                    <td data-label="Date & Time" className="px-4 py-3">
                       <div className="font-medium text-gray-900">
                         {new Date(r.date).toLocaleDateString()}
                       </div>
                       <div className="text-xs text-gray-500">{r.time}</div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Cliente" className="px-4 py-3">
                       <div className="text-gray-900">{r.customer.name}</div>
                       <div className="text-xs text-gray-500">{r.customer.email}</div>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{r.partySize} guests</td>
-                    <td className="px-4 py-3">
+                    <td data-label="Número de pessoas" className="px-4 py-3 text-gray-600">{r.partySize} guests</td>
+                    <td data-label="Mesa" className="px-4 py-3">
                       {r.table ? (
                         <span className="text-gray-900">{r.table.name} (seats {r.table.capacity})</span>
                       ) : (
                         <span className="text-gray-400">Unassigned</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[r.status] || 'bg-gray-100'}`}>
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Ações" className="px-4 py-3">
                       <div className="flex gap-1">
                         {r.status === 'PENDING' && (
                           <button
-                            onClick={() => updateStatus(r.id, 'CONFIRMED')}
+                            onClick={() => updateStatus(r.id, 'CONFIRMADO')}
                             className="text-xs px-2 py-1 bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                             aria-label={`Confirm reservation for ${r.customer.name}`}
-                          >
-                            Confirm
-                          </button>
+                          >Confirmar</button>
                         )}
                         {r.status === 'CONFIRMED' && (
                           <button
@@ -193,7 +191,7 @@ export default function ReservationList() {
                         )}
                         {r.status === 'SEATED' && (
                           <button
-                            onClick={() => updateStatus(r.id, 'COMPLETED')}
+                            onClick={() => updateStatus(r.id, 'CONCLUÍDO')}
                             className="text-xs px-2 py-1 bg-green-50 text-green-700 rounded hover:bg-green-100"
                             aria-label={`Complete reservation for ${r.customer.name}`}
                           >
@@ -202,25 +200,21 @@ export default function ReservationList() {
                         )}
                         {!['COMPLETED', 'CANCELLED'].includes(r.status) && (
                           <button
-                            onClick={() => updateStatus(r.id, 'CANCELLED')}
+                            onClick={() => updateStatus(r.id, 'CANCELADO')}
                             className="text-xs px-2 py-1 bg-red-50 text-red-700 rounded hover:bg-red-100"
                             aria-label={`Cancel reservation for ${r.customer.name}`}
-                          >
-                            Cancel
-                          </button>
+                          >Cancelar</button>
                         )}
                         <Link
                           to={`/reservations/${r.id}`}
                           className="text-xs px-2 py-1 text-primary-600 hover:text-primary-700"
-                        >
-                          Details
-                        </Link>
+                        >Detalhes</Link>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {pagination && pagination.totalPages > 1 && (
@@ -229,9 +223,7 @@ export default function ReservationList() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Previous
-              </button>
+              >Anterior</button>
               <span className="text-sm text-gray-600">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
@@ -239,9 +231,7 @@ export default function ReservationList() {
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Next
-              </button>
+              >Próximo</button>
             </div>
           )}
         </>

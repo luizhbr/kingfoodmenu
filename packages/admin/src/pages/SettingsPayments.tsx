@@ -68,7 +68,7 @@ export default function SettingsPayments() {
         setSuccess('Payment settings updated');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -77,17 +77,17 @@ export default function SettingsPayments() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to="/settings" className="text-sm text-primary-600 hover:text-primary-700">&larr; Back to Settings</Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Payment Gateways</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">Gateways de pagamento</h1>
         </div>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </div>
 
@@ -100,7 +100,7 @@ export default function SettingsPayments() {
           <h2 className="text-lg font-semibold text-gray-900">Stripe</h2>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={stripeEnabled} onChange={(e) => setStripeEnabled(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
-            <span className="text-sm text-gray-700">Enabled</span>
+            <span className="text-sm text-gray-700">Habilitado</span>
           </label>
         </div>
         <div className="space-y-4">
@@ -125,7 +125,7 @@ export default function SettingsPayments() {
           <h2 className="text-lg font-semibold text-gray-900">PayPal</h2>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={paypalEnabled} onChange={(e) => setPaypalEnabled(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
-            <span className="text-sm text-gray-700">Enabled</span>
+            <span className="text-sm text-gray-700">Habilitado</span>
           </label>
         </div>
         <div className="space-y-4">
@@ -150,7 +150,7 @@ export default function SettingsPayments() {
           <h2 className="text-lg font-semibold text-gray-900">Cash on Delivery</h2>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={cashEnabled} onChange={(e) => setCashEnabled(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
-            <span className="text-sm text-gray-700">Enabled</span>
+            <span className="text-sm text-gray-700">Habilitado</span>
           </label>
         </div>
       </div>

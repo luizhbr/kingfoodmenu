@@ -85,7 +85,7 @@ export default function DeveloperMetrics() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">API Metrics</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Métricas da API</h1>
         <div className="flex gap-1">
           {TIME_RANGES.map((r) => (
             <button
@@ -175,7 +175,7 @@ export default function DeveloperMetrics() {
         <div className="px-6 py-4 border-b border-gray-200">
           <h3 className="text-sm font-semibold text-gray-700">Top Endpoints</h3>
         </div>
-        <table className="w-full text-sm">
+        <div className="table-responsive"><table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
             <tr>
               <th className="px-6 py-3 text-left">Method</th>
@@ -189,25 +189,25 @@ export default function DeveloperMetrics() {
           <tbody className="divide-y divide-gray-100">
             {loading ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">Loading...</td>
+                <td data-label="Method" colSpan={6} className="px-6 py-8 text-center text-gray-500">Carregando...</td>
               </tr>
             ) : endpoints.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">No data yet.</td>
+                <td data-label="Method" colSpan={6} className="px-6 py-8 text-center text-gray-500">No data yet.</td>
               </tr>
             ) : (
               endpoints.map((ep, i) => (
                 <tr key={i} className="hover:bg-gray-50">
-                  <td className="px-6 py-3">
+                  <td data-label="Method" className="px-6 py-3">
                     <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${METHOD_COLORS[ep.method] || 'bg-gray-100 text-gray-700'}`}>
                       {ep.method}
                     </span>
                   </td>
-                  <td className="px-6 py-3 text-gray-700 font-mono text-xs">{ep.path}</td>
-                  <td className="px-6 py-3 text-right text-gray-900">{ep.count.toLocaleString()}</td>
-                  <td className="px-6 py-3 text-right text-gray-700">{ep.avgResponseTime}</td>
-                  <td className="px-6 py-3 text-right text-gray-700">{ep.p95ResponseTime}</td>
-                  <td className="px-6 py-3 text-right">
+                  <td data-label="Path" className="px-6 py-3 text-gray-700 font-mono text-xs">{ep.path}</td>
+                  <td data-label="Requests" className="px-6 py-3 text-right text-gray-900">{ep.count.toLocaleString()}</td>
+                  <td data-label="Avg (ms)" className="px-6 py-3 text-right text-gray-700">{ep.avgResponseTime}</td>
+                  <td data-label="P95 (ms)" className="px-6 py-3 text-right text-gray-700">{ep.p95ResponseTime}</td>
+                  <td data-label="Errors" className="px-6 py-3 text-right">
                     {ep.errors > 0 ? (
                       <span className="text-red-600 font-medium">{ep.errors}</span>
                     ) : (
@@ -218,7 +218,7 @@ export default function DeveloperMetrics() {
               ))
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

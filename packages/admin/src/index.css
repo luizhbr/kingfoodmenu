@@ -1,3 +1,189 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── P17 — padrões responsivos reutilizáveis (mobile-first, desktop preservado) ── */
+
+/* Tabela responsiva: wrapper com rolagem horizontal controlada.
+   Em telas < 768px, vira cards empilhados. */
+@layer components {
+  .table-responsive {
+    @apply w-full overflow-x-auto -mx-3 px-3 sm:mx-0 sm:px-0;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-responsive table {
+    @apply w-full text-sm min-w-[640px];
+  }
+
+  /* <768px: tabela vira cards */
+  @media (max-width: 767px) {
+    .table-responsive table,
+    .table-responsive thead,
+    .table-responsive tbody,
+    .table-responsive tr {
+      display: block;
+      width: 100%;
+    }
+
+    .table-responsive thead {
+      display: none;
+    }
+
+    .table-responsive tr {
+      @apply mb-3 border border-gray-200 rounded-xl bg-white p-3;
+    }
+
+    .table-responsive td {
+      @apply flex items-center justify-between gap-3 px-3 py-2 text-sm border-b border-gray-100;
+      text-align: right;
+    }
+
+    .table-responsive td:last-child {
+      border-bottom: none;
+    }
+
+    .table-responsive td::before {
+      content: attr(data-label);
+      @apply text-xs font-semibold text-gray-500 uppercase tracking-wide mr-2;
+      text-align: left;
+      flex-shrink: 0;
+    }
+
+    .table-responsive td[data-label=""]::before {
+      content: "";
+      display: none;
+    }
+  }
+
+  /* Cartão base responsivo */
+  .card-responsive {
+    @apply bg-white rounded-xl border border-gray-200;
+  }
+
+  /* Grid responsivo universal: 1 coluna no mobile, N no desktop */
+  .grid-stack {
+    @apply grid grid-cols-1 gap-4;
+  }
+  .grid-stack-2 {
+    @apply grid grid-cols-1 gap-4 md:grid-cols-2;
+  }
+  .grid-stack-3 {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3;
+  }
+  .grid-stack-4 {
+    @apply grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4;
+  }
+
+  /* Formulário 1 coluna (mobile) → preserva grid do desktop */
+  .form-grid {
+    @apply grid grid-cols-1 gap-4 sm:grid-cols-2;
+  }
+  .form-grid-full {
+    @apply col-span-1 sm:col-span-2;
+  }
+
+  /* Botões touch-friendly (mín. 44px de altura) */
+  .btn-touch {
+    @apply min-h-[44px] px-4 inline-flex items-center justify-center;
+  }
+
+  /* Header de página responsivo: título + ações empilhadas no mobile */
+  .page-header {
+    @apply flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6;
+  }
+
+  /* Inputs touch-friendly */
+  .input-touch {
+    @apply min-h-[44px];
+  }
+
+  /* Modal responsivo */
+  .modal-responsive {
+    @apply w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-xl;
+  }
+
+  /* Badge de status não quebra */
+  .status-badge {
+    @apply inline-flex items-center whitespace-nowrap;
+  }
+
+  /* Cards de listagem (substituem tabela quando necessário) */
+  .list-card {
+    @apply bg-white rounded-xl border border-gray-200 p-4 hover:shadow-md transition-shadow;
+  }
+
+  /* ── King Food V3 Design System ─────────────────────────────── */
+  .kf-display {
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    line-height: 0.95;
+  }
+
+  .kf-card {
+    background: rgba(255, 255, 255, 0.45);
+    border: 1px solid rgba(34, 29, 37, 0.08);
+    border-radius: 1.25rem;
+  }
+
+  .kf-chip {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(34, 29, 37, 0.1);
+    border-radius: 1rem;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .kf-chip:hover {
+    background: rgba(255, 255, 255, 0.85);
+  }
+  .kf-chip:active {
+    transform: scale(0.98);
+  }
+
+  .kf-btn-ink {
+    background: #221d25;
+    color: #e2ddcf;
+    border-radius: 48px;
+    font-weight: 700;
+    box-shadow: 0 10px 28px -8px rgba(34, 29, 37, 0.35);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .kf-btn-ink:hover {
+    background: #2e2732;
+  }
+  .kf-btn-ink:active {
+    transform: scale(0.98);
+  }
+
+  .kf-btn-gold {
+    background: #ffd100;
+    color: #221d25;
+    border-radius: 48px;
+    font-weight: 800;
+    box-shadow: 0 10px 28px -8px rgba(255, 209, 0, 0.45);
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .kf-btn-gold:hover {
+    background: #ffe14a;
+  }
+  .kf-btn-gold:active {
+    transform: scale(0.98);
+  }
+
+}
+
+/* Evita overflow horizontal global */
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+#root {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Inputs/selects não estouram no mobile */
+input, select, textarea {
+  max-width: 100%;
+}

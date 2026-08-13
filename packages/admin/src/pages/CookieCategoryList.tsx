@@ -57,7 +57,7 @@ export default function CookieCategoryList() {
         setShowForm(false);
         loadCategories();
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -89,17 +89,17 @@ export default function CookieCategoryList() {
     setShowForm(true);
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Cookie Categories</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Categorias de cookies</h1>
         <button
           onClick={() => { setForm(emptyForm); setEditingId(null); setShowForm(!showForm); }}
           className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
         >
-          {showForm ? 'Cancel' : 'Add Category'}
+          {showForm ? 'Cancelar' : 'Add Category'}
         </button>
       </div>
 
@@ -133,7 +133,7 @@ export default function CookieCategoryList() {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -158,9 +158,7 @@ export default function CookieCategoryList() {
                 checked={form.isActive}
                 onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                 className="h-4 w-4 rounded border-gray-300 text-primary-600"
-              />
-              Active
-            </label>
+              />Ativo</label>
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-gray-700">Sort Order</label>
               <input
@@ -176,69 +174,65 @@ export default function CookieCategoryList() {
               type="submit"
               className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
             >
-              {editingId ? 'Update' : 'Create'}
+              {editingId ? 'Atualizar' : 'Criar'}
             </button>
           </div>
         </form>
       )}
 
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="table-responsive"><table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-500 uppercase text-xs">
             <tr>
-              <th className="px-6 py-3 text-left">Name</th>
+              <th className="px-6 py-3 text-left">Nome</th>
               <th className="px-6 py-3 text-left">Label</th>
-              <th className="px-6 py-3 text-left">Description</th>
-              <th className="px-6 py-3 text-center">Required</th>
-              <th className="px-6 py-3 text-center">Active</th>
-              <th className="px-6 py-3 text-right">Actions</th>
+              <th className="px-6 py-3 text-left">Descrição</th>
+              <th className="px-6 py-3 text-center">Obrigatório</th>
+              <th className="px-6 py-3 text-center">Ativo</th>
+              <th className="px-6 py-3 text-right">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {categories.map((cat) => (
               <tr key={cat.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 font-medium text-gray-900">{cat.name}</td>
-                <td className="px-6 py-4 text-gray-700">{cat.label}</td>
-                <td className="px-6 py-4 text-gray-500 max-w-xs truncate">{cat.description}</td>
-                <td className="px-6 py-4 text-center">
+                <td data-label="Nome" className="px-6 py-4 font-medium text-gray-900">{cat.name}</td>
+                <td data-label="Label" className="px-6 py-4 text-gray-700">{cat.label}</td>
+                <td data-label="Descrição" className="px-6 py-4 text-gray-500 max-w-xs truncate">{cat.description}</td>
+                <td data-label="Obrigatório" className="px-6 py-4 text-center">
                   {cat.isRequired ? (
-                    <span className="text-green-600 font-medium">Yes</span>
+                    <span className="text-green-600 font-medium">Sim</span>
                   ) : (
-                    <span className="text-gray-400">No</span>
+                    <span className="text-gray-400">Não</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-center">
+                <td data-label="Ativo" className="px-6 py-4 text-center">
                   {cat.isActive ? (
-                    <span className="text-green-600 font-medium">Yes</span>
+                    <span className="text-green-600 font-medium">Sim</span>
                   ) : (
-                    <span className="text-red-500">No</span>
+                    <span className="text-red-500">Não</span>
                   )}
                 </td>
-                <td className="px-6 py-4 text-right space-x-3">
+                <td data-label="Ações" className="px-6 py-4 text-right space-x-3">
                   <button
                     onClick={() => startEdit(cat)}
                     className="text-primary-600 hover:text-primary-700 font-medium"
-                  >
-                    Edit
-                  </button>
+                  >Editar</button>
                   <button
                     onClick={() => handleDelete(cat.id)}
                     className="text-red-500 hover:text-red-600 font-medium"
-                  >
-                    Delete
-                  </button>
+                  >Excluir</button>
                 </td>
               </tr>
             ))}
             {categories.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
+                <td data-label="Nome" colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   No cookie categories yet.
                 </td>
               </tr>
             )}
           </tbody>
-        </table>
+        </table></div>
       </div>
     </div>
   );

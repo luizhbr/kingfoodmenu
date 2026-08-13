@@ -74,7 +74,7 @@ export default function MenuItemList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800">Menu Items</h2>
+        <h2 className="text-2xl font-semibold text-gray-800">Itens do cardápio</h2>
         <Link
           to="/menu/items/new"
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -122,21 +122,21 @@ export default function MenuItemList() {
       {!loading && items.length > 0 && (
         <>
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
+            <div className="table-responsive"><table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoria</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preço</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Extras</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {items.map((item) => (
                   <tr key={item.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label="Item" className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-3">
                         {item.image ? (
                           <img src={item.image} alt={item.name} className="w-10 h-10 rounded object-cover" />
@@ -153,17 +153,17 @@ export default function MenuItemList() {
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td data-label="Categoria" className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {item.category.name}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <td data-label="Preço" className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       ${item.price.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td data-label="Status" className="px-6 py-4 whitespace-nowrap">
                       <div className="flex gap-1">
                         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                           }`}>
-                          {item.isActive ? 'Active' : 'Inactive'}
+                          {item.isActive ? 'Ativo' : 'Inactive'}
                         </span>
                         {item.trackStock && (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${item.stockQty > 0 ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'
@@ -173,21 +173,17 @@ export default function MenuItemList() {
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
+                    <td data-label="Extras" className="px-6 py-4 whitespace-nowrap text-xs text-gray-500">
                       {item._count.options} options &middot; {item._count.allergens} allergens
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
-                      <Link to={`/menu/items/${item.id}`} className="text-primary-600 hover:text-primary-900 font-medium" aria-label={`Edit ${item.name}`}>
-                        Edit
-                      </Link>
-                      <button onClick={() => handleDelete(item.id, item.name)} className="text-red-600 hover:text-red-900 font-medium" aria-label={`Delete ${item.name}`}>
-                        Delete
-                      </button>
+                    <td data-label="Ações" className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
+                      <Link to={`/menu/items/${item.id}`} className="text-primary-600 hover:text-primary-900 font-medium" aria-label={`Edit ${item.name}`}>Editar</Link>
+                      <button onClick={() => handleDelete(item.id, item.name)} className="text-red-600 hover:text-red-900 font-medium" aria-label={`Delete ${item.name}`}>Excluir</button>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* Pagination */}
@@ -199,9 +195,7 @@ export default function MenuItemList() {
                   onClick={() => fetchItems(pagination.page - 1)}
                   disabled={pagination.page <= 1}
                   className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-                >
-                  Previous
-                </button>
+                >Anterior</button>
                 <span className="px-3 py-1 text-sm text-gray-600">
                   Page {pagination.page} of {pagination.totalPages}
                 </span>
@@ -209,9 +203,7 @@ export default function MenuItemList() {
                   onClick={() => fetchItems(pagination.page + 1)}
                   disabled={pagination.page >= pagination.totalPages}
                   className="px-3 py-1 border rounded text-sm disabled:opacity-50"
-                >
-                  Next
-                </button>
+                >Próximo</button>
               </div>
             </div>
           )}

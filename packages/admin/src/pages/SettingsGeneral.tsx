@@ -59,7 +59,7 @@ export default function SettingsGeneral() {
         setSuccess('General settings updated');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -68,17 +68,17 @@ export default function SettingsGeneral() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to="/settings" className="text-sm text-primary-600 hover:text-primary-700">&larr; Back to Settings</Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">General Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">Configurações gerais</h1>
         </div>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </div>
 
@@ -98,7 +98,7 @@ export default function SettingsGeneral() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Timezone</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Fuso horário</label>
           <select value={timezone} onChange={(e) => setTimezone(e.target.value)} className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
             {TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
           </select>

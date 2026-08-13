@@ -38,7 +38,7 @@ export default function Login({ onLogin }: Props) {
         body: JSON.stringify(body),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Login failed');
+      if (!res.ok) throw new Error(data.error || 'Falha no login');
       onLogin(data.data.token);
     } catch (err: any) {
       setError(err.message);
@@ -56,7 +56,7 @@ export default function Login({ onLogin }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-lg p-8 space-y-5">
-          <h2 className="text-xl font-semibold text-gray-900 text-center">Sign In</h2>
+          <h2 className="text-xl font-semibold text-gray-900 text-center">Entrar</h2>
 
           {error && (
             <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg">{error}</div>
@@ -73,7 +73,7 @@ export default function Login({ onLogin }: Props) {
             </div>
           )}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
             <input
               type="email"
               value={email}
@@ -100,7 +100,7 @@ export default function Login({ onLogin }: Props) {
             disabled={loading}
             className="w-full bg-primary-600 text-white py-2.5 rounded-lg font-semibold hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
+            {loading ? 'Entrando...' : 'Entrar'}
           </button>
         </form>
       </div>

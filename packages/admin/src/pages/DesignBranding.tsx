@@ -45,7 +45,7 @@ export default function DesignBranding() {
         setSuccess('Branding updated successfully');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -68,7 +68,7 @@ export default function DesignBranding() {
       if (data.success && data.data) {
         if (type === 'logo') setLogo(data.data.logo);
         else setFavicon(data.data.favicon);
-        setSuccess(`${type === 'logo' ? 'Logo' : 'Favicon'} uploaded successfully`);
+        setSuccess(`${type === 'logo' ? 'Logotipo' : 'Favicon'} uploaded successfully`);
         setTimeout(() => setSuccess(''), 3000);
       } else {
         setError(typeof data.error === 'string' ? data.error : 'Upload failed');
@@ -78,18 +78,18 @@ export default function DesignBranding() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Branding</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Marca</h1>
         <button
           onClick={handleSave}
           disabled={saving}
           className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </div>
 
@@ -129,10 +129,10 @@ export default function DesignBranding() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Logo */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Logo</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Logotipo</h2>
           {logo ? (
             <div className="mb-4">
-              <img src={logo} alt="Logo" className="w-24 h-24 object-contain rounded-lg border border-gray-200" />
+              <img src={logo} alt="Logotipo" className="w-24 h-24 object-contain rounded-lg border border-gray-200" />
             </div>
           ) : (
             <div className="mb-4 w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-sm">

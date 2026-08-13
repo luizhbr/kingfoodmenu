@@ -55,7 +55,7 @@ export default function SettingsOrder() {
         setSuccess('Order settings updated');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -64,17 +64,17 @@ export default function SettingsOrder() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <Link to="/settings" className="text-sm text-primary-600 hover:text-primary-700">&larr; Back to Settings</Link>
-          <h1 className="text-2xl font-bold text-gray-900 mt-1">Order Settings</h1>
+          <h1 className="text-2xl font-bold text-gray-900 mt-1">Configurações de pedidos</h1>
         </div>
         <button onClick={handleSave} disabled={saving} className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50">
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </div>
 

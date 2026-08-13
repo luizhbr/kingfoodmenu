@@ -9,11 +9,11 @@ interface PeriodOption {
 }
 
 const PERIODS: PeriodOption[] = [
-  { value: 'today', label: 'Today' },
-  { value: 'yesterday', label: 'Yesterday' },
+  { value: 'today', label: 'Hoje' },
+  { value: 'yesterday', label: 'Ontem' },
   { value: '7d', label: 'Last 7 days' },
-  { value: '30d', label: 'Last 30 days' },
-  { value: 'month', label: 'This month' },
+  { value: '30d', label: 'Últimos 30 dias' },
+  { value: 'month', label: 'Este mês' },
   { value: 'prevMonth', label: 'Previous month' },
 ];
 
@@ -133,8 +133,8 @@ export default function Reports() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
-          <p className="text-sm text-gray-500">{data?.range?.label || 'Loading...'}</p>
+          <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
+          <p className="text-sm text-gray-500">{data?.range?.label || 'Carregando...'}</p>
         </div>
         <div className="flex items-center gap-2">
           <select
@@ -156,9 +156,7 @@ export default function Reports() {
           <button
             onClick={load}
             className="px-3 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700"
-          >
-            Refresh
-          </button>
+          >Atualizar</button>
         </div>
       </div>
 
@@ -181,9 +179,9 @@ export default function Reports() {
         <>
           {/* Headline */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card label="Revenue" value={fmt(ov?.revenue)} sub={`${ov?.orders ?? 0} orders`} />
+            <Card label="Receita" value={fmt(ov?.revenue)} sub={`${ov?.orders ?? 0} orders`} />
             <Card label="AOV" value={fmt(ov?.aov)} />
-            <Card label="Customers" value={`${ov?.customers ?? 0}`} sub={`${data?.customers?.newCustomers ?? 0} new`} />
+            <Card label="Clientes" value={`${ov?.customers ?? 0}`} sub={`${data?.customers?.newCustomers ?? 0} new`} />
             <Card label="Items Sold" value={`${ov?.itemsSold ?? 0}`} />
           </div>
 
@@ -192,18 +190,18 @@ export default function Reports() {
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               <Card label="Gross Sales" value={fmt(ov?.grossSales)} />
               <Card label="Discounts" value={fmt(ov?.discount)} />
-              <Card label="Tax" value={fmt(ov?.tax)} />
+              <Card label="Imposto" value={fmt(ov?.tax)} />
               <Card label="Delivery Fees" value={fmt(ov?.deliveryFees)} />
               <Card label="Net Revenue" value={fmt(ov?.revenue)} />
             </div>
           </Section>
 
           {/* Orders */}
-          <Section title="Orders">
+          <Section title="Pedidos">
             <div className="grid grid-cols-3 gap-4">
-              <Card label="Completed" value={`${ov?.completed ?? 0}`} />
-              <Card label="Pending" value={`${ov?.pending ?? 0}`} />
-              <Card label="Cancelled" value={`${ov?.cancelled ?? 0}`} />
+              <Card label="Concluído" value={`${ov?.completed ?? 0}`} />
+              <Card label="Pendente" value={`${ov?.pending ?? 0}`} />
+              <Card label="Cancelado" value={`${ov?.cancelled ?? 0}`} />
             </div>
           </Section>
 
@@ -211,53 +209,53 @@ export default function Reports() {
           <div className="grid md:grid-cols-2 gap-6">
             <Section title="Top Products">
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="table-responsive"><table className="w-full text-sm">
                   <thead className="bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <tr>
                       <th className="px-4 py-2">Product</th>
                       <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Sales</th>
+                      <th className="px-4 py-2 text-right">Vendas</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {(products?.products || []).map((p: any, i: number) => (
                       <tr key={i}>
-                        <td className="px-4 py-2 font-medium">{p.name}</td>
-                        <td className="px-4 py-2 text-right">{p.quantity}</td>
-                        <td className="px-4 py-2 text-right">{fmt(p.sales)}</td>
+                        <td data-label="Product" className="px-4 py-2 font-medium">{p.name}</td>
+                        <td data-label="Qty" className="px-4 py-2 text-right">{p.quantity}</td>
+                        <td data-label="Vendas" className="px-4 py-2 text-right">{fmt(p.sales)}</td>
                       </tr>
                     ))}
                     {(!products?.products || products.products.length === 0) && (
-                      <tr><td className="px-4 py-4 text-gray-400" colSpan={3}>No data</td></tr>
+                      <tr><td data-label="Product" className="px-4 py-4 text-gray-400" colSpan={3}>No data</td></tr>
                     )}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             </Section>
 
             <Section title="Top Categories">
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="table-responsive"><table className="w-full text-sm">
                   <thead className="bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <tr>
-                      <th className="px-4 py-2">Category</th>
+                      <th className="px-4 py-2">Categoria</th>
                       <th className="px-4 py-2 text-right">Qty</th>
-                      <th className="px-4 py-2 text-right">Sales</th>
+                      <th className="px-4 py-2 text-right">Vendas</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {(products?.categories || []).map((c: any, i: number) => (
                       <tr key={i}>
-                        <td className="px-4 py-2 font-medium">{c.name}</td>
-                        <td className="px-4 py-2 text-right">{c.quantity}</td>
-                        <td className="px-4 py-2 text-right">{fmt(c.sales)}</td>
+                        <td data-label="Categoria" className="px-4 py-2 font-medium">{c.name}</td>
+                        <td data-label="Qty" className="px-4 py-2 text-right">{c.quantity}</td>
+                        <td data-label="Vendas" className="px-4 py-2 text-right">{fmt(c.sales)}</td>
                       </tr>
                     ))}
                     {(!products?.categories || products.categories.length === 0) && (
-                      <tr><td className="px-4 py-4 text-gray-400" colSpan={3}>No data</td></tr>
+                      <tr><td data-label="Categoria" className="px-4 py-4 text-gray-400" colSpan={3}>No data</td></tr>
                     )}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             </Section>
           </div>
@@ -278,7 +276,7 @@ export default function Reports() {
                 )}
               </div>
               <div className="bg-white rounded-xl border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Coupons</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Cupons</h3>
                 <div className="flex justify-between py-1.5">
                   <span className="text-sm text-gray-600">Total usage</span>
                   <span className="text-sm font-medium">{marketing?.coupons?.totalUsage ?? 0}</span>
@@ -334,34 +332,34 @@ export default function Reports() {
           </Section>
 
           {/* Delivery */}
-          <Section title="Delivery">
+          <Section title="Entrega">
             <div className="grid grid-cols-3 gap-4">
               <Card label="Delivery Orders" value={`${delivery?.deliveryOrders ?? 0}`} />
-              <Card label="Delivered" value={`${delivery?.delivered ?? 0}`} />
-              <Card label="Cancelled" value={`${delivery?.cancelled ?? 0}`} />
+              <Card label="Entregue" value={`${delivery?.delivered ?? 0}`} />
+              <Card label="Cancelado" value={`${delivery?.cancelled ?? 0}`} />
             </div>
             {delivery?.driverPerformance && delivery.driverPerformance.length > 0 && (
               <div className="mt-4 bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <table className="w-full text-sm">
+                <div className="table-responsive"><table className="w-full text-sm">
                   <thead className="bg-gray-50 text-left text-xs text-gray-500 uppercase">
                     <tr>
                       <th className="px-4 py-2">Driver</th>
                       <th className="px-4 py-2 text-right">Assigned</th>
-                      <th className="px-4 py-2 text-right">Delivered</th>
+                      <th className="px-4 py-2 text-right">Entregue</th>
                       <th className="px-4 py-2 text-right">Rate</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {delivery.driverPerformance.map((d: any, i: number) => (
                       <tr key={i}>
-                        <td className="px-4 py-2 font-medium">{d.driverName}</td>
-                        <td className="px-4 py-2 text-right">{d.assigned}</td>
-                        <td className="px-4 py-2 text-right">{d.delivered}</td>
-                        <td className="px-4 py-2 text-right">{d.completionRate}%</td>
+                        <td data-label="Driver" className="px-4 py-2 font-medium">{d.driverName}</td>
+                        <td data-label="Assigned" className="px-4 py-2 text-right">{d.assigned}</td>
+                        <td data-label="Entregue" className="px-4 py-2 text-right">{d.delivered}</td>
+                        <td data-label="Rate" className="px-4 py-2 text-right">{d.completionRate}%</td>
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </table></div>
               </div>
             )}
           </Section>

@@ -96,12 +96,12 @@ export default function DeliveryZoneList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Delivery Zones</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Zonas de entrega</h1>
         <button
           onClick={() => setShowForm(!showForm)}
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
         >
-          {showForm ? 'Cancel' : 'Add Zone'}
+          {showForm ? 'Cancelar' : 'Add Zone'}
         </button>
       </div>
 
@@ -166,7 +166,7 @@ export default function DeliveryZoneList() {
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -176,45 +176,43 @@ export default function DeliveryZoneList() {
 
       {!loading && zones.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="table-responsive"><table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Charge</th>
                 <th className="text-right px-4 py-3 font-medium text-gray-600">Min Order</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600">Ações</th>
               </tr>
             </thead>
             <tbody>
               {zones.map((zone) => (
                 <tr key={zone.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{zone.name}</td>
-                  <td className="px-4 py-3 text-right">${zone.charge.toFixed(2)}</td>
-                  <td className="px-4 py-3 text-right">${zone.minOrder.toFixed(2)}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="Nome" className="px-4 py-3 font-medium text-gray-900">{zone.name}</td>
+                  <td data-label="Charge" className="px-4 py-3 text-right">${zone.charge.toFixed(2)}</td>
+                  <td data-label="Min Order" className="px-4 py-3 text-right">${zone.minOrder.toFixed(2)}</td>
+                  <td data-label="Status" className="px-4 py-3">
                     <button
                       onClick={() => toggleActive(zone)}
                       className={`text-xs px-2 py-0.5 rounded-full font-medium ${zone.isActive ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'
                         }`}
                       aria-label={`${zone.isActive ? 'Deactivate' : 'Activate'} zone ${zone.name}`}
                     >
-                      {zone.isActive ? 'Active' : 'Inactive'}
+                      {zone.isActive ? 'Ativo' : 'Inactive'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-right">
+                  <td data-label="Ações" className="px-4 py-3 text-right">
                     <button
                       onClick={() => deleteZone(zone.id)}
                       className="text-red-600 hover:text-red-700 text-xs font-medium"
                       aria-label={`Delete zone ${zone.name}`}
-                    >
-                      Delete
-                    </button>
+                    >Excluir</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

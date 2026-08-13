@@ -339,13 +339,13 @@ export default function DesignTemplates() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Templates</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Modelos</h1>
           <p className="text-sm text-gray-500 mt-1">Choose a storefront layout template. This changes the header, hero, features, CTA, and footer style.</p>
         </div>
       </div>
@@ -391,7 +391,7 @@ export default function DesignTemplates() {
                 <div className="flex items-center justify-between mb-1">
                   <h3 className="text-sm font-semibold text-gray-900">{tpl.name}</h3>
                   {isActive && (
-                    <span className="text-[10px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full">Active</span>
+                    <span className="text-[10px] font-medium text-primary-600 bg-primary-50 px-1.5 py-0.5 rounded-full">Ativo</span>
                   )}
                 </div>
                 <p className="text-xs text-gray-500 leading-relaxed mb-3">{tpl.description}</p>

@@ -55,7 +55,7 @@ export default function AutomationRuleList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Automation Rules</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Regras de automação</h1>
         <Link
           to="/automation/new"
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -68,7 +68,7 @@ export default function AutomationRuleList() {
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -83,33 +83,33 @@ export default function AutomationRuleList() {
 
       {!loading && rules.length > 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-          <table className="w-full text-sm">
+          <div className="table-responsive"><table className="w-full text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50">
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Event</th>
-                <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
                 <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                <th className="text-right px-4 py-3 font-medium text-gray-600">Actions</th>
+                <th className="text-right px-4 py-3 font-medium text-gray-600">Ações</th>
               </tr>
             </thead>
             <tbody>
               {rules.map((rule) => (
                 <tr key={rule.id} className="border-b border-gray-100 hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{rule.name}</td>
-                  <td className="px-4 py-3">
+                  <td data-label="Nome" className="px-4 py-3 font-medium text-gray-900">{rule.name}</td>
+                  <td data-label="Event" className="px-4 py-3">
                     <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
                       {EVENT_LABELS[rule.event] || rule.event}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">
+                  <td data-label="Ações" className="px-4 py-3 text-gray-600">
                     {rule.actions.map((a, i) => (
                       <span key={i} className="text-xs px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 mr-1">
                         {a.type}
                       </span>
                     ))}
                   </td>
-                  <td className="px-4 py-3">
+                  <td data-label="Status" className="px-4 py-3">
                     <button
                       onClick={() => toggleActive(rule)}
                       className={`text-xs px-2.5 py-1 rounded-full font-medium ${rule.isActive
@@ -118,29 +118,25 @@ export default function AutomationRuleList() {
                         }`}
                       aria-label={`${rule.isActive ? 'Deactivate' : 'Activate'} rule ${rule.name}`}
                     >
-                      {rule.isActive ? 'Active' : 'Inactive'}
+                      {rule.isActive ? 'Ativo' : 'Inactive'}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-right space-x-2">
+                  <td data-label="Ações" className="px-4 py-3 text-right space-x-2">
                     <Link
                       to={`/automation/${rule.id}`}
                       className="text-primary-600 hover:text-primary-700 text-xs font-medium"
                       aria-label={`Edit rule ${rule.name}`}
-                    >
-                      Edit
-                    </Link>
+                    >Editar</Link>
                     <button
                       onClick={() => deleteRule(rule.id)}
                       className="text-red-600 hover:text-red-700 text-xs font-medium"
                       aria-label={`Delete rule ${rule.name}`}
-                    >
-                      Delete
-                    </button>
+                    >Excluir</button>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
     </div>

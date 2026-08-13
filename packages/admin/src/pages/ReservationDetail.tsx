@@ -84,7 +84,7 @@ export default function ReservationDetail() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+        <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
       </div>
     );
   }
@@ -92,7 +92,7 @@ export default function ReservationDetail() {
   if (error || !reservation) {
     return (
       <div>
-        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">{error || 'Reservation not found'}</div>
+        <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">{error || 'Reserva não encontrada'}</div>
         <Link to="/reservations" className="text-primary-600 hover:text-primary-700 text-sm">
           Back to Reservations
         </Link>
@@ -109,7 +109,7 @@ export default function ReservationDetail() {
           </svg>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reservation Details</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Detalhes da reserva</h1>
           <p className="text-sm text-gray-500">
             {new Date(reservation.date).toLocaleDateString()} at {reservation.time}
           </p>
@@ -124,24 +124,24 @@ export default function ReservationDetail() {
         <div className="lg:col-span-2 space-y-6">
           {/* Guest Info */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Guest Information</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Informações do cliente</h2>
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-gray-500">Name</dt>
+                <dt className="text-gray-500">Nome</dt>
                 <dd className="font-medium text-gray-900">{reservation.customer.name}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Email</dt>
+                <dt className="text-gray-500">E-mail</dt>
                 <dd className="font-medium text-gray-900">{reservation.customer.email}</dd>
               </div>
               {reservation.customer.phone && (
                 <div>
-                  <dt className="text-gray-500">Phone</dt>
+                  <dt className="text-gray-500">Telefone</dt>
                   <dd className="font-medium text-gray-900">{reservation.customer.phone}</dd>
                 </div>
               )}
               <div>
-                <dt className="text-gray-500">Party Size</dt>
+                <dt className="text-gray-500">Número de pessoas</dt>
                 <dd className="font-medium text-gray-900">{reservation.partySize} guests</dd>
               </div>
             </dl>
@@ -149,22 +149,22 @@ export default function ReservationDetail() {
 
           {/* Reservation Details */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Details</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Detalhes</h2>
             <dl className="grid grid-cols-2 gap-4 text-sm">
               <div>
-                <dt className="text-gray-500">Date</dt>
+                <dt className="text-gray-500">Data</dt>
                 <dd className="font-medium text-gray-900">{new Date(reservation.date).toLocaleDateString()}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Time</dt>
+                <dt className="text-gray-500">Hora</dt>
                 <dd className="font-medium text-gray-900">{reservation.time}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Location</dt>
+                <dt className="text-gray-500">Local</dt>
                 <dd className="font-medium text-gray-900">{reservation.location.name}</dd>
               </div>
               <div>
-                <dt className="text-gray-500">Table</dt>
+                <dt className="text-gray-500">Mesa</dt>
                 <dd className="font-medium text-gray-900">
                   {reservation.table ? `${reservation.table.name} (seats ${reservation.table.capacity})` : 'Unassigned'}
                 </dd>
@@ -183,7 +183,7 @@ export default function ReservationDetail() {
         <div className="space-y-6">
           {/* Status Update */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Update Status</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Atualizar Status</h2>
             <div className="space-y-2">
               {STATUSES.map((status) => (
                 <button
@@ -204,13 +204,13 @@ export default function ReservationDetail() {
 
           {/* Table Assignment */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Assign Table</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Atribuir Mesa</h2>
             <select
               value={reservation.table?.id || ''}
               onChange={(e) => updateReservation({ tableId: e.target.value || null })}
               disabled={updating}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
-              aria-label="Assign table"
+              aria-label="Atribuir mesa"
             >
               <option value="">No table assigned</option>
               {tables.map((table) => (

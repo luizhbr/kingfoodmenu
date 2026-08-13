@@ -24,16 +24,16 @@ interface KitchenOrder {
 const KITCHEN_STATUSES = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'];
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; next: string | null }> = {
-  PENDING: { label: 'New', color: 'text-yellow-800', bg: 'bg-yellow-50 border-yellow-300', next: 'CONFIRMED' },
-  CONFIRMED: { label: 'Confirmed', color: 'text-blue-800', bg: 'bg-blue-50 border-blue-300', next: 'PREPARING' },
-  PREPARING: { label: 'Preparing', color: 'text-purple-800', bg: 'bg-purple-50 border-purple-300', next: 'READY' },
-  READY: { label: 'Ready', color: 'text-green-800', bg: 'bg-green-50 border-green-300', next: null },
+  PENDING: { label: 'Novos', color: 'text-yellow-800', bg: 'bg-yellow-50 border-yellow-300', next: 'CONFIRMADO' },
+  CONFIRMED: { label: 'Confirmado', color: 'text-blue-800', bg: 'bg-blue-50 border-blue-300', next: 'EM PREPARO' },
+  PREPARING: { label: 'Em preparo', color: 'text-purple-800', bg: 'bg-purple-50 border-purple-300', next: 'PRONTO' },
+  READY: { label: 'Pronto', color: 'text-green-800', bg: 'bg-green-50 border-green-300', next: null },
 };
 
 const NEXT_ACTION: Record<string, string> = {
-  PENDING: 'Confirm',
+  PENDING: 'Confirmar',
   CONFIRMED: 'Start Preparing',
-  PREPARING: 'Mark Ready',
+  PREPARING: 'Marcar pronto',
 };
 
 export default function KitchenDisplay() {
@@ -43,7 +43,7 @@ export default function KitchenDisplay() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
 
   const fetchOrders = useCallback(() => {
-    // Fetch active orders (non-completed, non-cancelled)
+    // Fetch pedidos ativos (non-completed, non-cancelled)
     const statuses = KITCHEN_STATUSES.join(',');
     api.get<{ data: KitchenOrder[] }>(`/orders?limit=50&includeItems=true&status=${statuses}`)
       .then((res) => {
@@ -59,7 +59,7 @@ export default function KitchenDisplay() {
   }, [fetchOrders]);
 
   // Serverless polling: Socket.IO is not available on Vercel serverless
-  // functions, so the kitchen refreshes active orders on a fixed interval.
+  // functions, so the kitchen refreshes pedidos ativos on a fixed interval.
   // The interval is cleared on unmount and never duplicated (single effect).
   useEffect(() => {
     const timer = setInterval(fetchOrders, 15000);
@@ -124,29 +124,27 @@ export default function KitchenDisplay() {
       {/* Header */}
       <div className="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold text-primary-400">Kitchen Display</h1>
+          <h1 className="text-lg font-bold text-primary-400">Cozinha — Display</h1>
           <div className="flex items-center gap-2" role="status">
             <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-xs text-gray-400">Auto-refresh 15s</span>
+            <span className="text-xs text-gray-400">Atualização automática 15s</span>
           </div>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-xs text-gray-400">
-            {orders.length} active orders | Updated {lastRefresh.toLocaleTimeString()}
+            {orders.length} pedidos ativos | Atualizado {lastRefresh.toLocaleTimeString()}
           </span>
           <button
             onClick={fetchOrders}
             className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition-colors"
             aria-label="Refresh orders"
-          >
-            Refresh
-          </button>
+          >Atualizar</button>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       ) : (
         <>
@@ -154,7 +152,7 @@ export default function KitchenDisplay() {
           {scheduledOrders.length > 0 && (
             <div className="mx-4 mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
               <h3 className="text-sm font-bold text-indigo-800 mb-2">
-                Scheduled Orders ({scheduledOrders.length})
+                Pedidos agendados ({scheduledOrders.length})
               </h3>
               <div className="flex flex-wrap gap-3">
                 {scheduledOrders.map((order) => (
@@ -162,7 +160,7 @@ export default function KitchenDisplay() {
                     <span className="font-mono font-bold text-gray-900">#{order.orderNumber}</span>
                     <span className={`ml-2 px-1.5 py-0.5 rounded font-medium ${order.orderType === 'DELIVERY' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
                       }`}>
-                      {order.orderType}
+                      {order.orderType === 'DELIVERY' ? "Entrega" : order.orderType === 'PICKUP' ? "Retirada" : order.orderType}
                     </span>
                     <span className="ml-2 text-indigo-600 font-medium">
                       {new Date(order.scheduledAt!).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -174,9 +172,9 @@ export default function KitchenDisplay() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-4 gap-4 p-4 h-[calc(100vh-52px)] overflow-hidden">
+          <div className="overflow-x-auto"><div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 h-auto md:h-[calc(100vh-52px)] overflow-x-auto">
             {ordersByStatus.map(({ status, config, orders: statusOrders }) => (
-              <div key={status} className="flex flex-col min-h-0">
+              <div key={status} className="flex flex-col min-h-0 min-w-[280px]">
                 {/* Column header */}
                 <div className={`rounded-t-lg px-4 py-2 border-b-2 ${config.bg}`}>
                   <div className="flex items-center justify-between">
@@ -190,7 +188,7 @@ export default function KitchenDisplay() {
                 {/* Order cards */}
                 <div className="flex-1 overflow-y-auto space-y-3 py-3">
                   {statusOrders.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm py-8">No orders</p>
+                    <p className="text-center text-gray-400 text-sm py-8">Sem pedidos</p>
                   )}
                   {statusOrders.map((order) => (
                     <div
@@ -208,7 +206,7 @@ export default function KitchenDisplay() {
                               ? 'bg-blue-100 text-blue-700'
                               : 'bg-green-100 text-green-700'
                             }`}>
-                            {order.orderType}
+                            {order.orderType === 'DELIVERY' ? "Entrega" : order.orderType === 'PICKUP' ? "Retirada" : order.orderType}
                           </span>
                         </div>
                         <span className="text-xs text-gray-400">{getTimeSince(order.createdAt)}</span>
@@ -269,16 +267,16 @@ export default function KitchenDisplay() {
                             className="flex-1 bg-green-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
                             aria-label={`Mark order ${order.orderNumber} as ${order.orderType === 'DELIVERY' ? 'out for delivery' : 'picked up'}`}
                           >
-                            {order.orderType === 'DELIVERY' ? 'Out for Delivery' : 'Picked Up'}
+                            {order.orderType === 'DELIVERY' ? 'Em entrega' : 'Retirado'}
                           </button>
                         )}
                         <button
-                          onClick={() => handleStatusUpdate(order.id, 'CANCELLED')}
+                          onClick={() => handleStatusUpdate(order.id, 'CANCELADO')}
                           disabled={updating === order.id}
                           className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                          aria-label={`Cancel order ${order.orderNumber}`}
+                          aria-label={`Cancelar order ${order.orderNumber}`}
                         >
-                          Cancel
+                          Cancelar
                         </button>
                       </div>
                     </div>
@@ -286,6 +284,7 @@ export default function KitchenDisplay() {
                 </div>
               </div>
             ))}
+          </div>
           </div>
         </>
       )}

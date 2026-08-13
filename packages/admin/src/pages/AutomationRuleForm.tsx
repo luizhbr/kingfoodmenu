@@ -103,7 +103,7 @@ export default function AutomationRuleForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
             <input
               type="text"
               required
@@ -136,7 +136,7 @@ export default function AutomationRuleForm() {
               onChange={(e) => setConditionsJson(e.target.value)}
               rows={3}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none text-sm font-mono"
-              placeholder='e.g., { "order.status": "CONFIRMED" }'
+              placeholder='e.g., { "order.status": "CONFIRMADO" }'
             />
           </div>
 
@@ -147,14 +147,14 @@ export default function AutomationRuleForm() {
               onChange={(e) => setIsActive(e.target.checked)}
               className="accent-primary-600"
             />
-            <span className="text-sm text-gray-700">Active</span>
+            <span className="text-sm text-gray-700">Ativo</span>
           </div>
         </div>
 
         {/* Actions */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Actions</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Ações</h2>
             <button
               type="button"
               onClick={addAction}
@@ -182,9 +182,7 @@ export default function AutomationRuleForm() {
                       type="button"
                       onClick={() => removeAction(i)}
                       className="text-red-500 hover:text-red-700 text-xs"
-                    >
-                      Remove
-                    </button>
+                    >Remover</button>
                   )}
                 </div>
 
@@ -236,15 +234,13 @@ export default function AutomationRuleForm() {
             disabled={loading}
             className="bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-primary-700 transition-colors disabled:opacity-50"
           >
-            {loading ? 'Saving...' : isNew ? 'Create Rule' : 'Update Rule'}
+            {loading ? 'Salvando...' : isNew ? 'Create Rule' : 'Update Rule'}
           </button>
           <button
             type="button"
             onClick={() => navigate('/automation')}
             className="px-6 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancel
-          </button>
+          >Cancelar</button>
         </div>
       </form>
     </div>

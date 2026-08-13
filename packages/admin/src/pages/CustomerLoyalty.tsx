@@ -75,7 +75,7 @@ export default function CustomerLoyalty() {
 
   return (
     <div className="max-w-3xl">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Loyalty Points</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Pontos de fidelidade</h1>
 
       {/* Search */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -95,7 +95,7 @@ export default function CustomerLoyalty() {
             disabled={loading || !searchEmail}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
           >
-            {loading ? 'Searching...' : 'Search'}
+            {loading ? 'Searching...' : 'Buscar'}
           </button>
         </div>
       </div>

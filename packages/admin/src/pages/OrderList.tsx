@@ -68,7 +68,7 @@ export default function OrderList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Pedidos</h1>
       </div>
 
       {/* Filters */}
@@ -79,15 +79,15 @@ export default function OrderList() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           aria-label="Filter by status"
         >
-          <option value="">All Statuses</option>
-          <option value="PENDING">Pending</option>
-          <option value="CONFIRMED">Confirmed</option>
-          <option value="PREPARING">Preparing</option>
-          <option value="READY">Ready</option>
-          <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-          <option value="DELIVERED">Delivered</option>
-          <option value="PICKED_UP">Picked Up</option>
-          <option value="CANCELLED">Cancelled</option>
+          <option value="">Todos os status</option>
+          <option value="PENDING">Pendente</option>
+          <option value="CONFIRMED">Confirmado</option>
+          <option value="PREPARING">Em preparo</option>
+          <option value="READY">Pronto</option>
+          <option value="OUT_FOR_DELIVERY">Em entrega</option>
+          <option value="DELIVERED">Entregue</option>
+          <option value="PICKED_UP">Retirado</option>
+          <option value="CANCELLED">Cancelado</option>
         </select>
         <select
           value={typeFilter}
@@ -95,15 +95,15 @@ export default function OrderList() {
           className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 outline-none"
           aria-label="Filter by order type"
         >
-          <option value="">All Types</option>
-          <option value="DELIVERY">Delivery</option>
-          <option value="PICKUP">Pickup</option>
+          <option value="">Todos os tipos</option>
+          <option value="DELIVERY">Entrega</option>
+          <option value="PICKUP">Retirada</option>
         </select>
       </div>
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -118,23 +118,23 @@ export default function OrderList() {
       {!loading && orders.length > 0 && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="table-responsive"><table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Order #</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Customer</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Pedido #</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Cliente</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Tipo</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Items</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Itens</th>
                   <th className="text-right px-4 py-3 font-medium text-gray-600">Total</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Data</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {orders.map((order) => (
                   <tr key={order.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs">
+                    <td data-label="Pedido #" className="px-4 py-3 font-mono text-xs">
                       {order.orderNumber}
                       {order.scheduledAt && (
                         <span className="ml-1.5 inline-flex items-center text-indigo-600" title={`Scheduled: ${new Date(order.scheduledAt).toLocaleString()}`} aria-label={`Scheduled: ${new Date(order.scheduledAt).toLocaleString()}`}>
@@ -142,37 +142,35 @@ export default function OrderList() {
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      {order.customer ? order.customer.name : <span className="text-gray-400">Guest</span>}
+                    <td data-label="Cliente" className="px-4 py-3">
+                      {order.customer ? order.customer.name : <span className="text-gray-400">Convidado</span>}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Tipo" className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${order.orderType === 'DELIVERY' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
                         }`}>
                         {order.orderType}
                       </span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
                         {order.status.replace(/_/g, ' ')}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{order._count.items}</td>
-                    <td className="px-4 py-3 text-right font-medium">${order.total.toFixed(2)}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td data-label="Itens" className="px-4 py-3 text-gray-600">{order._count.items}</td>
+                    <td data-label="Total" className="px-4 py-3 text-right font-medium">${order.total.toFixed(2)}</td>
+                    <td data-label="Data" className="px-4 py-3 text-gray-500 text-xs">
                       {new Date(order.createdAt).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Ações" className="px-4 py-3">
                       <Link
                         to={`/orders/${order.id}`}
                         className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                      >
-                        View
-                      </Link>
+                      >Ver</Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {/* Pagination */}
@@ -182,9 +180,7 @@ export default function OrderList() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Previous
-              </button>
+              >Anterior</button>
               <span className="text-sm text-gray-600">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
@@ -192,9 +188,7 @@ export default function OrderList() {
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Next
-              </button>
+              >Próximo</button>
             </div>
           )}
         </>

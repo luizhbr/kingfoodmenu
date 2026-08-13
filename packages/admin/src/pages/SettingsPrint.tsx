@@ -50,7 +50,7 @@ interface Template {
 }
 
 const EMPTY: Template = {
-  name: 'Kitchen', type: 'KITCHEN', isDefault: true, enabled: true,
+  name: 'Cozinha', type: 'KITCHEN', isDefault: true, enabled: true,
   showLogo: false, logoUrl: null, logoAlignment: 'center', logoWidth: 48,
   showBusinessName: true, businessName: 'KING FOOD',
   showPhone: false, phone: '', showAddress: false, address: '',
@@ -155,9 +155,9 @@ export default function SettingsPrint() {
     if (sep) lines.push(sep);
     const money = (label: string, v: string) => label.padEnd(W - v.length) + v;
     if (tpl.showSubtotal) lines.push(money('Subtotal', '$16.90'));
-    if (tpl.showDeliveryFee) lines.push(money('Delivery', '$3.50'));
-    if (tpl.showDiscount) lines.push(money('Discount', '-$2.00'));
-    if (tpl.showTax) lines.push(money('Tax', '$1.35'));
+    if (tpl.showDeliveryFee) lines.push(money('Entrega', '$3.50'));
+    if (tpl.showDiscount) lines.push(money('Desconto', '-$2.00'));
+    if (tpl.showTax) lines.push(money('Imposto', '$1.35'));
     if (tpl.showTotal) lines.push(money('TOTAL', '$18.25'));
     if (tpl.showPaymentMethod) lines.push(`PAGAMENTO: CARD`);
     if (tpl.showNotes) lines.push(`OBS: Sem cebola`);
@@ -355,7 +355,7 @@ export default function SettingsPrint() {
 
           <Section title="Impressora">
             <Select label="Template" value={t.type} onChange={(v) => update('type', v)} options={[
-              { value: 'KITCHEN', label: 'Kitchen' }, { value: 'CUSTOMER', label: 'Customer' }, { value: 'DELIVERY', label: 'Delivery' },
+              { value: 'KITCHEN', label: 'Cozinha' }, { value: 'CUSTOMER', label: 'Cliente' }, { value: 'DELIVERY', label: 'Entrega' },
             ]} />
             <Select label="Tamanho" value={t.fontSize} onChange={(v) => update('fontSize', v)} options={[
               { value: 'small', label: 'Pequeno' }, { value: 'medium', label: 'Médio' }, { value: 'large', label: 'Grande' },

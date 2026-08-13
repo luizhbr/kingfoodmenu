@@ -22,7 +22,7 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Orders',
+    title: 'Pedidos',
     description: 'Min order values, lead times, tipping, tax',
     link: '/settings/order',
     roles: ['SUPER_ADMIN', 'MANAGER'],
@@ -33,7 +33,7 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Reservations',
+    title: 'Reservas',
     description: 'Booking intervals, stay time, auto-confirmation',
     link: '/settings/reservation',
     roles: ['SUPER_ADMIN', 'MANAGER'],
@@ -66,7 +66,7 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Reviews',
+    title: 'Avaliações',
     description: 'Moderation, auto-approve, requirements',
     link: '/settings/review',
     roles: ['SUPER_ADMIN', 'MANAGER'],
@@ -77,7 +77,7 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Print',
+    title: 'Imprimir',
     description: 'Thermal receipt templates, logo, preview',
     link: '/settings/print',
     roles: ['SUPER_ADMIN', 'MANAGER'],
@@ -109,7 +109,7 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">Configurações</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {visibleCards.map((card) => (
           <Link

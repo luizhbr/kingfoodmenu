@@ -45,7 +45,7 @@ export default function LegalPageForm() {
       if (data.success) {
         navigate('/legal/pages');
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -54,12 +54,12 @@ export default function LegalPageForm() {
     }
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Edit Legal Page</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Editar página jurídica</h1>
         <button
           onClick={() => navigate('/legal/pages')}
           className="text-sm text-gray-500 hover:text-gray-700"
@@ -110,7 +110,7 @@ export default function LegalPageForm() {
             disabled={saving}
             className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Salvando...' : 'Salvar'}
           </button>
         </div>
       </form>

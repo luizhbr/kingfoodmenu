@@ -63,7 +63,7 @@ export default function DesignLanding() {
         setSuccess('Landing page updated successfully');
         setTimeout(() => setSuccess(''), 3000);
       } else {
-        setError(typeof data.error === 'string' ? data.error : 'Failed to save');
+        setError(typeof data.error === 'string' ? data.error : 'Falha ao salvar');
       }
     } catch {
       setError('Network error');
@@ -86,18 +86,18 @@ export default function DesignLanding() {
     setFeatures(updated);
   }
 
-  if (loading) return <div className="p-6 text-gray-500">Loading...</div>;
+  if (loading) return <div className="p-6 text-gray-500">Carregando...</div>;
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Landing Page Editor</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Editor da página inicial</h1>
         <button
           onClick={handleSave}
           disabled={saving}
           className="px-4 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          {saving ? 'Salvando...' : 'Save Changes'}
         </button>
       </div>
 
@@ -139,7 +139,7 @@ export default function DesignLanding() {
               value={hero.ctaPrimaryText || ''}
               onChange={(e) => setHero({ ...hero, ctaPrimaryText: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              placeholder="View Menu"
+              placeholder="Ver cardápio"
             />
           </div>
           <div>
@@ -223,7 +223,7 @@ export default function DesignLanding() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">Description</label>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Descrição</label>
                   <input
                     type="text"
                     value={feature.description}
@@ -236,9 +236,7 @@ export default function DesignLanding() {
                 type="button"
                 onClick={() => removeFeature(i)}
                 className="mt-5 text-red-500 hover:text-red-700 text-sm"
-              >
-                Remove
-              </button>
+              >Remover</button>
             </div>
           ))}
         </div>
@@ -259,7 +257,7 @@ export default function DesignLanding() {
             />
           </div>
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
             <textarea
               value={cta.description || ''}
               onChange={(e) => setCta({ ...cta, description: e.target.value })}

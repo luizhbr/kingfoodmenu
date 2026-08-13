@@ -28,7 +28,7 @@ const ROLE_COLORS: Record<string, string> = {
 const ROLE_LABELS: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   MANAGER: 'Manager',
-  STAFF: 'Staff',
+  STAFF: 'Funcionários',
 };
 
 export default function StaffList() {
@@ -83,7 +83,7 @@ export default function StaffList() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Staff</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Funcionários</h1>
         <Link
           to="/staff/invite"
           className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
@@ -111,13 +111,13 @@ export default function StaffList() {
           <option value="">All Roles</option>
           <option value="SUPER_ADMIN">Super Admin</option>
           <option value="MANAGER">Manager</option>
-          <option value="STAFF">Staff</option>
+          <option value="STAFF">Funcionários</option>
         </select>
       </div>
 
       {loading && (
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Loading" />
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       )}
 
@@ -130,31 +130,31 @@ export default function StaffList() {
       {!loading && staff.length > 0 && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table className="w-full text-sm">
+            <div className="table-responsive"><table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Email</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Role</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Location</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">E-mail</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Função</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Local</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {staff.map((member) => (
                   <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium">{member.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{member.email}</td>
-                    <td className="px-4 py-3">
+                    <td data-label="Nome" className="px-4 py-3 font-medium">{member.name}</td>
+                    <td data-label="E-mail" className="px-4 py-3 text-gray-600">{member.email}</td>
+                    <td data-label="Função" className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-700'}`}>
                         {ROLE_LABELS[member.role] || member.role}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">
+                    <td data-label="Local" className="px-4 py-3 text-gray-600">
                       {member.location?.name || '—'}
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Status" className="px-4 py-3">
                       <button
                         onClick={() => toggleActive(member.id, !member.isActive)}
                         className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.isActive
@@ -163,21 +163,19 @@ export default function StaffList() {
                           }`}
                         aria-label={`${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}`}
                       >
-                        {member.isActive ? 'Active' : 'Inactive'}
+                        {member.isActive ? 'Ativo' : 'Inactive'}
                       </button>
                     </td>
-                    <td className="px-4 py-3">
+                    <td data-label="Ações" className="px-4 py-3">
                       <Link
                         to={`/staff/${member.id}`}
                         className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                      >
-                        Edit
-                      </Link>
+                      >Editar</Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </div>
 
           {pagination && pagination.totalPages > 1 && (
@@ -186,9 +184,7 @@ export default function StaffList() {
                 disabled={page <= 1}
                 onClick={() => setPage((p) => p - 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Previous
-              </button>
+              >Anterior</button>
               <span className="text-sm text-gray-600">
                 Page {pagination.page} of {pagination.totalPages}
               </span>
@@ -196,9 +192,7 @@ export default function StaffList() {
                 disabled={page >= pagination.totalPages}
                 onClick={() => setPage((p) => p + 1)}
                 className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
-              >
-                Next
-              </button>
+              >Próximo</button>
             </div>
           )}
         </>

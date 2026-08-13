@@ -94,7 +94,7 @@ export default function AcceptInvite() {
   const ROLE_LABELS: Record<string, string> = {
     SUPER_ADMIN: 'Super Admin',
     MANAGER: 'Manager',
-    STAFF: 'Staff',
+    STAFF: 'Funcionários',
   };
 
   return (
