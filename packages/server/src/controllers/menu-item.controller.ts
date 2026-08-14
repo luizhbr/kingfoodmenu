@@ -229,10 +229,10 @@ export async function deleteMenuItem(req: Request<{ id: string }>, res: Response
 
   const orderItemCount = await prisma.orderItem.count({ where: { menuItemId: id } });
   if (orderItemCount > 0) {
-    res.status(409).json({
-      success: false,
-      error: 'Cannot delete menu item with existing orders. Deactivate it instead.',
-    });
+    // Soft-delete: keep historical order data intact, remove from public menu.
+    await prisma.menuItem.update({ where: { id }, data: { isActive: false } });
+    auditLog(req, { action: 'update', entity: 'MenuItem', entityId: id, details: { name: existing.name, reason: 'has_orders' } });
+    res.json({ success: true, message: 'Item removed from menu (preserved in historical orders)' });
     return;
   }
 

@@ -28,7 +28,7 @@ export function FeaturedProductGrid({ apiUrl = '/api/menu/items', onAdd, onClick
       .then((d) => {
         const list = d?.data?.items || d?.data || [];
         // Take first 6 items as featured
-        if (mounted) setItems(list.slice(0, 6));
+        if (mounted) setItems(list.slice(0, 1));
       })
       .catch(() => mounted && setError(true))
       .finally(() => mounted && setLoading(false));
@@ -44,7 +44,7 @@ export function FeaturedProductGrid({ apiUrl = '/api/menu/items', onAdd, onClick
 
       {loading && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+          {Array.from({ length: 1 }).map((_, i) => (
             <div key={i} className="rounded-kf-lg border border-kf-border bg-kf-surface p-3">
               <Skeleton className="aspect-[4/3] rounded-kf-md" />
               <Skeleton className="mt-3 h-4 w-3/4" />
@@ -67,7 +67,7 @@ export function FeaturedProductGrid({ apiUrl = '/api/menu/items', onAdd, onClick
       )}
 
       {!loading && items.length > 0 && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 max-w-xs mx-auto">
           {items.map((p) => (
             <ProductCard
               key={p.id}

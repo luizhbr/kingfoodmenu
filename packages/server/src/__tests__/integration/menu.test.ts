@@ -373,15 +373,21 @@ describe('Menu API - Integration Tests', () => {
       expect(res.status).toBe(403);
     });
 
-    it('returns 409 if item has orders', async () => {
+    it('soft-deletes item with orders', async () => {
       mockedPrisma.menuItem.findUnique.mockResolvedValue(sampleMenuItem as any);
       mockedPrisma.orderItem.count.mockResolvedValue(10);
+      mockedPrisma.menuItem.update.mockResolvedValue({ ...sampleMenuItem, isActive: false } as any);
 
       const res = await request(app)
         .delete('/api/menu/items/item-1')
         .set('Authorization', `Bearer ${adminToken}`);
 
-      expect(res.status).toBe(409);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(mockedPrisma.menuItem.update).toHaveBeenCalledWith({
+        where: { id: 'item-1' },
+        data: { isActive: false },
+      });
     });
 
     it('deletes item with no orders', async () => {
