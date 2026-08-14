@@ -97,10 +97,15 @@ export async function createJob(req: Request, res: Response): Promise<void> {
 }
 
 export async function listJobs(req: Request, res: Response): Promise<void> {
-  const { status, limit } = req.query;
+  const { status, orderId, printerId, type, limit } = req.query;
   const take = Math.min(100, parseInt(limit as string) || 50);
+  const where: any = {};
+  if (status) where.status = status as any;
+  if (orderId) where.orderId = orderId as string;
+  if (printerId) where.printerId = printerId as string;
+  if (type) where.type = type as string;
   const jobs = await prisma.printJob.findMany({
-    where: status ? { status: status as any } : undefined,
+    where: Object.keys(where).length ? where : undefined,
     orderBy: { createdAt: 'desc' },
     take,
     include: { order: { select: { orderNumber: true } }, printer: { select: { name: true } } },

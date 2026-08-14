@@ -23,7 +23,9 @@ appEvents.on('review.submitted', (data) => processRules('review.submitted', data
 async function autoPrintOnConfirmed(data: Record<string, unknown>): Promise<void> {
   try {
     const order = data.order as { id?: string; status?: string } | undefined;
-    if (!order?.id || order.status !== 'CONFIRMED') return;
+    const previousStatus = data.previousStatus as string | undefined;
+    // Ignore duplicate confirmations of the same order — the AUTO job already exists
+    if (!order?.id || order.status !== 'CONFIRMED' || previousStatus === 'CONFIRMED') return;
 
     const printers = await prisma.printer.findMany({ where: { enabled: true } });
     if (printers.length === 0) return;
