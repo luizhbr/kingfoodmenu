@@ -20,7 +20,7 @@ appEvents.on('review.submitted', (data) => processRules('review.submitted', data
  * by the PrintJob unique constraint (orderId, type, printerId) — duplicate
  * events can never create a second job for the same order+printer.
  */
-async function autoPrintOnConfirmed(data: Record<string, unknown>): Promise<void> {
+export async function autoPrintOnConfirmed(data: Record<string, unknown>): Promise<void> {
   try {
     const order = data.order as { id?: string; status?: string } | undefined;
     const previousStatus = data.previousStatus as string | undefined;

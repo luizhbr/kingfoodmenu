@@ -821,8 +821,12 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
   }
 
   try {
-    const { appEvents } = await import('../lib/events.js');
+    const { appEvents, autoPrintOnConfirmed } = await import('../lib/events.js');
     appEvents.emit('order.statusChanged', { order: updated, previousStatus: order.status });
+    // Await auto-print so it completes before the HTTP response in serverless environments
+    if (status === 'CONFIRMED' && order.status !== 'CONFIRMED') {
+      await autoPrintOnConfirmed({ order: updated, previousStatus: order.status });
+    }
   } catch (err) {
     console.error('[order] appEvents statusChanged failed:', err);
   }
