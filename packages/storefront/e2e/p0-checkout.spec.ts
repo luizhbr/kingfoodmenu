@@ -14,7 +14,7 @@ async function addProduct(page, nameSubstring) {
 }
 
 test('P0-001: OrderConfirmation item price is not NaN', async ({ page }) => {
-  await addProduct(page, 'Guaraná');
+  await addProduct(page, 'Coca-Cola');
   await page.goto(`${BASE}/checkout`);
   await page.fill('[data-testid="guest-name"]', 'QA P0-001');
   await page.fill('[data-testid="guest-email"]', 'qa-p0-001@example.com');
@@ -29,7 +29,7 @@ test('P0-001: OrderConfirmation item price is not NaN', async ({ page }) => {
 });
 
 test('P0-002: Delivery without address shows inline per-field errors', async ({ page }) => {
-  await addProduct(page, 'Guaraná');
+  await addProduct(page, 'Coca-Cola');
   await page.goto(`${BASE}/checkout`);
   await page.fill('[data-testid="guest-name"]', 'QA P0-002');
   await page.fill('[data-testid="guest-email"]', 'qa-p0-002@example.com');

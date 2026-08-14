@@ -295,7 +295,7 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
                 <Price value={total} size="lg" />
               </div>
             </div>
-            <Button onClick={handleAddToCart} disabled={!canAdd} className="w-full min-h-[52px]">
+            <Button onClick={handleAddToCart} disabled={!canAdd} className="w-full min-h-[52px]" data-testid="modal-add-to-cart">
               {added ? (
                 t('menu.added', 'Adicionado ✓')
               ) : (
