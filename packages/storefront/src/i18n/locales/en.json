@@ -211,7 +211,11 @@
     "zoneError": "Address outside delivery area.",
     "stripeError": "Failed to start payment",
     "upsellTitle": "Want to add anything else?",
-    "totalDisclaimer": "Final total will be confirmed on the order."
+    "totalDisclaimer": "Final total will be confirmed on the order.",
+    "addressLine1Required": "Informe seu endereço",
+    "cityRequired": "Informe sua cidade",
+    "stateRequired": "Informe seu estado",
+    "zipCodeRequired": "Informe seu CEP"
   },
   "orderConfirmation": {
     "title": "Order Placed!",

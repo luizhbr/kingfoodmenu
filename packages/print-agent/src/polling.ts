@@ -132,6 +132,19 @@ export class PrintAgent {
     });
     if (!created && local.status === 'PRINTED') return true; // already done
 
+    // Honor server state: skip jobs the server already sees as PRINTING/PRINTED/FAILED.
+    // This prevents spurious 'Invalid transition ...' loops when stale jobs reappear.
+    const serverStatus = job.status as string | undefined;
+    if (serverStatus === 'PRINTED') {
+      if (local.status !== 'PRINTED') {
+        try { this.queue.transition(jobId, 'PRINTED'); } catch { /* ignore */ }
+      }
+      return true;
+    }
+    if (serverStatus === 'PRINTING' || serverStatus === 'FAILED') {
+      return false; // wait for server to re-queue or finish
+    }
+
     try {
       // Mark PRINTING on server
       await this.api.reportStatus(jobId, 'PRINTING');

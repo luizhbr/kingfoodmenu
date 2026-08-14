@@ -211,7 +211,11 @@
     "zoneError": "Endereço fora da área de entrega.",
     "stripeError": "Falha ao iniciar pagamento",
     "upsellTitle": "Quer adicionar mais alguma coisa?",
-    "totalDisclaimer": "O total final será confirmado no pedido."
+    "totalDisclaimer": "O total final será confirmado no pedido.",
+    "addressLine1Required": "Informe seu endereço",
+    "cityRequired": "Informe sua cidade",
+    "stateRequired": "Informe seu estado",
+    "zipCodeRequired": "Informe seu CEP"
   },
   "orderConfirmation": {
     "title": "Commande Passée !",

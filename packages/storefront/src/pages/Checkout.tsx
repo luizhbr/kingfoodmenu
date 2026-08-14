@@ -40,6 +40,11 @@ export default function Checkout() {
   const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [address, setAddress] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
+  const [addressErrors, setAddressErrors] = useState({ line1: '', city: '', state: '', zip: '' });
+  function updateAddress(field: keyof typeof address, value: string) {
+    setAddress((p) => ({ ...p, [field]: value }));
+    setAddressErrors((p) => ({ ...p, [field]: '' }));
+  }
   const [scheduledAt, setScheduledAt] = useState('');
   const [comment, setComment] = useState('');
   const [couponCode, setCouponCode] = useState('');
@@ -232,7 +237,14 @@ export default function Checkout() {
   function validateAddress(): boolean {
     if (orderType !== 'delivery') return true;
     const { line1, city, state, zip } = address;
-    return !!(line1.trim() && city.trim() && state.trim() && zip.trim());
+    const errs = {
+      line1: line1.trim() ? '' : t('checkout.addressLine1Required', 'Informe seu endereço'),
+      city: city.trim() ? '' : t('checkout.cityRequired', 'Informe sua cidade'),
+      state: state.trim() ? '' : t('checkout.stateRequired', 'Informe seu estado'),
+      zip: zip.trim() ? '' : t('checkout.zipCodeRequired', 'Informe seu CEP'),
+    };
+    setAddressErrors(errs);
+    return Object.values(errs).every((v) => !v);
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -486,15 +498,17 @@ export default function Checkout() {
                     label={`${t('checkout.addressLine1', 'Endereço')} *`}
                     placeholder={t('checkout.addressLine1', 'Rua e número')}
                     value={address.line1}
-                    onChange={(e) => setAddress((p) => ({ ...p, line1: e.target.value }))}
+                    onChange={(e) => updateAddress('line1', e.target.value)}
                     data-testid="address-line1"
                     autoComplete="street-address"
+                    error={addressErrors.line1}
+                    errorTestId="address-line1-error"
                   />
                   <Input
                     label={t('checkout.addressLine2', 'Apartamento / Unidade')}
                     placeholder={t('checkout.addressLine2', 'Apto, sala, etc. (opcional)')}
                     value={address.line2}
-                    onChange={(e) => setAddress((p) => ({ ...p, line2: e.target.value }))}
+                    onChange={(e) => updateAddress('line2', e.target.value)}
                     data-testid="address-line2"
                     autoComplete="address-line2"
                   />
@@ -503,26 +517,32 @@ export default function Checkout() {
                       label={`${t('checkout.city', 'Cidade')} *`}
                       placeholder={t('checkout.city', 'Cidade')}
                       value={address.city}
-                      onChange={(e) => setAddress((p) => ({ ...p, city: e.target.value }))}
+                      onChange={(e) => updateAddress('city', e.target.value)}
                       autoComplete="address-level2"
                     data-testid="address-city"
+                    error={addressErrors.city}
+                    errorTestId="address-city-error"
                     />
                     <Input
                       label={`${t('checkout.state', 'Estado')} *`}
                       placeholder={t('checkout.state', 'Estado')}
                       value={address.state}
-                      onChange={(e) => setAddress((p) => ({ ...p, state: e.target.value }))}
+                      onChange={(e) => updateAddress('state', e.target.value)}
                       autoComplete="address-level1"
                     data-testid="address-state"
+                    error={addressErrors.state}
+                    errorTestId="address-state-error"
                     />
                   </div>
                   <Input
                     label={`${t('checkout.zipCode', 'CEP')} *`}
                     placeholder={t('checkout.zipCode', 'CEP')}
                     value={address.zip}
-                    onChange={(e) => setAddress((p) => ({ ...p, zip: e.target.value }))}
+                    onChange={(e) => updateAddress('zip', e.target.value)}
                     data-testid="address-zip"
                     autoComplete="postal-code"
+                    error={addressErrors.zip}
+                    errorTestId="address-zip-error"
                   />
                 </div>
               </Card>

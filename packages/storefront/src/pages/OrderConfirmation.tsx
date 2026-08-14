@@ -17,7 +17,9 @@ type OrderItem = {
   id?: string;
   name: string;
   quantity: number;
-  price: number;
+  price?: number;
+  unitPrice?: number;
+  subtotal?: number;
   options: OrderOption[];
   comment?: string | null;
 };
@@ -140,7 +142,20 @@ export default function OrderConfirmation() {
                         )}
                         {item.comment && <p className="ml-5 text-xs text-kf-muted italic">“{item.comment}”</p>}
                       </div>
-                      <Price value={(item.price + optsTotal) * item.quantity} size="sm" />
+                      {(() => {
+                        let unitPrice = item.unitPrice;
+                        if (unitPrice === undefined) {
+                          unitPrice = item.price;
+                        }
+                        if (unitPrice === undefined && item.subtotal !== undefined && item.quantity > 0) {
+                          unitPrice = item.subtotal / item.quantity;
+                        }
+                        if (unitPrice === undefined) {
+                          console.error('[OrderConfirmation] missing unitPrice for item', item);
+                          return <span className="text-kf-error text-sm">—</span>;
+                        }
+                        return <Price value={(unitPrice + optsTotal) * item.quantity} size="sm" />;
+                      })()}
                     </li>
                   );
                 })}
