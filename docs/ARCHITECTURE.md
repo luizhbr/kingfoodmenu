@@ -65,7 +65,8 @@ não mantém conexões abertas entre requisições. Por isso:
 ```json
 {
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api" },
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/:path*", "destination": "/admin/index.html" },
     { "source": "/((?!assets/|admin/|sw\\.js|manifest\\.json|api/).*)", "destination": "/index.html" }
   ]
@@ -81,14 +82,14 @@ não mantém conexões abertas entre requisições. Por isso:
 `buildCommand` (vercel.json):
 
 ```bash
-npx prisma generate && npm run build -w packages/server && npm run build -w packages/storefront && MSYS_NO_PATHCONV=1 VITE_BASE_PATH=/admin/ npm run build -w packages/admin && cp -r packages/admin/dist packages/storefront/dist/admin
+npx prisma generate && npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/storefront && node scripts/publish-admin.mjs
 ```
 
 1. `prisma generate` — gera o Prisma Client
-2. `tsc` no server — compila TS → CommonJS em `packages/server/dist/`
-3. Vite no storefront — gera `packages/storefront/dist/`
-4. Vite no admin — gera `packages/admin/dist/` com base `/admin/`
-5. `cp -r` — copia o admin para dentro do dist do storefront
+2. `tsc` no shared — gera `@kitchenasty/shared` em `packages/shared/dist/`
+3. `tsc` no server — compila TS → CommonJS em `packages/server/dist/`
+4. Vite no storefront — gera `packages/storefront/dist/`
+5. `scripts/publish-admin.mjs` — builda o admin com `VITE_BASE_PATH=/admin/` e publica em `packages/storefront/dist/admin`
 
 `outputDirectory: packages/storefront/dist`
 

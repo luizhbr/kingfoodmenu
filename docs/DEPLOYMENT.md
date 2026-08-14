@@ -12,10 +12,10 @@ Vercel (import do repo)
 buildCommand (vercel.json)
    │
    ├── npx prisma generate
+   ├── npm run build -w packages/shared
    ├── npm run build -w packages/server (tsc → dist/)
    ├── npm run build -w packages/storefront (vite)
-   ├── MSYS_NO_PATHCONV=1 VITE_BASE_PATH=/admin/ npm run build -w packages/admin
-   └── cp -r packages/admin/dist packages/storefront/dist/admin
+   └── node scripts/publish-admin.mjs  (VITE_BASE_PATH=/admin/ + publish em dist/admin)
    │
    ▼
 outputDirectory: packages/storefront/dist
@@ -31,7 +31,8 @@ https://king-food-foundation-ui.vercel.app
 
 | Source | Destination |
 |--------|-------------|
-| /api/:path* | /api (função serverless) |
+| /api/(.*) | /api/index (função serverless) |
+| /admin | /admin/index.html |
 | /admin/:path* | /admin/index.html |
 | /(resto) | /index.html (SPA fallback) |
 
