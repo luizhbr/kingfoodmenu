@@ -1,62 +1,10 @@
 {
-  "installCommand": "npm install --include=dev",
-  "buildCommand": "npx prisma generate && npm run build -w packages/server && npm run build -w packages/storefront && MSYS_NO_PATHCONV=1 VITE_BASE_PATH=/admin/ npm run build -w packages/admin && cp -r packages/admin/dist packages/storefront/dist/admin",
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "npx prisma generate && npm run build",
   "outputDirectory": "packages/storefront/dist",
+  "installCommand": "npm install",
+  "framework": "vite",
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api"
-    },
-    {
-      "source": "/admin/:path*",
-      "destination": "/admin/index.html"
-    },
-    {
-      "source": "/((?!assets/|admin/|sw\\.js|manifest\\.json|api/).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "headers": [
-    {
-      "source": "/sw.js",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/manifest.json",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=60"
-        }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0"
-        }
-      ]
-    },
-    {
-      "source": "/admin/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "no-store, max-age=0"
-        }
-      ]
-    }
-  ],
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 30
-    }
-  }
+    { "source": "/api/(.*)", "destination": "/api/index" }
+  ]
 }
