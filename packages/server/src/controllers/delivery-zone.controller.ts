@@ -121,3 +121,82 @@ export async function checkDeliveryZone(req: Request<{ locationId: string }>, re
 
   res.status(404).json({ success: false, error: 'Address is outside delivery zones' });
 }
+
+const checkDeliveryAddressSchema = z.object({
+  locationId: z.string().min(1).optional(),
+  line1: z.string().trim().min(1),
+  city: z.string().trim().min(1),
+  state: z.string().trim().min(1),
+  zip: z.string().trim().min(1),
+  lat: z.number().finite().optional(),
+  lng: z.number().finite().optional(),
+}).refine((value) => (value.lat == null) === (value.lng == null), {
+  message: 'lat and lng must be provided together',
+  path: ['lat'],
+});
+
+/**
+ * Storefront delivery pre-check. The address fields are the public contract;
+ * coordinates are optional until a geocoder is configured. Without coordinates,
+ * this mirrors createOrder by selecting the lowest-charge active zone. The final
+ * order endpoint remains authoritative and recalculates fee/minimum server-side.
+ */
+export async function checkDeliveryAddress(req: Request, res: Response): Promise<void> {
+  const parsed = checkDeliveryAddressSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+
+  const { locationId, lat, lng } = parsed.data;
+  const location = await prisma.location.findFirst({
+    where: {
+      ...(locationId ? { id: locationId } : {}),
+      isActive: true,
+      deliveryEnabled: true,
+    },
+    orderBy: { name: 'asc' },
+  });
+
+  if (!location) {
+    res.status(404).json({ success: false, error: 'No active delivery location found' });
+    return;
+  }
+
+  const zones = await prisma.deliveryZone.findMany({
+    where: { locationId: location.id, isActive: true },
+    orderBy: { charge: 'asc' },
+  });
+
+  if (zones.length === 0) {
+    res.status(404).json({ success: false, error: 'Delivery is unavailable for this location' });
+    return;
+  }
+
+  let matchedZone = zones[0];
+  if (lat != null && lng != null) {
+    const polygonZones = zones.filter((zone) => zone.boundaries && Array.isArray(zone.boundaries));
+    if (polygonZones.length > 0) {
+      const polygonMatch = polygonZones.find((zone) =>
+        isPointInPolygon(lat, lng, zone.boundaries as [number, number][])
+      );
+      if (!polygonMatch) {
+        res.status(404).json({ success: false, error: 'Address is outside delivery zones' });
+        return;
+      }
+      matchedZone = polygonMatch;
+    }
+  }
+
+  res.json({
+    success: true,
+    data: {
+      eligible: true,
+      fee: matchedZone.charge,
+      minOrder: matchedZone.minOrder,
+      zoneId: matchedZone.id,
+      zoneName: matchedZone.name,
+      locationId: location.id,
+    },
+  });
+}

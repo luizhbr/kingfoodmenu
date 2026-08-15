@@ -94,6 +94,7 @@ export default function Checkout() {
   // Dynamic delivery fee from zone check
   const [deliveryFee, setDeliveryFee] = useState(4.99);
   const [zoneError, setZoneError] = useState('');
+  const [locationId, setLocationId] = useState('');
 
   // Busy mode
   const [isBusy, setIsBusy] = useState(false);
@@ -124,6 +125,7 @@ export default function Checkout() {
       .then((res) => res.json())
       .then((data) => {
         const loc = data.data?.[0];
+        if (loc?.id) setLocationId(loc.id);
         if (loc?.isBusy) {
           setIsBusy(true);
           setBusyMessage(loc.busyMessage || t('checkout.busyMessage', 'Este local não está aceitando pedidos no momento.'));
@@ -165,24 +167,36 @@ export default function Checkout() {
       return;
     }
     const timeout = setTimeout(() => {
-      fetch(`${API_BASE}/api/delivery/zones/check`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ line1: address.line1, city: address.city, zip: address.zip }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.success) {
-            setDeliveryFee(data.data.fee ?? 4.99);
+      void (async () => {
+        try {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          await withCsrf(headers);
+          const res = await fetch(`${API_BASE}/api/delivery/zones/check`, {
+            method: 'POST',
+            headers,
+            credentials: 'include',
+            body: JSON.stringify({
+              locationId: locationId || undefined,
+              line1: address.line1,
+              city: address.city,
+              state: address.state,
+              zip: address.zip,
+            }),
+          });
+          const data = await res.json();
+          if (res.ok && data.success) {
+            setDeliveryFee(data.data.fee);
             setZoneError('');
           } else {
             setZoneError(data.error || t('checkout.zoneError', 'Endereço fora da área de entrega.'));
           }
-        })
-        .catch(() => setZoneError(''));
+        } catch {
+          setZoneError(t('checkout.zoneCheckUnavailable', 'Não foi possível validar a entrega agora.'));
+        }
+      })();
     }, 600);
     return () => clearTimeout(timeout);
-  }, [orderType, address.line1, address.city, address.zip, t]);
+  }, [orderType, address.line1, address.city, address.state, address.zip, locationId, t]);
 
   const applyCoupon = async () => {
     if (!couponCode.trim()) return;

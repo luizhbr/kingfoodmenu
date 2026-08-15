@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes.js';
 import printRoutes from './routes/print.routes.js';
 import printTemplateRoutes from './routes/print-template.routes.js';
 import locationRoutes from './routes/location.routes.js';
+import deliveryRoutes from './routes/delivery.routes.js';
 import menuRoutes from './routes/menu.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
@@ -184,6 +185,7 @@ export function createApp() {
   // ── Routes ────────────────────────────────────────────────────────────
   app.use('/api/auth', authRoutes);
   app.use('/api/locations', locationRoutes);
+  app.use('/api/delivery', deliveryRoutes);
   app.use('/api/menu', menuRoutes);
   app.use('/api/orders', orderRoutes);
   app.use('/api/payments', paymentRoutes);
