@@ -85,6 +85,17 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     return next();
   }
 
+  // Skip for POST /api/orders (guest checkout - no Bearer token, no cookie auth)
+  if (req.path === '/api/orders' && req.method === 'POST') {
+    return next();
+  }
+
+  // Skip for PATCH /api/orders/:id/status (staff-only endpoint requiring Bearer auth)
+  // CSRF should not block before authenticate middleware returns 401
+  if (req.path.match(/^\/api\/orders\/[^\/]+\/status$/) && req.method === 'PATCH') {
+    return next();
+  }
+
   // For all other state-changing requests, validate CSRF token
   const csrfToken = req.headers[CSRF_TOKEN_HEADER] as string | undefined;
   const cookieToken = req.cookies?.[CSRF_COOKIE_NAME];

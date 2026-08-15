@@ -17,6 +17,7 @@ vi.mock('../../lib/db.js', () => {
     loyaltyTransaction: { create: vi.fn() },
     automationRule: { findMany: vi.fn() },
     category: { findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn(), count: vi.fn() },
+    address: { create: vi.fn(), findUnique: vi.fn(), findMany: vi.fn(), update: vi.fn(), delete: vi.fn() },
   };
   return { default: mockPrisma, prisma: mockPrisma };
 });
@@ -186,6 +187,7 @@ describe('Order API - Integration Tests', () => {
       mockedPrisma.menuItem.findMany.mockResolvedValue([sampleMenuItem] as any);
       mockedPrisma.location.findFirst.mockResolvedValue(sampleLocation as any);
       mockedPrisma.deliveryZone.findFirst.mockResolvedValue(null);
+      mockedPrisma.address.create.mockResolvedValue({ id: 'addr-1' } as any);
       mockedPrisma.order.create.mockResolvedValue({ ...sampleOrder, orderType: 'DELIVERY' } as any);
       mockedPrisma.automationRule.findMany.mockResolvedValue([]);
 
@@ -234,37 +236,52 @@ describe('Order API - Integration Tests', () => {
   // ============================================================
   // GET
   // ============================================================
-  describe('GET /api/orders/:id', () => {
-    it('requires authentication', async () => {
-      const res = await request(app).get('/api/orders/order-1');
-      expect(res.status).toBe(401);
-    });
+describe('GET /api/orders/:id', () => {
+  it('should allow guest access to existing order', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      ...sampleOrder,
+      items: [{ id: 'oi-1', name: 'Pizza', quantity: 2, unitPrice: 14.99, subtotal: 29.98, options: [] }],
+    } as any);
 
-    it('returns order detail', async () => {
-      mockedPrisma.order.findUnique.mockResolvedValue({
-        ...sampleOrder,
-        items: [{ id: 'oi-1', name: 'Pizza', quantity: 2, unitPrice: 14.99, subtotal: 29.98, options: [] }],
-      } as any);
-
-      const res = await request(app)
-        .get('/api/orders/order-1')
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(200);
-      expect(res.body.data.orderNumber).toBe('KA-ABC-123');
-    });
-
-    it('returns 404 for unknown order', async () => {
-      mockedPrisma.order.findUnique.mockResolvedValue(null);
-
-      const res = await request(app)
-        .get('/api/orders/unknown')
-        .set('Authorization', `Bearer ${adminToken}`);
-
-      expect(res.status).toBe(404);
-    });
+    const res = await request(app).get('/api/orders/order-1');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.orderNumber).toBe('KA-ABC-123');
   });
 
+  it('should return 404 for guest with non-existent order', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(null);
+
+    const res = await request(app).get('/api/orders/unknown');
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.error).toBe('Order not found');
+  });
+
+  it('returns order detail', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      ...sampleOrder,
+      items: [{ id: 'oi-1', name: 'Pizza', quantity: 2, unitPrice: 14.99, subtotal: 29.98, options: [] }],
+    } as any);
+
+    const res = await request(app)
+      .get('/api/orders/order-1')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.orderNumber).toBe('KA-ABC-123');
+  });
+
+  it('returns 404 for unknown order', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue(null);
+
+    const res = await request(app)
+      .get('/api/orders/unknown')
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(404);
+  });
+});
   // ============================================================
   // UPDATE STATUS
   // ============================================================

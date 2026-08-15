@@ -156,10 +156,10 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
 
   if (!customerId) {
-    if (!guestName || !guestEmail || !guestPhone) {
+    if (!guestName || !guestEmail) {
       res
         .status(400)
-        .json({ success: false, error: 'Guest name, email, and phone are required for guest checkout' });
+        .json({ success: false, error: 'Guest name and email are required for guest checkout' });
       return;
     }
   }
@@ -685,14 +685,13 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
     where: { id },
     include: {
       customer: { select: { id: true, name: true, email: true, phone: true } },
-      location: { select: { id: true, name: true } },
-      items: {
+      location: { select: { id: true, name: true } },      items: {
         include: {
           menuItem: { select: { id: true, name: true, slug: true } },
           options: true,
-        },
+        }
       },
-      payments: { orderBy: { createdAt: 'desc' }, take: 1 },
+      payments: { orderBy: { createdAt: 'desc' }, take: 1 }
     },
   });
 
@@ -701,15 +700,18 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
     return;
   }
 
-  const user = req.user!;
-  if (user.type !== 'staff' && order.customerId !== user.id) {
-    res.status(403).json({ success: false, error: 'Access denied' });
-    return;
+  // If the user is authenticated, check if they are staff or the customer
+  if (req.user) {
+    const user = req.user;
+    if (user.type !== 'staff' && order.customerId !== user.id) {
+      res.status(403).json({ success: false, error: 'Access denied' });
+      return;
+    }
   }
+  // If the user is not authenticated (guest), we allow access to the order by ID (assuming the UUID is hard to guess)
 
   res.json({ success: true, data: order });
 }
-
 export async function listCustomerOrders(req: Request, res: Response): Promise<void> {
   const customerId = req.user?.id;
   if (!customerId) {

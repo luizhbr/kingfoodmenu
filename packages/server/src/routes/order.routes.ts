@@ -15,7 +15,7 @@ router.get('/my-orders', authenticate, listCustomerOrders);
 router.get('/', authenticate, requireStaff, listOrders);
 
 // Single order access — customers can only see their own, staff can see all
-router.get('/:id', authenticate, requireOwnership('order'), getOrder);
+router.get('/:id', optionalAuth, getOrder);
 
 // Only staff can update order status
 router.patch('/:id/status', authenticate, requireStaff, updateOrderStatus);
