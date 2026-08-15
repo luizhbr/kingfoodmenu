@@ -650,6 +650,9 @@ model SiteSettings {
   heroSection     Json?    // { title, subtitle, ctaPrimaryText, ctaPrimaryLink, ctaSecondaryText, ctaSecondaryLink, backgroundImage }
   featuresSection Json?    // [{ icon, title, description }]
   ctaSection      Json?    // { title, description, buttonText, buttonLink }
+  landingSocial   Json?    // [{ platform: string; label: string; url: string; icon: string; enabled: boolean }]
+  landingHours    Json?    // { enabled: boolean; rows: [{ day: number; label: string; hours: string }]; timezone: string }
+  landingContact  Json?    // { phone: string; whatsapp: string; email: string; address: string }
 
   // Operational settings
   generalSettings     Json?  // { timezone, distanceUnit, googleMapsApiKey, defaultCurrency, currencySymbol, currencyPosition, contactEmail, contactPhone }

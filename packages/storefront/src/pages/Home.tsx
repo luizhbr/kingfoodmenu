@@ -12,15 +12,15 @@ import { PromoBanner } from '../components/PromoBanner.js';
 import { FeaturedProductGrid } from '../components/FeaturedProductGrid.js';
 import CartBar from '../components/CartBar.js';
 
-const WA_URL = 'https://wa.me/12673107535';
-const GROUP_URL = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
-const MAPS_URL = 'https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5';
-const INSTAGRAM_URL = 'https://instagram.com/king.food_delivery';
-const BG = 'https://kingfood.online/bg-acai.jpg';
-const LOGO = 'https://kingfood.online/logo-kingfood.png.png';
-const TZ = 'America/New_York';
+const WA_URL_DEF = 'https://wa.me/12673107535';
+const GROUP_URL_DEF = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
+const MAPS_URL_DEF = 'https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5';
+const INSTAGRAM_URL_DEF = 'https://instagram.com/king.food_delivery';
+const BG_DEF = 'https://kingfood.online/bg-acai.jpg';
+const LOGO_DEF = 'https://kingfood.online/logo-kingfood.png.png';
+const TZ_DEF = 'America/New_York';
 
-const HOURS = [
+const DEFAULT_HOURS: { day: number; label: string; hours: string }[] = [
   { day: 0, label: 'Domingo', hours: '6:00 PM – 10:30 PM' },
   { day: 1, label: 'Segunda-feira', hours: '7:00 PM – 10:00 PM' },
   { day: 2, label: 'Terça-feira', hours: 'Fechado' },
@@ -30,12 +30,26 @@ const HOURS = [
   { day: 6, label: 'Sábado', hours: '9:00 PM – 11:00 PM' },
 ];
 
-const SIDE_LINKS = [
-  { label: 'Grupo WhatsApp', icon: '💬', href: GROUP_URL },
-  { label: 'Instagram', icon: '📸', href: INSTAGRAM_URL },
-  { label: 'Horários e entrega', icon: '🕐', action: 'hours' as const },
-  { label: 'Fale conosco', icon: '📱', href: WA_URL },
-];
+function getHours(settings: any): { day: number; label: string; hours: string }[] {
+  return settings?.landingHours?.rows || DEFAULT_HOURS;
+}
+function getSocialLinks(settings: any, onHours: () => void): any[] {
+  const stored = settings?.landingSocial || [];
+  if (stored.length > 0) {
+    return stored
+      .filter((s: any) => s.enabled !== false)
+      .map((s: any) => {
+        if (s.platform === 'hours' || s.url === '#hours') return { label: s.label, icon: s.icon || '🕐', action: 'hours' as const };
+        return { label: s.label, icon: s.icon || '🔗', href: s.url };
+      });
+  }
+  return [
+    { label: 'Grupo WhatsApp', icon: '💬', href: GROUP_URL_DEF },
+    { label: 'Instagram', icon: '📸', href: INSTAGRAM_URL_DEF },
+    { label: 'Horários e entrega', icon: '🕐', action: 'hours' as const },
+    { label: 'Fale conosco', icon: '📱', href: WA_URL_DEF },
+  ];
+}
 
 type OpenStatus =
   | { open: true; label: string; detail: string }
@@ -54,7 +68,7 @@ function parseClock(token: string): number | null {
 
 function getColumbusNow(): { day: number; minutes: number } {
   const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ,
+    timeZone: TZ_DEF,
     weekday: 'short',
     hour: 'numeric',
     minute: 'numeric',
@@ -79,10 +93,10 @@ function getColumbusNow(): { day: number; minutes: number } {
 
 function computeOpenStatus(): OpenStatus {
   const { day, minutes } = getColumbusNow();
-  const row = HOURS.find((h) => h.day === day) ?? HOURS[0];
+  const row = DEFAULT_HOURS.find((h) => h.day === day) ?? DEFAULT_HOURS[0];
   if (row.hours === 'Fechado') {
     for (let i = 1; i <= 7; i++) {
-      const nr = HOURS.find((h) => h.day === (day + i) % 7)!;
+      const nr = DEFAULT_HOURS.find((h) => h.day === (day + i) % 7)!;
       if (nr.hours !== 'Fechado') {
         const start = nr.hours.split('–')[0]?.trim() ?? '';
         return {
@@ -103,7 +117,7 @@ function computeOpenStatus(): OpenStatus {
   }
   if (minutes < start) return { open: false, label: 'Fechado', detail: `Abre ${startTok}` };
   for (let i = 1; i <= 7; i++) {
-    const nr = HOURS.find((h) => h.day === (day + i) % 7)!;
+    const nr = DEFAULT_HOURS.find((h) => h.day === (day + i) % 7)!;
     if (nr.hours !== 'Fechado') {
       const ns = nr.hours.split('–')[0]?.trim() ?? '';
       return {
@@ -131,7 +145,7 @@ function AcaiBerry({ className = '' }: { className?: string }) {
   );
 }
 
-function SplashScreen({ exiting }: { exiting: boolean }) {
+function SplashScreen({ exiting, logo: logoProp }: { exiting: boolean; logo?: string }) {
   return (
     <div
       className={`fixed inset-0 z-[100] flex flex-col items-center justify-center kf-splash ${
@@ -141,7 +155,7 @@ function SplashScreen({ exiting }: { exiting: boolean }) {
       aria-label="Carregando King Food"
     >
       <img
-        src={LOGO}
+        src={LOGO_DEF}
         alt="King Food"
         className="w-40 h-40 sm:w-44 sm:h-44 object-contain"
         decoding="async"
@@ -181,7 +195,14 @@ function GoogleGIcon({ className }: { className?: string }) {
 
 export default function Home() {
   const { settings } = useTheme();
-  const logo = settings.logo || LOGO;
+  const logo = settings.logo || LOGO_DEF;
+  const bg = settings.heroSection?.backgroundImage || BG_DEF;
+  const myTz = settings.landingHours?.timezone || TZ_DEF;
+  const myHours = getHours(settings);
+  const mySideLinks = useMemo(() => getSocialLinks(settings, () => setShowHours(true)), [settings]);
+  const myContact = settings.landingContact || {};
+  const myWaUrl = myContact.whatsapp ? `https://wa.me/${myContact.whatsapp.replace(/[^\d]/g,'')}` : WA_URL_DEF;
+  const myInstagramUrl = (settings.landingSocial||[]).find((s: any) => s.platform?.toLowerCase()=='instagram')?.url || INSTAGRAM_URL_DEF;
   const [loading, setLoading] = useState(true);
   const [splashExiting, setSplashExiting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -270,7 +291,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-[#F5F1E8] text-gray-900 relative pb-[var(--kf-nav-h)] md:pb-0">
-      {loading && <SplashScreen exiting={splashExiting} />}
+      {loading && <SplashScreen exiting={splashExiting} logo={logo} />}
 
       {/* Header limpo */}
       <header
@@ -313,7 +334,7 @@ export default function Home() {
               Horários
             </button>
             <a
-              href={WA_URL}
+              href={myWaUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold bg-[#25D366] text-white"
@@ -390,7 +411,7 @@ export default function Home() {
             <span className="mr-3">🛒</span>
             Pedir agora
           </Link>
-          {SIDE_LINKS.map((link) =>
+          {mySideLinks.map((link) =>
             link.action === 'hours' ? (
               <button
                 key={link.label}
@@ -506,7 +527,7 @@ export default function Home() {
               {openStatus.label} · {openStatus.detail}
             </p>
             <ul className="rounded-2xl border border-white/10 overflow-hidden divide-y divide-white/5">
-              {HOURS.map((row) => {
+              {myHours.map((row) => {
                 const isToday = row.day === today;
                 return (
                   <li

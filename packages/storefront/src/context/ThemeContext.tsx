@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL || '';
-
 interface HeroSection {
   title?: string;
   subtitle?: string;
@@ -10,20 +9,17 @@ interface HeroSection {
   ctaSecondaryLink?: string;
   backgroundImage?: string;
 }
-
 interface FeatureItem {
   icon: string;
   title: string;
   description: string;
 }
-
 interface CtaSection {
   title?: string;
   description?: string;
   buttonText?: string;
   buttonLink?: string;
 }
-
 export interface SiteSettings {
   id: string;
   siteName: string;
@@ -37,13 +33,14 @@ export interface SiteSettings {
   heroSection: HeroSection | null;
   featuresSection: FeatureItem[] | null;
   ctaSection: CtaSection | null;
+  landingSocial?: { platform: string; label: string; url: string; icon?: string; enabled?: boolean }[];
+  landingHours?: { enabled?: boolean; rows?: { day: number; label: string; hours: string }[]; timezone?: string };
+  landingContact?: { phone?: string; whatsapp?: string; email?: string; address?: string };
 }
-
 interface ThemeContextType {
   settings: SiteSettings;
   isDark: boolean;
 }
-
 const defaultSettings: SiteSettings = {
   id: 'default',
   siteName: 'King Food',
@@ -64,13 +61,14 @@ const defaultSettings: SiteSettings = {
   },
   featuresSection: null,
   ctaSection: null,
+  landingSocial: undefined,
+  landingHours: undefined,
+  landingContact: undefined,
 };
-
 const ThemeContext = createContext<ThemeContextType>({
   settings: defaultSettings,
   isDark: false,
 });
-
 function hexToHsl(hex: string): [number, number, number] {
   const r = parseInt(hex.slice(1, 3), 16) / 255;
   const g = parseInt(hex.slice(3, 5), 16) / 255;
@@ -89,7 +87,6 @@ function hexToHsl(hex: string): [number, number, number] {
   }
   return [h * 360, s * 100, l * 100];
 }
-
 function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
   l /= 100;
@@ -103,7 +100,6 @@ function hslToHex(h: number, s: number, l: number): string {
   };
   return `#${f(0)}${f(8)}${f(4)}`;
 }
-
 function generatePalette(hex: string): Record<string, string> {
   const [h, s] = hexToHsl(hex);
   const shades: Record<string, number> = {
@@ -125,7 +121,6 @@ function generatePalette(hex: string): Record<string, string> {
   }
   return result;
 }
-
 function applyColorVars(prefix: string, hex: string) {
   const palette = generatePalette(hex);
   const root = document.documentElement;
@@ -133,11 +128,9 @@ function applyColorVars(prefix: string, hex: string) {
     root.style.setProperty(`--color-${prefix}-${shade}`, color);
   }
 }
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [settings, setSettings] = useState<SiteSettings>(defaultSettings);
   const [isDark, setIsDark] = useState(false);
-
   useEffect(() => {
     fetch(`${API_BASE}/api/settings`)
       .then((res) => res.json())
@@ -148,12 +141,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
   }, []);
-
   useEffect(() => {
     applyColorVars('primary', settings.colorPrimary || '#FFD100');
     applyColorVars('secondary', settings.colorSecondary || '#E31818');
   }, [settings.colorPrimary, settings.colorSecondary]);
-
   useEffect(() => {
     const { darkMode } = settings;
     let dark = false;
@@ -169,11 +160,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       document.documentElement.classList.remove('dark');
     }
   }, [settings.darkMode]);
-
   useEffect(() => {
     document.title = settings.siteTitle;
   }, [settings.siteTitle]);
-
   useEffect(() => {
     if (settings.favicon) {
       let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
@@ -185,14 +174,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       link.href = settings.favicon;
     }
   }, [settings.favicon]);
-
   return (
     <ThemeContext.Provider value={{ settings, isDark }}>
       {children}
     </ThemeContext.Provider>
   );
 }
-
 export function useTheme() {
   return useContext(ThemeContext);
 }

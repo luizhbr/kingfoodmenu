@@ -31,6 +31,28 @@ const updateSettingsSchema = z.object({
     buttonText: z.string().optional(),
     buttonLink: z.string().optional(),
   }).optional(),
+  landingSocial: z.array(z.object({
+    platform: z.string(),
+    label: z.string(),
+    url: z.string(),
+    icon: z.string().optional(),
+    enabled: z.boolean().optional(),
+  })).optional(),
+  landingHours: z.object({
+    enabled: z.boolean().optional(),
+    rows: z.array(z.object({
+      day: z.number(),
+      label: z.string(),
+      hours: z.string(),
+    })).optional(),
+    timezone: z.string().optional(),
+  }).optional(),
+  landingContact: z.object({
+    phone: z.string().optional(),
+    whatsapp: z.string().optional(),
+    email: z.string().optional(),
+    address: z.string().optional(),
+  }).optional(),
 });
 
 async function getOrCreateSettings() {
@@ -56,6 +78,9 @@ function toPublicSettings(settings: Awaited<ReturnType<typeof getOrCreateSetting
     heroSection: settings.heroSection,
     featuresSection: settings.featuresSection,
     ctaSection: settings.ctaSection,
+    landingSocial: settings.landingSocial,
+    landingHours: settings.landingHours,
+    landingContact: settings.landingContact,
     createdAt: settings.createdAt,
     updatedAt: settings.updatedAt,
   };
