@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext.js';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
@@ -75,25 +74,31 @@ export default function OrderStatus() {
       .finally(() => setLoading(false));
   }, [id, token]);
 
-  // Real-time status updates via Socket.IO
+  // Polling for status updates (serverless-compatible)
   useEffect(() => {
     if (!id) return;
 
-    const socket = io({ path: '/socket.io', transports: ['websocket', 'polling'] });
+    const interval = setInterval(() => {
+      const headers: Record<string, string> = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-    socket.emit('join:order', id);
+      fetch(`${API_BASE}/api/orders/${id}`, { headers })
+        .then((res) => {
+          if (!res.ok) return;
+          return res.json();
+        })
+        .then((data) => {
+          if (data.data && data.data.status !== order?.status) {
+            setOrder(data.data);
+          }
+        })
+        .catch(() => {
+          // Silent fail for polling
+        });
+    }, 10000); // Poll every 10 seconds
 
-    socket.on('order:statusUpdate', (data: { id: string; status: string }) => {
-      if (data.id === id) {
-        setOrder((prev) => prev ? { ...prev, status: data.status } : prev);
-      }
-    });
-
-    return () => {
-      socket.emit('leave:order', id);
-      socket.disconnect();
-    };
-  }, [id]);
+    return () => clearInterval(interval);
+  }, [id, token]);
 
   if (loading) {
     return (
