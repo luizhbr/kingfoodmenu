@@ -9,6 +9,7 @@ import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
 import { validateCouponForOrder, recordCouponUsage, CouponError } from '../lib/coupon-service.js';
 import { debitCashback, creditCashbackForOrder, reverseCashbackForOrder, reverseDebit, linkDebitToOrder } from '../lib/cashback-service.js';
+const crypto = require('crypto');
 
 // ── Attribution source normalization ────────────────────────────────────────
 // Prisma enums are UPPERCASE. The storefront sends raw UTM values (lowercase),
@@ -106,6 +107,14 @@ const createOrderSchema = z.object({
 });
 
 function generateOrderNumber(): string {
+  const prefix = 'KF';
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
+  return `${prefix}-${timestamp}-${random}`;
+}
+
+// ── Tracking token generation (for guest orders) ────────────────────────
+function generateTrackingToken(): string {
   const prefix = 'KF';
   const timestamp = Date.now().toString(36).toUpperCase();
   const random = Math.random().toString(36).substring(2, 5).toUpperCase();
@@ -476,6 +485,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         deliveryLng: addressSnapshot?.lng ?? null,
         deliveryPlaceId: addressSnapshot?.placeId ?? null,
         deliveryFormattedAddress: addressSnapshot?.formattedAddress ?? null,
+        trackingToken: customerId ? undefined : generateTrackingToken(),
         guestName: customerId ? undefined : guestName,
         guestEmail: customerId ? undefined : guestEmail,
         guestPhone: customerId ? undefined : guestPhone,
@@ -681,18 +691,55 @@ export async function listOrders(req: Request, res: Response): Promise<void> {
 export async function getOrder(req: Request<{ id: string }>, res: Response): Promise<void> {
   const { id } = req.params;
 
+  // If the user is authenticated, check if they are staff or the customer
+  if (req.user) {
+    const user = req.user;
+    // First try to find by ID (for staff/customer accessing their own order)
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        location: { select: { id: true, name: true } },
+        items: {
+          include: {
+            menuItem: { select: { id: true, name: true, slug: true } },
+            options: true,
+          }
+        },
+        payments: { orderBy: { createdAt: 'desc' }, take: 1 }
+      }
+    });
+
+    if (!order) {
+      res.status(404).json({ success: false, error: 'Order not found' });
+      return;
+    }
+
+    // If the user is authenticated, check if they are staff or the customer
+    if (user.type !== 'staff' && order.customerId !== user.id) {
+      res.status(403).json({ success: false, error: 'Access denied' });
+      return;
+    }
+
+    res.json({ success: true, data: order });
+    return;
+  }
+
+  // If the user is not authenticated (guest), we allow access by trackingToken
+  // The id parameter should be the trackingToken for guest access
   const order = await prisma.order.findUnique({
-    where: { id },
+    where: { trackingToken: id },
     include: {
       customer: { select: { id: true, name: true, email: true, phone: true } },
-      location: { select: { id: true, name: true } },      items: {
+      location: { select: { id: true, name: true } },
+      items: {
         include: {
           menuItem: { select: { id: true, name: true, slug: true } },
           options: true,
         }
       },
       payments: { orderBy: { createdAt: 'desc' }, take: 1 }
-    },
+    }
   });
 
   if (!order) {
@@ -700,16 +747,8 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
     return;
   }
 
-  // If the user is authenticated, check if they are staff or the customer
-  if (req.user) {
-    const user = req.user;
-    if (user.type !== 'staff' && order.customerId !== user.id) {
-      res.status(403).json({ success: false, error: 'Access denied' });
-      return;
-    }
-  }
-  // If the user is not authenticated (guest), we allow access to the order by ID (assuming the UUID is hard to guess)
-
+  // For guest access, we don't need to check ownership beyond the token
+  // The trackingToken itself provides the access control
   res.json({ success: true, data: order });
 }
 export async function listCustomerOrders(req: Request, res: Response): Promise<void> {

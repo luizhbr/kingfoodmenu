@@ -273,6 +273,34 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
   }
 }
 
+
+/**
+ * Deduplicate Stripe events by event.id (in-memory, bounded TTL).
+ * Stripe re-delivers events with the SAME signature/timestamp on retries —
+ * replay protection must be keyed on event.id, NOT on the t= timestamp.
+ * In-memory is per-instance (serverless); the DB-level idempotency of the
+ * handlers below (updateMany by transactionId) is the real guard.
+ */
+const stripeEventIds = new Set<string>();
+const STRIPE_EVENT_TTL_MS = 15 * 60 * 1000; // 15 min retention
+
+function pruneStripeEventIds() {
+  if (stripeEventIds.size > 20000) {
+    const arr = Array.from(stripeEventIds);
+    stripeEventIds.clear();
+    for (let i = Math.floor(arr.length / 2); i < arr.length; i++) {
+      stripeEventIds.add(arr[i]);
+    }
+  }
+}
+
+function isStripeEventSeen(eventId: string): boolean {
+  if (stripeEventIds.has(eventId)) return true;
+  stripeEventIds.add(eventId);
+  pruneStripeEventIds();
+  return false;
+}
+
 export async function handleWebhook(req: Request, res: Response): Promise<void> {
   const sig = req.headers['stripe-signature'] as string;
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
@@ -282,12 +310,20 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
     return;
   }
 
-  let event;
+  let event: any;
   try {
     const stripe = await getStripe();
+    // constructEvent validates the signature AND the timestamp tolerance natively.
     event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
   } catch (err: any) {
     res.status(400).json({ success: false, error: `Webhook error: ${err.message}` });
+    return;
+  }
+
+  // Replay protection: idempotent on event.id. A re-delivered event is a
+  // no-op (200) — returning an error would make Stripe retry forever.
+  if (isStripeEventSeen(event.id)) {
+    res.json({ received: true, duplicate: true });
     return;
   }
 

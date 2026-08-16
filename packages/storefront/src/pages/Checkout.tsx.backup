@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo, FormEvent } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -41,10 +40,6 @@ export default function Checkout() {
   const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [address, setAddress] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
-const [predictions, setPredictions] = useState<any[]>([]);
-const [selectedPlace, setSelectedPlace] = useState<any>(null);
-const [loadingPredictions, setLoadingPredictions] = useState(false);
-const line1Ref = useRef<HTMLInputElement>(null);
   const [addressErrors, setAddressErrors] = useState({ line1: '', city: '', state: '', zip: '' });
   function updateAddress(field: keyof typeof address, value: string) {
     setAddress((p) => ({ ...p, [field]: value }));
@@ -188,22 +183,6 @@ const line1Ref = useRef<HTMLInputElement>(null);
               zip: address.zip,
             }),
           });
-          const [isLoaded, setIsLoaded] = useState(false);
-const [loadError, setLoadError] = useState<string | null>(null);
-const loader = useMemo(() => new Loader({
-  apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  libraries: ['places']
-}), []);
-useEffect(() => {
-  loader.load()
-    .then(() => {
-      setIsLoaded(true);
-    })
-    .catch((error) => {
-      setLoadError(error instanceof Error ? error.message : String(error));
-    });
-}, [loader]);
-
           const data = await res.json();
           if (res.ok && data.success) {
             setDeliveryFee(data.data.fee);
@@ -390,58 +369,7 @@ useEffect(() => {
     }
   }
 
-  // Google Places Autocomplete
-const handleLine1Change = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const value = event.target.value;
-  updateAddress('line1', value);
-  if (!isLoaded || loadError || !value.trim()) {
-    setPredictions([]);
-    return;
-  }
-  setLoadingPredictions(true);
-  const autocompleteService = new window.google.maps.places.AutocompleteService();
-  autocompleteService.getPlacePredictions({ input: value }, (predictions, status) => {
-    setLoadingPredictions(false);
-    if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-      setPredictions(predictions);
-    } else {
-      setPredictions([]);
-    }
-  });
-};
-
-const handlePlaceSelect = (place: any) => {
-  setLoadingPredictions(true);
-  const geocoder = new window.google.maps.places.PlacesService(new window.google.maps.Map(document.createElement('div')));
-  geocoder.getDetails({ placeId: place.place_id }, (result, status) => {
-    setLoadingPredictions(false);
-    if (status === window.google.maps.places.PlacesServiceStatus.OK && result) {
-      setSelectedPlace(result);
-      // Update address fields
-      const line1 = result.formatted_address || '';
-      let city = '', state = '', zip = '';
-      for (const component of result.address_components) {
-        if (component.types.includes('locality') || component.types.includes('postal_town')) {
-          city = component.long_name;
-        }
-        if (component.types.includes('administrative_area_level_1')) {
-          state = component.short_name;
-        }
-        if (component.types.includes('postal_code')) {
-          zip = component.long_name;
-        }
-      }
-      updateAddress('line1', line1);
-      updateAddress('city', city);
-      updateAddress('state', state);
-      updateAddress('zip', zip);
-      setPredictions([]);
-      line1Ref.current?.blur();
-    }
-  });
-};
-
-function getDefaultScheduleTime(): string {
+  function getDefaultScheduleTime(): string {
     const d = new Date();
     d.setHours(d.getHours() + 1, 0, 0, 0);
     return d.toISOString().slice(0, 16);
@@ -580,36 +508,16 @@ function getDefaultScheduleTime(): string {
                   <div className="mb-3 rounded-kf-md bg-kf-danger/10 p-3 text-sm text-kf-danger">{zoneError}</div>
                 )}
                 <div className="space-y-3">
-                  <div ref={line1Ref} className="relative w-full">
                   <Input
                     label={`${t('checkout.addressLine1', 'Endereço')} *`}
                     placeholder={t('checkout.addressLine1', 'Rua e número')}
                     value={address.line1}
-                    onChange={handleLine1Change}
+                    onChange={(e) => updateAddress('line1', e.target.value)}
                     data-testid="address-line1"
                     autoComplete="street-address"
                     error={addressErrors.line1}
                     errorTestId="address-line1-error"
                   />
-                  {/* Google Places Predictions Dropdown */}
-                  {loadingPredictions ? (
-                    <div className="absolute left-0 right-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10 flex items-center justify-center py-2">
-                      Loading...
-                    </div>
-                  ) : predictions.length > 0 ? (
-                    <div className="absolute left-0 right-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                      {predictions.map((prediction, index) => (
-                        <div
-                          key={index}
-                          onClick={() => handlePlaceSelect(prediction)}
-                          className="px-4 py-2 text-sm cursor-pointer hover:bg-kf-primary/10"
-                        >
-                          {prediction.description}
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                  </div>
                   <Input
                     label={t('checkout.addressLine2', 'Apartamento / Unidade')}
                     placeholder={t('checkout.addressLine2', 'Apto, sala, etc. (opcional)')}

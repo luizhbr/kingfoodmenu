@@ -50,6 +50,7 @@ import './lib/events.js';
 
 // Start metric cleanup cron
 import './lib/metricCleanup.js';
+const crypto = require('crypto');
 
 dotenv.config();
 
@@ -57,27 +58,42 @@ export function createApp() {
   const app = express();
 
   // ── Security headers (enhanced Helmet) ────────────────────────────────
-  app.use(helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-        connectSrc: ["'self'", 'https://api.stripe.com'],
-        fontSrc: ["'self'"],
-        objectSrc: ["'none'"],
-        upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-    crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
-    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-    hsts: process.env.NODE_ENV === 'production'
-      ? { maxAge: 31536000, includeSubDomains: true, preload: true }
-      : false,
-  }));
+  // CSP nonce middleware: per-request nonce + CSP header. Registered as its
+  // own middleware (NOT nested inside another app.use callback — nesting
+  // re-registers Helmet per request and leaks middleware in serverless).
+  app.use((req, res, next) => {
+    const nonce = crypto.randomBytes(16).toString('hex');
+    res.locals.cspNonce = nonce;
+    const cspHeader = `
+    default-src 'self';
+    script-src 'self' 'nonce-${nonce}';
+    style-src 'self' 'nonce-${nonce}';
+    img-src 'self' data: https:;
+    connect-src 'self' https://api.stripe.com;
+    font-src 'self';
+    object-src 'none';
+    base-uri 'self';
+    form-action 'self';
+    frame-ancestors 'none';
+    ${process.env.NODE_ENV === 'production' ? 'upgrade-insecure-requests' : ''}
+  `.replace(/\s+/g, ' ').trim();
+    res.setHeader('Content-Security-Policy', cspHeader);
+    next();
+  });
+
+  // Helmet (CSP handled by the custom middleware above)
+  app.use(
+    helmet({
+      contentSecurityPolicy: false, // We handle CSP via custom middleware
+      crossOriginEmbedderPolicy: false,
+      crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      hsts: process.env.NODE_ENV === 'production'
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
+    })
+  );
 
   // ── CORS ──────────────────────────────────────────────────────────────
   app.use(cors({

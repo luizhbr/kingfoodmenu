@@ -49,9 +49,87 @@ function verifySignature(req: Request): boolean {
  * 
  * Body: { event: string, data: any, source?: string, attribution?: { ... } }
  */
+
+// Simple in-memory nonce store for replay protection
+// In production, this should be Redis or similar shared store
+const nonceStore = new Set();
+const NONCE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const WEBSOCKET_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+
+function pruneNonceStore() {
+  const now = Date.now();
+  // Note: This is a simple implementation - in production use Redis with TTL
+  // For now, we'll just rely on the timestamp check in verifySignatureWithReplayProtection
+}
+
+/**
+ * Verify HMAC-SHA256 signature with replay protection
+ * Expected header: x-webhook-signature
+ * Also checks: x-webhook-timestamp (optional) and x-webhook-nonce (required for replay protection)
+ */
+function verifySignatureWithReplayProtection(req: Request): boolean {
+  if (!WEBHOOK_SECRET) {
+    console.warn("[webhook] WEBHOOK_SECRET not set — skipping signature verification");
+    return true; // Skip if no secret configured (dev mode)
+  }
+
+  const signature = req.headers["x-webhook-signature"] as string;
+  const timestampStr = req.headers["x-webhook-timestamp"] as string;
+  const nonce = req.headers["x-webhook-nonce"] as string;
+
+  if (!signature) return false;
+  if (!nonce) {
+    console.warn("[webhook] Missing x-webhook-nonce header");
+    return false;
+  }
+
+  // Check timestamp if provided (reject if older than 5 minutes)
+  if (timestampStr) {
+    const timestamp = parseInt(timestampStr, 10);
+    if (isNaN(timestamp)) {
+      console.warn("[webhook] Invalid x-webhook-timestamp");
+      return false;
+    }
+    const now = Date.now();
+    if (Math.abs(now - timestamp) > WEBSOCKET_TIMEOUT_MS) {
+      console.warn("[webhook] Webhook timestamp too old");
+      return false;
+    }
+  }
+
+  // Check for replay
+  if (nonceStore.has(nonce)) {
+    console.warn("[webhook] Replay attack detected - nonce already used");
+    return false;
+  }
+
+  const rawBody = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
+  const expected = crypto.createHmac("sha256", WEBHOOK_SECRET).update(rawBody).digest("hex");
+
+  try {
+    const valid = crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    if (valid) {
+      // Add nonce to store (in production, set expiry)
+      nonceStore.add(nonce);
+      // Simple cleanup - remove if we have too many entries
+      if (nonceStore.size > 10000) {
+        // Clear half when getting too large (simple approach)
+        const arr = Array.from(nonceStore);
+        nonceStore.clear();
+        for (let i = Math.floor(arr.length / 2); i < arr.length; i++) {
+          nonceStore.add(arr[i]);
+        }
+      }
+    }
+    return valid;
+  } catch {
+    return false;
+  }
+}
+
 router.post("/n8n", express.json(), async (req: Request, res: Response) => {
   // Verify signature
-  if (!verifySignature(req)) {
+  if (!verifySignatureWithReplayProtection(req)) {
     return res.status(401).json({ error: "Invalid webhook signature" });
   }
 

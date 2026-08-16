@@ -18,11 +18,15 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || '';
  * of the raw request body.
  */
 export function verifyWebhookSignature(req: Request, res: Response, next: NextFunction): void {
-  // Skip verification if WEBHOOK_SECRET is not configured (dev mode)
+  // Fail closed if WEBHOOK_SECRET is not configured
   if (!WEBHOOK_SECRET) {
     if (process.env.NODE_ENV === 'production') {
-      console.error('[security] WEBHOOK_SECRET not set in production — webhook verification disabled');
+      console.error('[security] WEBHOOK_SECRET not set in production — rejecting webhook request');
+      res.status(401).json({ success: false, error: 'Invalid webhook signature' });
+      return;
     }
+    // In dev/test, we allow the request to pass through (for local testing only)
+    console.warn('[webhook] WEBHOOK_SECRET not set — skipping signature verification (dev mode only)');
     return next();
   }
 
