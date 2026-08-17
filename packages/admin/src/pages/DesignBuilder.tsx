@@ -1,15 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 /* ════════════════════════════════════════════════════════════════════
-   KING FOOD — VISUAL EXPERIENCE BUILDER
-   Editor visual (UX/UI only): tema, cores, tipografia, componentes,
-   landing, cardápio, navegação e mobile com LIVE PREVIEW.
-   Persistência/publicação: integração futura (estado visual apenas).
+   KING FOOD — VISUAL EXPERIENCE BUILDER (FASE 2)
+   Preview central + interação direta (hover/click seleciona elemento)
+   + controles contextuais + sidebar em grupos.
+   Persistência/publicação: próxima fase (estado visual apenas).
    ════════════════════════════════════════════════════════════════════ */
 
 type Device = 'desktop' | 'tablet' | 'mobile';
 type PreviewPage = 'landing' | 'menu';
 type TabKey = 'appearance' | 'landing' | 'menu' | 'nav' | 'mobile';
+type ElementKey = 'hero' | 'button' | 'card' | 'category' | 'header' | 'footer' | 'features' | null;
 
 interface BuilderConfig {
   preset: string;
@@ -88,12 +89,13 @@ interface BuilderConfig {
   };
 }
 
-/* ── Presets ──────────────────────────────────────────────────────── */
+/* ── Presets (com descrição curta) ────────────────────────────────── */
 
-const PRESETS: { id: string; name: string; config: BuilderConfig }[] = [
+const PRESETS: { id: string; name: string; desc: string; config: BuilderConfig }[] = [
   {
     id: 'kingfood',
     name: 'King Food',
+    desc: 'Identidade original da marca',
     config: {
       preset: 'kingfood',
       colors: {
@@ -125,6 +127,7 @@ const PRESETS: { id: string; name: string; config: BuilderConfig }[] = [
   {
     id: 'minimal',
     name: 'Minimalista',
+    desc: 'Limpo, direto e sem ruído',
     config: {
       preset: 'minimal',
       colors: {
@@ -156,6 +159,7 @@ const PRESETS: { id: string; name: string; config: BuilderConfig }[] = [
   {
     id: 'modern',
     name: 'Moderno',
+    desc: 'Visual contemporâneo e vibrante',
     config: {
       preset: 'modern',
       colors: {
@@ -187,6 +191,7 @@ const PRESETS: { id: string; name: string; config: BuilderConfig }[] = [
   {
     id: 'vibrant',
     name: 'Vibrante',
+    desc: 'Cores fortes e energia',
     config: {
       preset: 'vibrant',
       colors: {
@@ -218,6 +223,7 @@ const PRESETS: { id: string; name: string; config: BuilderConfig }[] = [
   {
     id: 'elegant',
     name: 'Elegante',
+    desc: 'Sofisticado e atemporal',
     config: {
       preset: 'elegant',
       colors: {
@@ -275,12 +281,22 @@ const WEIGHTS = [
   { id: '800', label: 'Extra bold' },
 ];
 
-/* ── Sub-componentes de UI do editor ───────────────────────────────── */
+const ELEMENT_LABELS: Record<Exclude<ElementKey, null>, string> = {
+  hero: 'Hero',
+  button: 'Botão',
+  card: 'Card',
+  category: 'Categoria',
+  header: 'Header',
+  footer: 'Rodapé',
+  features: 'Destaques',
+};
+
+/* ── UI controls do editor ────────────────────────────────────────── */
 
 function Section({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white overflow-hidden transition-shadow hover:shadow-sm">
       <button
         type="button"
         onClick={() => setOpen(!open)}
@@ -288,11 +304,20 @@ function Section({ title, children, defaultOpen = true }: { title: string; child
         aria-expanded={open}
       >
         <span className="text-sm font-semibold text-gray-800">{title}</span>
-        <svg className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+        <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open && <div className="px-4 pb-4 space-y-3">{children}</div>}
+      {open && <div className="px-4 pb-4 space-y-3 kf-anim-fade-in">{children}</div>}
+    </div>
+  );
+}
+
+function GroupLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 pt-1">
+      <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">{children}</span>
+      <span className="h-px flex-1 bg-gray-200" aria-hidden />
     </div>
   );
 }
@@ -306,7 +331,7 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
           type="color"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="w-9 h-9 rounded-lg border border-gray-200 cursor-pointer p-0.5"
+          className="w-10 h-10 rounded-lg border border-gray-200 cursor-pointer p-0.5 transition-transform hover:scale-105"
           aria-label={`Cor ${label}`}
         />
         <input
@@ -316,10 +341,10 @@ function ColorField({ label, value, onChange }: { label: string; value: string; 
             const v = e.target.value;
             if (/^#[0-9a-fA-F]{6}$/.test(v)) onChange(v);
           }}
-          className="w-20 px-2 py-1.5 text-xs border border-gray-200 rounded-lg font-mono focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          className="w-20 px-2 py-2 text-xs border border-gray-200 rounded-lg font-mono focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
           aria-label={`Hex ${label}`}
         />
-        <span className="w-5 h-5 rounded-full border border-gray-200" style={{ background: value }} aria-hidden />
+        <span className="w-5 h-5 rounded-full border border-gray-200 shadow-inner" style={{ background: value }} aria-hidden />
       </div>
     </div>
   );
@@ -341,7 +366,7 @@ function SliderField({ label, value, min, max, step = 1, unit = '', onChange }: 
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-[#FFD100]"
+        className="w-full accent-[#FFD100] h-5 cursor-pointer"
         aria-label={label}
       />
     </div>
@@ -362,8 +387,8 @@ function SegmentedControl<T extends string>({ label, value, options, onChange }:
             role="radio"
             aria-checked={value === opt.id}
             onClick={() => onChange(opt.id)}
-            className={`flex-1 min-h-[40px] px-2 text-xs font-medium transition-colors ${
-              value === opt.id ? 'bg-[#FFD100] text-[#221D25]' : 'bg-white text-gray-600 hover:bg-gray-50'
+            className={`flex-1 min-h-[44px] px-2 text-xs font-medium transition-all duration-150 ${
+              value === opt.id ? 'bg-[#FFD100] text-[#221D25] shadow-inner' : 'bg-white text-gray-600 hover:bg-gray-50'
             }`}
           >
             {opt.label}
@@ -381,19 +406,39 @@ function ToggleField({ label, value, onChange }: { label: string; value: boolean
       role="switch"
       aria-checked={value}
       onClick={() => onChange(!value)}
-      className="w-full flex items-center justify-between min-h-[44px]"
+      className="w-full flex items-center justify-between min-h-[44px] rounded-lg px-1 hover:bg-gray-50 transition-colors"
     >
       <span className="text-xs font-medium text-gray-600">{label}</span>
-      <span className={`w-10 h-6 rounded-full transition-colors relative ${value ? 'bg-[#FFD100]' : 'bg-gray-300'}`}>
-        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${value ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
+      <span className={`w-10 h-6 rounded-full transition-colors duration-200 relative ${value ? 'bg-[#FFD100]' : 'bg-gray-300'}`}>
+        <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${value ? 'translate-x-[18px]' : 'translate-x-0.5'}`} />
       </span>
     </button>
   );
 }
 
+function TextField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div>
+      <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-shadow"
+      />
+    </div>
+  );
+}
+
 /* ── Preview ───────────────────────────────────────────────────────── */
 
-function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
+interface PreviewProps {
+  cfg: BuilderConfig;
+  selected: ElementKey;
+  onSelect: (k: ElementKey) => void;
+}
+
+function PreviewLanding({ cfg, selected, onSelect }: PreviewProps) {
   const c = cfg.colors;
   const t = cfg.typography;
   const l = cfg.landing;
@@ -401,10 +446,21 @@ function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
   const headingSize = Math.round(t.baseSize * t.headingScale * 2.2);
   const btnRadius = cfg.components.buttonStyle === 'pill' ? 9999 : cfg.components.buttonStyle === 'rounded' ? 12 : 4;
 
+  const outline = (key: ElementKey) => ({
+    outline: selected === key ? `2px solid ${c.primary}` : '1px dashed transparent',
+    outlineOffset: 1,
+    cursor: 'pointer',
+    transition: 'outline-color 0.15s ease',
+  });
+
   return (
     <div style={{ fontFamily: font, background: c.background, color: c.text, fontSize: t.baseSize * 0.8 }}>
       {/* Header */}
-      <div style={{ background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div
+        style={{ ...outline('header'), background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        onClick={() => onSelect('header')}
+        data-el="header"
+      >
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ width: 18, height: 18, borderRadius: 5, background: c.primary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: contrastText(c.primary), fontSize: 9, fontWeight: 800 }}>K</span>
           <span style={{ fontWeight: 800, fontSize: 12 }}>King Food</span>
@@ -413,12 +469,22 @@ function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
           {cfg.nav.showCart && (
             <span style={{ width: 22, height: 22, borderRadius: 6, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🛒</span>
           )}
-          <span style={{ padding: '4px 10px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 10, fontWeight: 700 }}>{l.ctaText}</span>
+          <span
+            style={{ ...outline('button'), padding: '4px 10px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 10, fontWeight: 700 }}
+            onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
+            data-el="button"
+          >
+            {l.ctaText}
+          </span>
         </div>
       </div>
 
       {/* Hero */}
-      <div style={{ padding: '16px 12px', textAlign: l.ctaPosition === 'center' ? 'center' : 'left' }}>
+      <div
+        style={{ ...outline('hero'), padding: '16px 12px', textAlign: l.ctaPosition === 'center' ? 'center' : 'left' }}
+        onClick={() => onSelect('hero')}
+        data-el="hero"
+      >
         {l.heroImage && (
           <div style={{ height: 70, borderRadius: 12, background: `linear-gradient(135deg, ${c.primary}33, ${c.secondary}33)`, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }} aria-hidden>
             🍧
@@ -427,14 +493,24 @@ function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
         <div style={{ fontSize: headingSize, fontWeight: Number(t.weight), lineHeight: 1.1, letterSpacing: '-0.02em' }}>{l.heroTitle}</div>
         <div style={{ color: c.textMuted, fontSize: 11, marginTop: 4 }}>{l.heroSubtitle}</div>
         <div style={{ marginTop: 10, display: 'flex', gap: 6, justifyContent: l.ctaPosition === 'center' ? 'center' : 'flex-start' }}>
-          <span style={{ padding: '6px 14px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 11, fontWeight: 700 }}>{l.ctaText} →</span>
+          <span
+            style={{ ...outline('button'), padding: '6px 14px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 11, fontWeight: 700 }}
+            onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
+            data-el="button"
+          >
+            {l.ctaText} →
+          </span>
           <span style={{ padding: '6px 14px', borderRadius: btnRadius, border: `1px solid ${c.border}`, color: c.text, fontSize: 11 }}>Ver cardápio</span>
         </div>
       </div>
 
       {/* Features */}
       {l.showFeatures && (
-        <div style={{ padding: '0 12px 14px' }}>
+        <div
+          style={{ ...outline('features'), padding: '0 12px 14px' }}
+          onClick={() => onSelect('features')}
+          data-el="features"
+        >
           <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Destaques</div>
           <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(l.featuresCount, 3)}, 1fr)`, gap: 8 }}>
             {Array.from({ length: Math.min(l.featuresCount, 3) }).map((_, i) => (
@@ -454,11 +530,11 @@ function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
 
       {/* Footer */}
       {l.showFooter && (
-        <div style={{
-          background: l.footerStyle === 'dark' ? '#221D25' : c.surface,
-          color: l.footerStyle === 'dark' ? '#E2DDCF' : c.text,
-          padding: '12px', textAlign: 'center', fontSize: 9,
-        }}>
+        <div
+          style={{ ...outline('footer'), background: l.footerStyle === 'dark' ? '#221D25' : c.surface, color: l.footerStyle === 'dark' ? '#E2DDCF' : c.text, padding: '12px', textAlign: 'center', fontSize: 9 }}
+          onClick={() => onSelect('footer')}
+          data-el="footer"
+        >
           <div style={{ fontWeight: 800, fontSize: 11 }}>King Food</div>
           <div style={{ opacity: 0.7 }}>Açaí brasileiro · Columbus, OH</div>
           <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 8 }}>
@@ -470,7 +546,7 @@ function PreviewLanding({ cfg }: { cfg: BuilderConfig }) {
   );
 }
 
-function PreviewMenu({ cfg }: { cfg: BuilderConfig }) {
+function PreviewMenu({ cfg, selected, onSelect }: PreviewProps) {
   const c = cfg.colors;
   const t = cfg.typography;
   const m = cfg.menu;
@@ -488,16 +564,31 @@ function PreviewMenu({ cfg }: { cfg: BuilderConfig }) {
     { name: 'Coxinha', price: 6.5, emoji: '🥟' },
   ];
 
+  const outline = (key: ElementKey) => ({
+    outline: selected === key ? `2px solid ${c.primary}` : '1px dashed transparent',
+    outlineOffset: 1,
+    cursor: 'pointer',
+    transition: 'outline-color 0.15s ease',
+  });
+
   return (
     <div style={{ fontFamily: font, background: c.background, color: c.text, fontSize: t.baseSize * 0.8 }}>
       {/* Header */}
-      <div style={{ background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div
+        style={{ ...outline('header'), background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        onClick={() => onSelect('header')}
+        data-el="header"
+      >
         <span style={{ fontWeight: 800, fontSize: 12 }}>King Food</span>
         <span style={{ width: 22, height: 22, borderRadius: 6, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🛒</span>
       </div>
 
       {/* Category pills */}
-      <div style={{ padding: '8px 12px 0', display: 'flex', gap: 6, overflow: 'hidden' }}>
+      <div
+        style={{ ...outline('category'), padding: '8px 12px 0', display: 'flex', gap: 6, overflow: 'hidden' }}
+        onClick={() => onSelect('category')}
+        data-el="category"
+      >
         {['Todos', 'Açaí', 'Burgers', 'Bebidas'].map((cat, i) => {
           const active = i === 1;
           const bg = active ? cfg.components.categoryActiveColor : cfg.components.categoryInactiveColor;
@@ -521,13 +612,12 @@ function PreviewMenu({ cfg }: { cfg: BuilderConfig }) {
       {/* Grid */}
       <div style={{ padding: 10, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: m.gap }}>
         {items.map((item) => (
-          <div key={item.name} style={{
-            background: c.surface,
-            border: cfg.components.cardBorder ? `1px solid ${c.border}` : 'none',
-            borderRadius: cardRadius,
-            padding: cfg.components.cardPadding,
-            boxShadow: cfg.components.cardShadow === 'soft' ? '0 4px 12px rgba(0,0,0,0.08)' : cfg.components.cardShadow === 'subtle' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-          }}>
+          <div
+            key={item.name}
+            style={{ ...outline('card'), background: c.surface, border: cfg.components.cardBorder ? `1px solid ${c.border}` : 'none', borderRadius: cardRadius, padding: cfg.components.cardPadding, boxShadow: cfg.components.cardShadow === 'soft' ? '0 4px 12px rgba(0,0,0,0.08)' : cfg.components.cardShadow === 'subtle' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}
+            onClick={() => onSelect('card')}
+            data-el="card"
+          >
             <div style={{
               aspectRatio: cfg.components.imageRatio.replace('/', ' / '),
               borderRadius: imgRadius,
@@ -543,7 +633,13 @@ function PreviewMenu({ cfg }: { cfg: BuilderConfig }) {
             {m.showDescription && <div style={{ fontSize: 8, color: c.textMuted, marginTop: 2 }}>Descrição do produto</div>}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
               {m.showPrice && <span style={{ fontSize: 10, fontWeight: 800, color: c.price }}>${item.price.toFixed(2)}</span>}
-              <span style={{ width: 20, height: 20, borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}>+</span>
+              <span
+                style={{ ...outline('button'), width: 20, height: 20, borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}
+                onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
+                data-el="button"
+              >
+                +
+              </span>
             </div>
           </div>
         ))}
@@ -552,9 +648,9 @@ function PreviewMenu({ cfg }: { cfg: BuilderConfig }) {
   );
 }
 
-function PreviewFrame({ cfg, device, page }: { cfg: BuilderConfig; device: Device; page: PreviewPage }) {
+function PreviewFrame({ cfg, device, page, selected, onSelect }: PreviewProps & { device: Device; page: PreviewPage }) {
   const widths: Record<Device, string> = { desktop: '100%', tablet: '768px', mobile: '390px' };
-  const height: Record<Device, string> = { desktop: '520px', tablet: '520px', mobile: '640px' };
+  const height: Record<Device, string> = { desktop: '540px', tablet: '540px', mobile: '660px' };
   const isMobile = device === 'mobile';
 
   return (
@@ -574,7 +670,9 @@ function PreviewFrame({ cfg, device, page }: { cfg: BuilderConfig; device: Devic
           <span className="text-[10px] text-gray-400 font-mono">{isMobile ? '390px' : device === 'tablet' ? '768px' : 'Desktop'}</span>
         </div>
         <div className="overflow-y-auto" style={{ height: 'calc(100% - 28px)' }}>
-          {page === 'landing' ? <PreviewLanding cfg={cfg} /> : <PreviewMenu cfg={cfg} />}
+          {page === 'landing'
+            ? <PreviewLanding cfg={cfg} selected={selected} onSelect={onSelect} />
+            : <PreviewMenu cfg={cfg} selected={selected} onSelect={onSelect} />}
         </div>
         {isMobile && cfg.mobile.bottomNavVisible && (
           <div style={{
@@ -596,6 +694,63 @@ function PreviewFrame({ cfg, device, page }: { cfg: BuilderConfig; device: Devic
   );
 }
 
+/* ── Mini-previews de componentes ──────────────────────────────────── */
+
+function MiniButtonPreview({ cfg }: { cfg: BuilderConfig }) {
+  const c = cfg.colors;
+  const radius = cfg.components.buttonStyle === 'pill' ? 9999 : cfg.components.buttonStyle === 'rounded' ? 12 : 4;
+  const size = cfg.components.buttonSize === 'sm' ? 8 : cfg.components.buttonSize === 'md' ? 10 : 12;
+  return (
+    <div className="flex items-center justify-center gap-2 rounded-lg bg-gray-50 border border-gray-100 p-3">
+      <span style={{ padding: `${size}px 16px`, borderRadius: radius, background: c.primary, color: contrastText(c.primary), fontSize: 11, fontWeight: 700 }}>
+        Adicionar ao carrinho
+      </span>
+    </div>
+  );
+}
+
+function MiniCardPreview({ cfg }: { cfg: BuilderConfig }) {
+  const c = cfg.colors;
+  return (
+    <div className="flex items-center justify-center rounded-lg bg-gray-50 border border-gray-100 p-3">
+      <div style={{
+        width: 110, background: c.surface,
+        border: cfg.components.cardBorder ? `1px solid ${c.border}` : 'none',
+        borderRadius: cfg.components.cardRadius, padding: 8,
+        boxShadow: cfg.components.cardShadow === 'soft' ? '0 4px 12px rgba(0,0,0,0.08)' : cfg.components.cardShadow === 'subtle' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
+      }}>
+        <div style={{ height: 44, borderRadius: cfg.components.imageRadius, background: `linear-gradient(135deg, ${c.primary}33, ${c.secondary}33)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }} aria-hidden>🍧</div>
+        <div style={{ fontSize: 9, fontWeight: 700, marginTop: 4 }}>Açaí King</div>
+        <div style={{ fontSize: 9, fontWeight: 800, color: c.price, marginTop: 2 }}>$12.90</div>
+      </div>
+    </div>
+  );
+}
+
+function MiniCategoryPreview({ cfg }: { cfg: BuilderConfig }) {
+  const c = cfg.colors;
+  const radius = cfg.components.categoryStyle === 'pill' ? 9999 : cfg.components.categoryStyle === 'rounded' ? cfg.components.categoryRadius : 0;
+  return (
+    <div className="flex items-center justify-center gap-1.5 rounded-lg bg-gray-50 border border-gray-100 p-3">
+      {['Açaí', 'Burgers', 'Bebidas'].map((cat, i) => {
+        const active = i === 0;
+        const bg = active ? cfg.components.categoryActiveColor : cfg.components.categoryInactiveColor;
+        return (
+          <span key={cat} style={{
+            padding: '4px 10px', borderRadius: radius,
+            borderBottom: cfg.components.categoryStyle === 'underline' && active ? `2px solid ${cfg.components.categoryActiveColor}` : 'none',
+            background: cfg.components.categoryStyle === 'underline' ? 'transparent' : bg,
+            color: active ? contrastText(cfg.components.categoryActiveColor) : c.textMuted,
+            fontSize: 9, fontWeight: 700, whiteSpace: 'nowrap',
+          }}>
+            {cat}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
 /* ── Editor principal ─────────────────────────────────────────────── */
 
 export default function DesignBuilder() {
@@ -603,8 +758,10 @@ export default function DesignBuilder() {
   const [device, setDevice] = useState<Device>('desktop');
   const [page, setPage] = useState<PreviewPage>('landing');
   const [tab, setTab] = useState<TabKey>('appearance');
+  const [selected, setSelected] = useState<ElementKey>(null);
   const [dirty, setDirty] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
+  const [showDiscard, setShowDiscard] = useState(false);
   const [toast, setToast] = useState('');
 
   function update<K extends keyof BuilderConfig>(key: K, value: BuilderConfig[K]) {
@@ -625,12 +782,16 @@ export default function DesignBuilder() {
     if (preset) {
       setConfig(JSON.parse(JSON.stringify(preset.config)));
       setDirty(true);
+      setSelected(null);
+      setToast(`Tema "${preset.name}" aplicado`);
+      setTimeout(() => setToast(''), 2200);
     }
   }
 
   function restoreDefault() {
     setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
     setDirty(false);
+    setSelected(null);
     setShowRestore(false);
     setToast('Aparência restaurada para o padrão');
     setTimeout(() => setToast(''), 2500);
@@ -639,13 +800,21 @@ export default function DesignBuilder() {
   function discard() {
     setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
     setDirty(false);
+    setSelected(null);
+    setShowDiscard(false);
     setToast('Alterações descartadas');
     setTimeout(() => setToast(''), 2500);
   }
 
-  function fakeAction(label: string) {
-    setToast(`${label} — persistência será integrada em breve`);
-    setTimeout(() => setToast(''), 3000);
+  function selectElement(key: ElementKey) {
+    setSelected(key);
+    if (key) {
+      // navega para a aba correspondente ao elemento
+      if (key === 'hero' || key === 'features' || key === 'footer') setTab('landing');
+      else if (key === 'card' || key === 'category') setTab('menu');
+      else if (key === 'header') setTab('nav');
+      else if (key === 'button') setTab('appearance');
+    }
   }
 
   const tabs: { key: TabKey; label: string }[] = [
@@ -678,7 +847,7 @@ export default function DesignBuilder() {
             )}
             <button
               type="button"
-              onClick={discard}
+              onClick={() => setShowDiscard(true)}
               disabled={!dirty}
               className="min-h-[44px] px-4 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
@@ -686,7 +855,7 @@ export default function DesignBuilder() {
             </button>
             <button
               type="button"
-              onClick={() => fakeAction('Rascunho salvo')}
+              onClick={() => setToast('Salvar estará disponível quando a persistência do construtor for habilitada.')}
               disabled={!dirty}
               className="min-h-[44px] px-4 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
@@ -694,9 +863,9 @@ export default function DesignBuilder() {
             </button>
             <button
               type="button"
-              onClick={() => fakeAction('Publicado')}
-              disabled={!dirty}
-              className="min-h-[44px] px-5 rounded-xl bg-[#FFD100] text-[#221D25] text-sm font-bold hover:bg-[#E6BC00] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-sm"
+              disabled
+              title="Publicação será habilitada na próxima etapa"
+              className="min-h-[44px] px-5 rounded-xl bg-[#FFD100]/50 text-[#221D25]/60 text-sm font-bold cursor-not-allowed transition-colors shadow-sm"
             >
               Publicar
             </button>
@@ -711,8 +880,8 @@ export default function DesignBuilder() {
               role="tab"
               aria-selected={tab === tb.key}
               onClick={() => setTab(tb.key)}
-              className={`shrink-0 min-h-[44px] px-4 rounded-lg text-sm font-semibold transition-colors ${
-                tab === tb.key ? 'bg-[#FFD100] text-[#221D25]' : 'text-gray-600 hover:bg-gray-100'
+              className={`shrink-0 min-h-[44px] px-4 rounded-lg text-sm font-semibold transition-all duration-150 ${
+                tab === tb.key ? 'bg-[#FFD100] text-[#221D25] shadow-sm' : 'text-gray-600 hover:bg-gray-100'
               }`}
             >
               {tb.label}
@@ -721,33 +890,56 @@ export default function DesignBuilder() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto px-4 py-4 grid lg:grid-cols-[380px_1fr] gap-4">
+      <div className="max-w-[1400px] mx-auto px-4 py-4 grid lg:grid-cols-[360px_1fr] gap-4">
         {/* ── CONTROLES ── */}
         <div className="space-y-3 order-2 lg:order-1">
+          {/* Barra de contexto: elemento selecionado */}
+          {selected && (
+            <div className="flex items-center justify-between rounded-xl border border-[#FFD100]/50 bg-amber-50 px-3 py-2 kf-anim-fade-in">
+              <span className="text-xs font-bold text-gray-800">
+                Editando: <span className="text-[#B45309]">{ELEMENT_LABELS[selected]}</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="min-h-[36px] px-2 text-xs font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+                aria-label="Limpar seleção"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
           {tab === 'appearance' && (
             <>
+              <GroupLabel>Aparência</GroupLabel>
+
               {/* Presets */}
               <Section title="Tema">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 gap-2">
                   {PRESETS.map((p) => {
-                    const selected = config.preset === p.id;
+                    const isSel = config.preset === p.id;
                     return (
                       <button
                         key={p.id}
                         type="button"
                         onClick={() => applyPreset(p.id)}
-                        aria-pressed={selected}
-                        className={`rounded-xl border p-2 text-left transition-all min-h-[64px] ${
-                          selected ? 'border-[#FFD100] ring-2 ring-[#FFD100]/40 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+                        aria-pressed={isSel}
+                        className={`flex items-center gap-3 rounded-xl border p-2.5 text-left transition-all duration-150 min-h-[56px] ${
+                          isSel ? 'border-[#FFD100] ring-2 ring-[#FFD100]/40 bg-amber-50' : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
                         }`}
                       >
-                        <div className="flex gap-1 mb-1.5">
-                          <span className="w-4 h-4 rounded-full border border-gray-200" style={{ background: p.config.colors.primary }} />
-                          <span className="w-4 h-4 rounded-full border border-gray-200" style={{ background: p.config.colors.secondary }} />
-                          <span className="w-4 h-4 rounded-full border border-gray-200" style={{ background: p.config.colors.background }} />
-                        </div>
-                        <span className="text-xs font-semibold text-gray-800 flex items-center gap-1">
-                          {selected && <span className="text-[#E6BC00]">✓</span>} {p.name}
+                        {/* mini-preview do preset */}
+                        <span className="w-12 h-10 shrink-0 rounded-lg border border-gray-200 overflow-hidden relative" aria-hidden>
+                          <span className="absolute inset-x-0 top-0 h-2.5" style={{ background: p.config.colors.primary }} />
+                          <span className="absolute left-1 top-3.5 w-3 h-3 rounded-full" style={{ background: p.config.colors.secondary }} />
+                          <span className="absolute right-1 top-3.5 w-4 h-2 rounded-sm" style={{ background: p.config.colors.background, border: '1px solid #eee' }} />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="block text-sm font-semibold text-gray-800 flex items-center gap-1">
+                            {isSel && <span className="text-[#E6BC00]">✓</span>} {p.name}
+                          </span>
+                          <span className="block text-[11px] text-gray-500 truncate">{p.desc}</span>
                         </span>
                       </button>
                     );
@@ -778,6 +970,18 @@ export default function DesignBuilder() {
 
               {/* Tipografia */}
               <Section title="Tipografia">
+                {/* Preview da fonte */}
+                <div className="rounded-lg bg-gray-50 border border-gray-100 p-3 text-center" aria-hidden>
+                  <div style={{ fontFamily: FONTS.find((f) => f.id === t.font)?.stack, fontWeight: Number(t.weight), fontSize: 18 }}>
+                    Aa
+                  </div>
+                  <div style={{ fontFamily: FONTS.find((f) => f.id === t.font)?.stack, fontWeight: Number(t.weight), fontSize: 12, color: c.text }}>
+                    King Food
+                  </div>
+                  <div style={{ fontFamily: FONTS.find((f) => f.id === t.font)?.stack, fontSize: 10, color: c.textMuted }}>
+                    Açaí artesanal
+                  </div>
+                </div>
                 <SegmentedControl
                   label="Fonte"
                   value={t.font}
@@ -795,89 +999,81 @@ export default function DesignBuilder() {
                 <SliderField label="Espaçamento" value={t.spacing} min={1} max={2} step={0.1} onChange={(v) => updateNested('typography', { spacing: v })} />
               </Section>
 
-              {/* Componentes */}
-              <Section title="Componentes">
+              <GroupLabel>Componentes</GroupLabel>
+
+              {/* Botões */}
+              <Section title="Botões">
+                <MiniButtonPreview cfg={config} />
                 <SegmentedControl
-                  label="Estilo do botão"
+                  label="Estilo"
                   value={comp.buttonStyle}
                   options={[{ id: 'pill' as const, label: 'Pílula' }, { id: 'rounded' as const, label: 'Arredondado' }, { id: 'square' as const, label: 'Quadrado' }]}
                   onChange={(v) => updateNested('components', { buttonStyle: v })}
                 />
-                <SliderField label="Raio do botão" value={comp.buttonRadius} min={0} max={48} unit="px" onChange={(v) => updateNested('components', { buttonRadius: v })} />
+                <SliderField label="Raio" value={comp.buttonRadius} min={0} max={48} unit="px" onChange={(v) => updateNested('components', { buttonRadius: v })} />
                 <SegmentedControl
-                  label="Tamanho do botão"
+                  label="Tamanho"
                   value={comp.buttonSize}
                   options={[{ id: 'sm' as const, label: 'P' }, { id: 'md' as const, label: 'M' }, { id: 'lg' as const, label: 'G' }]}
                   onChange={(v) => updateNested('components', { buttonSize: v })}
                 />
-                <SliderField label="Raio do card" value={comp.cardRadius} min={0} max={32} unit="px" onChange={(v) => updateNested('components', { cardRadius: v })} />
+              </Section>
+
+              {/* Cards */}
+              <Section title="Cards">
+                <MiniCardPreview cfg={config} />
+                <SliderField label="Raio" value={comp.cardRadius} min={0} max={32} unit="px" onChange={(v) => updateNested('components', { cardRadius: v })} />
                 <SegmentedControl
-                  label="Sombra do card"
+                  label="Sombra"
                   value={comp.cardShadow}
                   options={[{ id: 'none' as const, label: 'Nenhuma' }, { id: 'subtle' as const, label: 'Suave' }, { id: 'soft' as const, label: 'Forte' }]}
                   onChange={(v) => updateNested('components', { cardShadow: v })}
                 />
-                <ToggleField label="Borda do card" value={comp.cardBorder} onChange={(v) => updateNested('components', { cardBorder: v })} />
-                <SliderField label="Espaçamento do card" value={comp.cardPadding} min={8} max={24} unit="px" onChange={(v) => updateNested('components', { cardPadding: v })} />
+                <ToggleField label="Borda" value={comp.cardBorder} onChange={(v) => updateNested('components', { cardBorder: v })} />
+                <SliderField label="Espaçamento" value={comp.cardPadding} min={8} max={24} unit="px" onChange={(v) => updateNested('components', { cardPadding: v })} />
+              </Section>
+
+              {/* Imagens */}
+              <Section title="Imagens">
                 <SegmentedControl
-                  label="Proporção da imagem"
+                  label="Proporção"
                   value={comp.imageRatio}
                   options={[{ id: '4/3' as const, label: '4:3' }, { id: '1/1' as const, label: '1:1' }, { id: '16/10' as const, label: '16:10' }]}
                   onChange={(v) => updateNested('components', { imageRatio: v })}
                 />
-                <SliderField label="Raio da imagem" value={comp.imageRadius} min={0} max={24} unit="px" onChange={(v) => updateNested('components', { imageRadius: v })} />
+                <SliderField label="Raio" value={comp.imageRadius} min={0} max={24} unit="px" onChange={(v) => updateNested('components', { imageRadius: v })} />
+              </Section>
+
+              {/* Categorias */}
+              <Section title="Categorias">
+                <MiniCategoryPreview cfg={config} />
                 <SegmentedControl
-                  label="Estilo das categorias"
+                  label="Estilo"
                   value={comp.categoryStyle}
                   options={[{ id: 'pill' as const, label: 'Pílula' }, { id: 'rounded' as const, label: 'Arredondado' }, { id: 'underline' as const, label: 'Sublinhado' }]}
                   onChange={(v) => updateNested('components', { categoryStyle: v })}
                 />
-                <ColorField label="Categoria ativa" value={comp.categoryActiveColor} onChange={(v) => updateNested('components', { categoryActiveColor: v })} />
-                <ColorField label="Categoria inativa" value={comp.categoryInactiveColor} onChange={(v) => updateNested('components', { categoryInactiveColor: v })} />
-                <SliderField label="Raio da categoria" value={comp.categoryRadius} min={0} max={9999} unit="px" onChange={(v) => updateNested('components', { categoryRadius: v })} />
+                <ColorField label="Ativa" value={comp.categoryActiveColor} onChange={(v) => updateNested('components', { categoryActiveColor: v })} />
+                <ColorField label="Inativa" value={comp.categoryInactiveColor} onChange={(v) => updateNested('components', { categoryInactiveColor: v })} />
+                <SliderField label="Raio" value={comp.categoryRadius} min={0} max={9999} unit="px" onChange={(v) => updateNested('components', { categoryRadius: v })} />
               </Section>
             </>
           )}
 
           {tab === 'landing' && (
             <>
+              <GroupLabel>Conteúdo visual</GroupLabel>
               <Section title="Hero">
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Título</label>
-                    <input
-                      type="text"
-                      value={config.landing.heroTitle}
-                      onChange={(e) => updateNested('landing', { heroTitle: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Subtítulo</label>
-                    <input
-                      type="text"
-                      value={config.landing.heroSubtitle}
-                      onChange={(e) => updateNested('landing', { heroSubtitle: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Texto do CTA</label>
-                    <input
-                      type="text"
-                      value={config.landing.ctaText}
-                      onChange={(e) => updateNested('landing', { ctaText: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                    />
-                  </div>
-                  <SegmentedControl
-                    label="Posição do CTA"
-                    value={config.landing.ctaPosition}
-                    options={[{ id: 'left' as const, label: 'Esquerda' }, { id: 'center' as const, label: 'Centro' }]}
-                    onChange={(v) => updateNested('landing', { ctaPosition: v })}
-                  />
-                  <ToggleField label="Imagem no hero" value={config.landing.heroImage} onChange={(v) => updateNested('landing', { heroImage: v })} />
-                </div>
+                <TextField label="Título" value={config.landing.heroTitle} onChange={(v) => updateNested('landing', { heroTitle: v })} />
+                <TextField label="Subtítulo" value={config.landing.heroSubtitle} onChange={(v) => updateNested('landing', { heroSubtitle: v })} />
+                <TextField label="Texto do CTA" value={config.landing.ctaText} onChange={(v) => updateNested('landing', { ctaText: v })} />
+                <SegmentedControl
+                  label="Posição do CTA"
+                  value={config.landing.ctaPosition}
+                  options={[{ id: 'left' as const, label: 'Esquerda' }, { id: 'center' as const, label: 'Centro' }]}
+                  onChange={(v) => updateNested('landing', { ctaPosition: v })}
+                />
+                <ToggleField label="Imagem no hero" value={config.landing.heroImage} onChange={(v) => updateNested('landing', { heroImage: v })} />
               </Section>
 
               <Section title="Destaques">
@@ -911,6 +1107,7 @@ export default function DesignBuilder() {
 
           {tab === 'menu' && (
             <>
+              <GroupLabel>Conteúdo visual</GroupLabel>
               <Section title="Layout">
                 <SliderField label="Colunas desktop" value={config.menu.columnsDesktop} min={2} max={5} onChange={(v) => updateNested('menu', { columnsDesktop: v })} />
                 <SliderField label="Colunas tablet" value={config.menu.columnsTablet} min={2} max={4} onChange={(v) => updateNested('menu', { columnsTablet: v })} />
@@ -950,6 +1147,7 @@ export default function DesignBuilder() {
 
           {tab === 'nav' && (
             <>
+              <GroupLabel>Conteúdo visual</GroupLabel>
               <Section title="Header">
                 <SegmentedControl
                   label="Estilo"
@@ -983,6 +1181,7 @@ export default function DesignBuilder() {
 
           {tab === 'mobile' && (
             <>
+              <GroupLabel>Conteúdo visual</GroupLabel>
               <Section title="Densidade">
                 <SegmentedControl
                   label="Densidade"
@@ -1026,7 +1225,7 @@ export default function DesignBuilder() {
                     role="radio"
                     aria-checked={device === d}
                     onClick={() => setDevice(d)}
-                    className={`min-h-[40px] px-3 text-xs font-semibold transition-colors ${
+                    className={`min-h-[44px] px-3 text-xs font-semibold transition-all duration-150 ${
                       device === d ? 'bg-[#FFD100] text-[#221D25]' : 'bg-white text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -1042,7 +1241,7 @@ export default function DesignBuilder() {
                     role="radio"
                     aria-checked={page === pg}
                     onClick={() => setPage(pg)}
-                    className={`min-h-[40px] px-3 text-xs font-semibold transition-colors ${
+                    className={`min-h-[44px] px-3 text-xs font-semibold transition-all duration-150 ${
                       page === pg ? 'bg-[#FFD100] text-[#221D25]' : 'bg-white text-gray-600 hover:bg-gray-50'
                     }`}
                   >
@@ -1053,14 +1252,14 @@ export default function DesignBuilder() {
             </div>
 
             <div className="relative">
-              <PreviewFrame cfg={config} device={device} page={page} />
+              <PreviewFrame cfg={config} device={device} page={page} selected={selected} onSelect={selectElement} />
               <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-400 bg-white/80 rounded-full px-2 py-0.5 border border-gray-200">
                 PREVIEW AO VIVO
               </span>
             </div>
 
             <p className="text-center text-[11px] text-gray-400">
-              Preview ≠ Salvar ≠ Publicar — as alterações aparecem aqui antes de qualquer persistência.
+              Clique em um elemento do preview para editá-lo · Preview ≠ Salvar ≠ Publicar
             </p>
           </div>
         </div>
@@ -1068,7 +1267,7 @@ export default function DesignBuilder() {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#221D25] text-[#E2DDCF] text-sm font-medium rounded-full px-5 py-3 shadow-lg kf-anim-scale-in" role="status">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#221D25] text-[#E2DDCF] text-sm font-medium rounded-full px-5 py-3 shadow-lg kf-anim-scale-in max-w-[90vw] text-center" role="status">
           {toast}
         </div>
       )}
@@ -1101,6 +1300,40 @@ export default function DesignBuilder() {
                 className="flex-1 min-h-[48px] rounded-xl bg-[#FFD100] text-[#221D25] text-sm font-bold hover:bg-[#E6BC00] transition-colors"
               >
                 Restaurar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Descartar */}
+      {showDiscard && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 kf-anim-fade-in"
+          onClick={() => setShowDiscard(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Descartar alterações"
+        >
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl p-6 kf-anim-scale-in" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Descartar alterações?</h2>
+            <p className="text-sm text-gray-500 mb-5">
+              As alterações locais serão perdidas e o editor voltará ao estado inicial.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowDiscard(false)}
+                className="flex-1 min-h-[48px] rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={discard}
+                className="flex-1 min-h-[48px] rounded-xl bg-[#FFD100] text-[#221D25] text-sm font-bold hover:bg-[#E6BC00] transition-colors"
+              >
+                Descartar
               </button>
             </div>
           </div>
