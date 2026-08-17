@@ -113,12 +113,36 @@ function generateOrderNumber(): string {
   return `${prefix}-${timestamp}-${random}`;
 }
 
-// ── Tracking token generation (for guest orders) ────────────────────────
+// ── SECURE TRACKING TOKEN GENERATION ────────────────────────────────────────
+// Uses cryptographically secure random bytes (128 bits of entropy)
 function generateTrackingToken(): string {
   const prefix = 'KF';
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 5).toUpperCase();
-  return `${prefix}-${timestamp}-${random}`;
+  const randomBytes = crypto.randomBytes(16).toString('hex');
+  return `${prefix}-${randomBytes}`;
+}
+
+// ── GUEST TRACKING RESPONSE DTO ─────────────────────────────────────────────
+// Minimal public response containing ONLY what the tracking UI needs
+interface GuestTrackingResponse {
+  orderNumber: string;
+  status: string;
+  timeline: Array<{ status: string; label: string; completed: boolean }>;
+}
+
+function buildGuestTrackingResponse(order: { orderNumber: string; status: string; orderType: string }): GuestTrackingResponse {
+  const timeline = [
+    { status: 'PENDING', label: 'Pedido recebido', completed: order.status !== 'PENDING' },
+    { status: 'CONFIRMED', label: 'Pedido aceito', completed: ['CONFIRMED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKED_UP'].includes(order.status) },
+    { status: 'PREPARING', label: 'Em preparo', completed: ['PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKED_UP'].includes(order.status) },
+    { status: 'READY', label: 'Pronto', completed: ['READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'PICKED_UP'].includes(order.status) },
+    ...(order.orderType === 'DELIVERY' ? [
+      { status: 'OUT_FOR_DELIVERY', label: 'Saiu para entrega', completed: ['OUT_FOR_DELIVERY', 'DELIVERED'].includes(order.status) },
+      { status: 'DELIVERED', label: 'Entregue', completed: order.status === 'DELIVERED' }
+    ] : [
+      { status: 'PICKED_UP', label: 'Retirado', completed: order.status === 'PICKED_UP' }
+    ])
+  ];
+  return { orderNumber: order.orderNumber, status: order.status, timeline };
 }
 
 export async function createOrder(req: Request, res: Response): Promise<void> {
@@ -725,20 +749,17 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
     return;
   }
 
-  // If the user is not authenticated (guest), we allow access by trackingToken
-  // The id parameter should be the trackingToken for guest access
+  // ── GUEST TRACKING PATH ───────────────────────────────────────────────────
+  // Guest must provide valid tracking token in the URL path
   const order = await prisma.order.findUnique({
     where: { trackingToken: id },
     include: {
-      customer: { select: { id: true, name: true, email: true, phone: true } },
-      location: { select: { id: true, name: true } },
       items: {
         include: {
           menuItem: { select: { id: true, name: true, slug: true } },
           options: true,
         }
       },
-      payments: { orderBy: { createdAt: 'desc' }, take: 1 }
     }
   });
 
@@ -747,9 +768,14 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
     return;
   }
 
-  // For guest access, we don't need to check ownership beyond the token
-  // The trackingToken itself provides the access control
-  res.json({ success: true, data: order });
+  // Return MINIMAL guest tracking DTO - NO PII, NO payment data
+  const guestResponse = buildGuestTrackingResponse({
+    orderNumber: order.orderNumber,
+    status: order.status,
+    orderType: order.orderType,
+  });
+
+  res.json({ success: true, data: guestResponse });
 }
 export async function listCustomerOrders(req: Request, res: Response): Promise<void> {
   const customerId = req.user?.id;

@@ -42,6 +42,8 @@ type Order = {
   guestPhone?: string | null;
   comment?: string | null;
   createdAt?: string;
+  customerId?: string | null;
+  trackingToken?: string | null;
 };
 
 function formatCurrency(v: number | undefined) {
@@ -95,6 +97,13 @@ export default function OrderConfirmation() {
   const confirmed = order?.status === 'CONFIRMED';
   const isDelivery = (order?.orderType ?? '').toUpperCase() === 'DELIVERY';
   const orderNumber = order?.orderNumber || id;
+
+  // Determine tracking identifier:
+  // - Authenticated customers: use order.id
+  // - Guests: use trackingToken (cryptographically secure)
+  const trackingIdentifier = order?.customerId
+    ? (order?.id ?? id)
+    : (order?.trackingToken ?? id);
 
   return (
     <div className="min-h-screen bg-kf-bg px-4 py-8 pb-[calc(var(--kf-nav-h)+2rem)]">
@@ -203,7 +212,7 @@ export default function OrderConfirmation() {
           <Link to="/menu" className="flex-1 inline-flex items-center justify-center rounded-kf-md border border-kf-border bg-kf-surface px-4 py-2.5 text-sm font-semibold text-kf-foreground hover:bg-kf-surface-muted transition-colors min-h-[44px]">
             {t('orderConfirmation.orderMore', 'Pedir Mais')}
           </Link>
-          <Link to={`/orders/${order?.id ?? id ?? ''}`} className="flex-1 inline-flex items-center justify-center rounded-kf-md bg-kf-primary px-4 py-2.5 text-sm font-semibold text-kf-ink hover:bg-kf-primary/90 transition-colors min-h-[44px]">
+          <Link to={`/orders/${trackingIdentifier}`} className="flex-1 inline-flex items-center justify-center rounded-kf-md bg-kf-primary px-4 py-2.5 text-sm font-semibold text-kf-ink hover:bg-kf-primary/90 transition-colors min-h-[44px]">
             {t('orderConfirmation.trackOrder', 'Acompanhar Pedido')}
           </Link>
         </div>

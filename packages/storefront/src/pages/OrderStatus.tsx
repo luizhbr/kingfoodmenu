@@ -31,6 +31,18 @@ interface OrderDetail {
   items: OrderItem[];
 }
 
+interface GuestTrackingResponse {
+  orderNumber: string;
+  status: string;
+  timeline: Array<{ status: string; label: string; completed: boolean }>;
+}
+
+type OrderData = OrderDetail | GuestTrackingResponse;
+
+function isGuestResponse(data: OrderData): data is GuestTrackingResponse {
+  return 'timeline' in data && !('items' in data);
+}
+
 function getStepIndex(steps: { key: string; label: string }[], status: string): number {
   return steps.findIndex((s) => s.key === status);
 }
@@ -39,7 +51,7 @@ export default function OrderStatus() {
   const { t } = useTranslation();
   const { id } = useParams();
   const { token } = useAuth();
-  const [order, setOrder] = useState<OrderDetail | null>(null);
+  const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -119,8 +131,10 @@ export default function OrderStatus() {
     );
   }
 
+  const isGuest = isGuestResponse(order);
   const isCancelled = order.status === 'CANCELLED';
-  const steps = order.orderType === 'DELIVERY' ? DELIVERY_STEPS : PICKUP_STEPS;
+  const orderType = isGuest ? 'DELIVERY' : (order as OrderDetail).orderType;
+  const steps = orderType === 'DELIVERY' ? DELIVERY_STEPS : PICKUP_STEPS;
   const currentStep = getStepIndex(steps, order.status);
 
   return (
@@ -128,13 +142,17 @@ export default function OrderStatus() {
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">#{order.orderNumber}</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            {new Date(order.createdAt).toLocaleString()}
-          </p>
+          {!isGuest && (
+            <p className="text-sm text-gray-500 mt-1">
+              {new Date((order as OrderDetail).createdAt).toLocaleString()}
+            </p>
+          )}
         </div>
-        <Link to="/account/orders" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-          {t('orders.title')}
-        </Link>
+        {!isGuest && (
+          <Link to="/account/orders" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+            {t('orders.title')}
+          </Link>
+        )}
       </div>
 
       {/* Status Tracker */}
@@ -147,6 +165,42 @@ export default function OrderStatus() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
             <span className="font-medium text-red-700">{t('orderStatus.cancelledMessage')}</span>
+          </div>
+        ) : isGuest ? (
+          // Guest tracking: use timeline from DTO
+          <div className="relative">
+            <div className="flex items-center justify-between">
+              {order.timeline.map((step, idx) => {
+                const isComplete = step.completed;
+                const isCurrent = idx === currentStep;
+                return (
+                  <div key={step.status} className="flex flex-col items-center relative z-10" style={{ flex: 1 }}>
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        isComplete ? 'bg-primary-600 text-white' : 'bg-gray-200 text-gray-500'
+                      } ${isCurrent ? 'ring-4 ring-primary-100' : ''}`}
+                    >
+                      {isComplete ? (
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      ) : (
+                        idx + 1
+                      )}
+                    </div>
+                    <span className={`text-xs mt-2 text-center ${isComplete ? 'text-primary-700 font-medium' : 'text-gray-400'}`}>
+                      {step.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="absolute top-4 left-0 right-0 h-0.5 bg-gray-200 -translate-y-1/2" style={{ marginLeft: `${100 / (order.timeline.length * 2)}%`, marginRight: `${100 / (order.timeline.length * 2)}%` }}>
+              <div
+                className="h-full bg-primary-600 transition-all duration-500"
+                style={{ width: currentStep >= 0 ? `${(currentStep / (order.timeline.length - 1)) * 100}%` : '0%' }}
+              />
+            </div>
           </div>
         ) : (
           <div className="relative">
@@ -188,7 +242,8 @@ export default function OrderStatus() {
         )}
       </div>
 
-      {/* Order Items */}
+      {/* Order Items - ONLY for authenticated users */}
+      {!isGuest && (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
         <h2 className="text-lg font-semibold text-gray-900 mb-4">{t('orders.items')}</h2>
         <div className="space-y-3">
@@ -233,10 +288,11 @@ export default function OrderStatus() {
           )}
           <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">
             <span>{t('checkout.total')}</span>
-            <span className="text-primary-600">${order.total.toFixed(2)}</span>
+            <span className="text-primary-600">${(order as OrderDetail).total.toFixed(2)}</span>
           </div>
         </div>
       </div>
+      )}
 
       <div className="mt-8 flex justify-center gap-4">
         <Link
@@ -245,12 +301,14 @@ export default function OrderStatus() {
         >
           {t('home.viewMenu')}
         </Link>
-        <Link
-          to="/account/orders"
-          className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors"
-        >
-          {t('orders.title')}
-        </Link>
+        {!isGuest && (
+          <Link
+            to="/account/orders"
+            className="border border-gray-300 text-gray-700 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+          >
+            {t('orders.title')}
+          </Link>
+        )}
       </div>
     </div>
   );
