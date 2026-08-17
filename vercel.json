@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx prisma generate && npm run build -w packages/shared && npm run build -w packages/server && npm run build -w packages/storefront && node scripts/publish-admin.mjs",
+  "buildCommand": "npx prisma generate && npm run build -w packages/shared && npm run build -w packages/shared-ui && npm run build -w packages/server && npm run build -w packages/storefront && node scripts/publish-admin.mjs",
   "outputDirectory": "packages/storefront/dist",
   "installCommand": "npm install --include=dev",
   "framework": "vite",
