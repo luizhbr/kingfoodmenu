@@ -331,7 +331,7 @@ export default function Menu() {
                       }
                     }}
                     data-category-id={group.category.id}
-                    className="scroll-mt-[calc(4rem+3.75rem)]"
+                    className="scroll-mt-[calc(4rem+3.75rem)] kf-anim-fade-in"
                     aria-label={group.category.name}
                   >
                     <h2 className="mb-3 flex items-center gap-3 text-base font-extrabold uppercase tracking-wide text-kf-foreground">
@@ -348,6 +348,7 @@ export default function Menu() {
                           price={item.price}
                           image={item.image || undefined}
                           badge={item._count.options > 0 ? t('menu.options', 'Opções') : undefined}
+                          parallax
                           onClick={() => setSelectedItemId(item.id)}
                           onAdd={() => handleQuickAdd(item)}
                         />

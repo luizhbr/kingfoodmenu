@@ -475,8 +475,8 @@ function getDefaultScheduleTime(): string {
     : t('checkout.placeOrderTotal', 'Finalizar pedido — {{total}}').replace('{{total}}', `$${total.toFixed(2)}`);
 
   return (
-    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+8rem)]">
-      <main className="mx-auto max-w-3xl px-4 pt-[72px] pb-6 pb-[calc(var(--kf-nav-h)+5rem)] lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-10">
+    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+5.5rem)]">
+      <main className="mx-auto max-w-3xl px-4 pt-[72px] pb-6 lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-10">
         <h1 className="text-2xl font-extrabold text-kf-foreground mb-6">{t('checkout.title', 'Finalizar Pedido')}</h1>
 
         {isBusy && (

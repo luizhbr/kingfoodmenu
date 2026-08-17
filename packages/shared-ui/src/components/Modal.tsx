@@ -20,14 +20,14 @@ export const Modal: React.FC<ModalProps> = ({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-kf-modal flex items-center justify-center p-4 bg-black/50"
+      className="fixed inset-0 z-kf-modal flex items-center justify-center p-4 bg-black/50 kf-anim-fade-in"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
     >
       <div
         className={cn(
-          'w-full rounded-kf-lg bg-kf-surface shadow-kf-modal overflow-hidden',
+          'w-full rounded-kf-lg bg-kf-surface shadow-kf-modal overflow-hidden kf-anim-scale-in',
           sizes[size]
         )}
         onClick={(e) => e.stopPropagation()}

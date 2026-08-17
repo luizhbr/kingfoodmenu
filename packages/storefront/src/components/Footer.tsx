@@ -12,9 +12,9 @@ function ClassicFooter() {
 
   return (
     <footer className="bg-ink text-cream/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
         {/* Marca + localização */}
-        <div className="text-center mb-5">
+        <div className="text-center mb-4">
           <div className="flex items-center justify-center gap-2 mb-1.5">
             {settings.logo ? (
               <img src={settings.logo} alt={settings.siteName} className="w-7 h-7 rounded-lg object-cover bg-[#FFD100]" />
@@ -29,7 +29,7 @@ function ClassicFooter() {
         </div>
 
         {/* Links em linha compactos */}
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm mb-5" aria-label="Rodapé">
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-1 text-sm mb-4" aria-label="Rodapé">
           <Link to="/menu" className="min-h-[44px] inline-flex items-center hover:text-[#FFD100] transition-colors font-medium">
             {t('nav.menu')}
           </Link>
@@ -67,7 +67,7 @@ function ClassicFooter() {
         </nav>
 
         {/* Legal compacto */}
-        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-xs text-cream/50 border-t border-cream/10 pt-4">
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-cream/50 border-t border-cream/10 pt-3">
           <Link to="/privacy-policy" className="min-h-[36px] inline-flex items-center hover:text-cream transition-colors">
             Privacidade
           </Link>

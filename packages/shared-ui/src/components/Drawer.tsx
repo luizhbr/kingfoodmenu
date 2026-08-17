@@ -10,9 +10,9 @@ export interface DrawerProps {
 }
 
 const positions = {
-  bottom: 'inset-x-0 bottom-0 rounded-t-kf-lg',
-  right: 'inset-y-0 right-0 h-full rounded-l-kf-lg',
-  left: 'inset-y-0 left-0 h-full rounded-r-kf-lg',
+  bottom: 'inset-x-0 bottom-0 rounded-t-kf-lg kf-anim-slide-up',
+  right: 'inset-y-0 right-0 h-full rounded-l-kf-lg kf-anim-slide-in-right',
+  left: 'inset-y-0 left-0 h-full rounded-r-kf-lg kf-anim-slide-in-left',
 };
 
 export const Drawer: React.FC<DrawerProps> = ({
@@ -26,7 +26,7 @@ export const Drawer: React.FC<DrawerProps> = ({
       aria-modal="true"
     >
       <div
-        className="absolute inset-0 bg-black/40"
+        className="absolute inset-0 bg-black/40 kf-anim-fade-in"
         onClick={onClose}
       />
       <div

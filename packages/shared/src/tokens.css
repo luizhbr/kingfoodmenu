@@ -69,10 +69,75 @@ html.dark {
   --kf-border: #3A343D;
 }
 
+/* ── Motion utilities (UX polish) ─────────────────────────────── */
+@keyframes kf-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes kf-scale-in {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes kf-slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes kf-slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes kf-slide-in-left {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes kf-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.kf-anim-fade-in {
+  animation: kf-fade-in var(--kf-duration-fast) ease-out;
+}
+
+.kf-anim-scale-in {
+  animation: kf-scale-in var(--kf-duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kf-anim-slide-up {
+  animation: kf-slide-up var(--kf-duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kf-anim-slide-in-right {
+  animation: kf-slide-in-right var(--kf-duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kf-anim-slide-in-left {
+  animation: kf-slide-in-left var(--kf-duration-normal) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.kf-anim-pop {
+  animation: kf-pop var(--kf-duration-fast) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   :root {
     --kf-duration-fast: 0ms;
     --kf-duration-normal: 0ms;
     --kf-duration-slow: 0ms;
+  }
+
+  .kf-anim-fade-in,
+  .kf-anim-scale-in,
+  .kf-anim-slide-up,
+  .kf-anim-slide-in-right,
+  .kf-anim-slide-in-left,
+  .kf-anim-pop {
+    animation: none;
   }
 }
