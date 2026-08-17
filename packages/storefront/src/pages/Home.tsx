@@ -1,6 +1,6 @@
 /**
- * King Food entry page — adapted from king-food-webview (v3) home shell.
- * Menu CTA routes to native /menu (no OlaClick iframe).
+ * King Food entry page — faithful clone of king-food-v3 landing (kingfood.online).
+ * Preserves Foundation integration: /menu routing, splash, hours sheet, open status.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -16,8 +16,11 @@ const WA_URL_DEF = 'https://wa.me/12673107535';
 const GROUP_URL_DEF = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
 const MAPS_URL_DEF = 'https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5';
 const INSTAGRAM_URL_DEF = 'https://instagram.com/king.food_delivery';
+const SORTEIO_IG_POST_URL = 'https://www.instagram.com/p/DbjecIfC6kS/?igsh=MWF2dnZzZ3RudmF6Yw==';
 const BG_DEF = 'https://kingfood.online/bg-acai.jpg';
-const LOGO_DEF = 'https://kingfood.online/logo-kingfood.png.png';
+const LOGO_DEF = '/logo-kingfood.png.png';
+const FEATURED_IMG = '/featured-abacaxi.png';
+const FEATURED_PRODUCT_URL = 'https://kingfood.fe-v2.ola.click/acai-do-king/acai-tropical-no-abacaxi';
 const TZ_DEF = 'America/New_York';
 
 const DEFAULT_HOURS: { day: number; label: string; hours: string }[] = [
@@ -44,10 +47,12 @@ function getSocialLinks(settings: any, onHours: () => void): any[] {
       });
   }
   return [
+    { label: 'Cardápio', icon: '🥣', action: 'menu' as const },
     { label: 'Grupo WhatsApp', icon: '💬', href: GROUP_URL_DEF },
+    { label: 'WhatsApp', icon: '📱', href: WA_URL_DEF },
     { label: 'Instagram', icon: '📸', href: INSTAGRAM_URL_DEF },
+    { label: 'Google Maps', icon: '📍', href: MAPS_URL_DEF },
     { label: 'Horários e entrega', icon: '🕐', action: 'hours' as const },
-    { label: 'Fale conosco', icon: '📱', href: WA_URL_DEF },
   ];
 }
 
@@ -76,15 +81,7 @@ function getColumbusNow(): { day: number; minutes: number } {
   });
   const parts = fmt.formatToParts(new Date());
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
-  const dayMap: Record<string, number> = {
-    Sun: 0,
-    Mon: 1,
-    Tue: 2,
-    Wed: 3,
-    Thu: 4,
-    Fri: 5,
-    Sat: 6,
-  };
+  const dayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
   let hour = parseInt(get('hour'), 10);
   if (Number.isNaN(hour) || hour === 24) hour = 0;
   const minute = parseInt(get('minute'), 10) || 0;
@@ -99,11 +96,7 @@ function computeOpenStatus(): OpenStatus {
       const nr = DEFAULT_HOURS.find((h) => h.day === (day + i) % 7)!;
       if (nr.hours !== 'Fechado') {
         const start = nr.hours.split('–')[0]?.trim() ?? '';
-        return {
-          open: false,
-          label: 'Fechado',
-          detail: i === 1 ? `Abre amanhã ${start}` : `Abre ${nr.label} ${start}`,
-        };
+        return { open: false, label: 'Fechado', detail: i === 1 ? `Abre amanhã ${start}` : `Abre ${nr.label} ${start}` };
       }
     }
     return { open: false, label: 'Fechado', detail: 'Veja horários' };
@@ -112,19 +105,13 @@ function computeOpenStatus(): OpenStatus {
   const start = parseClock(startTok);
   const end = parseClock(endTok);
   if (start == null || end == null) return { open: false, label: 'Horários', detail: row.hours };
-  if (minutes >= start && minutes < end) {
-    return { open: true, label: 'Aberto agora', detail: `Fecha ${endTok}` };
-  }
+  if (minutes >= start && minutes < end) return { open: true, label: 'Aberto agora', detail: `Fecha ${endTok}` };
   if (minutes < start) return { open: false, label: 'Fechado', detail: `Abre ${startTok}` };
   for (let i = 1; i <= 7; i++) {
     const nr = DEFAULT_HOURS.find((h) => h.day === (day + i) % 7)!;
     if (nr.hours !== 'Fechado') {
       const ns = nr.hours.split('–')[0]?.trim() ?? '';
-      return {
-        open: false,
-        label: 'Fechado',
-        detail: i === 1 ? `Abre amanhã ${ns}` : `Abre ${nr.label} ${ns}`,
-      };
+      return { open: false, label: 'Fechado', detail: i === 1 ? `Abre amanhã ${ns}` : `Abre ${nr.label} ${ns}` };
     }
   }
   return { open: false, label: 'Fechado', detail: 'Veja horários' };
@@ -154,12 +141,7 @@ function SplashScreen({ exiting, logo: logoProp }: { exiting: boolean; logo?: st
       role="status"
       aria-label="Carregando King Food"
     >
-      <img
-        src={LOGO_DEF}
-        alt="King Food"
-        className="w-40 h-40 sm:w-44 sm:h-44 object-contain"
-        decoding="async"
-      />
+      <img src={logoProp || LOGO_DEF} alt="King Food" className="w-40 h-40 sm:w-44 sm:h-44 object-contain" decoding="async" />
       <div className="mt-7 flex items-end justify-center gap-2.5 h-12" aria-hidden>
         {[0, 1, 2, 3, 4].map((i) => (
           <span key={i} className="kf-acai inline-flex">
@@ -182,17 +164,6 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-function GoogleGIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" aria-hidden>
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-    </svg>
-  );
-}
-
 export default function Home() {
   const { settings } = useTheme();
   const logo = settings.logo || LOGO_DEF;
@@ -201,8 +172,8 @@ export default function Home() {
   const myHours = getHours(settings);
   const mySideLinks = useMemo(() => getSocialLinks(settings, () => setShowHours(true)), [settings]);
   const myContact = settings.landingContact || {};
-  const myWaUrl = myContact.whatsapp ? `https://wa.me/${myContact.whatsapp.replace(/[^\d]/g,'')}` : WA_URL_DEF;
-  const myInstagramUrl = (settings.landingSocial||[]).find((s: any) => s.platform?.toLowerCase()=='instagram')?.url || INSTAGRAM_URL_DEF;
+  const myWaUrl = myContact.whatsapp ? `https://wa.me/${myContact.whatsapp.replace(/[^\d]/g, '')}` : WA_URL_DEF;
+  const myInstagramUrl = (settings.landingSocial || []).find((s: any) => s.platform?.toLowerCase() == 'instagram')?.url || INSTAGRAM_URL_DEF;
   const [loading, setLoading] = useState(true);
   const [splashExiting, setSplashExiting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -231,11 +202,8 @@ export default function Home() {
   // Splash (v3 timing)
   useEffect(() => {
     if (loadingDone.current) return;
-    const reduce =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const warm =
-      typeof sessionStorage !== 'undefined' && sessionStorage.getItem('kf_splash_seen') === '1';
+    const reduce = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const warm = typeof sessionStorage !== 'undefined' && sessionStorage.getItem('kf_splash_seen') === '1';
     const minMs = reduce ? 200 : warm ? 450 : 700;
     const maxMs = reduce ? 400 : warm ? 900 : 1600;
     let finished = false;
@@ -245,18 +213,12 @@ export default function Home() {
       if (finished) return;
       finished = true;
       loadingDone.current = true;
-      try {
-        sessionStorage.setItem('kf_splash_seen', '1');
-      } catch {
-        /* */
-      }
+      try { sessionStorage.setItem('kf_splash_seen', '1'); } catch { /* */ }
       setSplashExiting(true);
       exitTimer = window.setTimeout(() => setLoading(false), reduce ? 80 : 280);
     };
 
-    const minTimer = window.setTimeout(() => {
-      if (document.readyState === 'complete') finish();
-    }, minMs);
+    const minTimer = window.setTimeout(() => { if (document.readyState === 'complete') finish(); }, minMs);
     const maxTimer = window.setTimeout(finish, maxMs);
 
     return () => {
@@ -268,9 +230,7 @@ export default function Home() {
 
   useEffect(() => {
     document.body.style.overflow = drawerOpen || showHours ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    return () => { document.body.style.overflow = ''; };
   }, [drawerOpen, showHours]);
 
   useEffect(() => {
@@ -280,64 +240,76 @@ export default function Home() {
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        setScrolled(el.scrollTop > 80);
-        ticking = false;
-      });
+      requestAnimationFrame(() => { setScrolled(el.scrollTop > 80); ticking = false; });
     };
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, [loading]);
 
   return (
-    <div className="min-h-screen bg-[#F5F1E8] text-gray-900 relative pb-[var(--kf-nav-h)] md:pb-0">
+    <div className="min-h-screen bg-[#E2DDCF] text-[#221D25] relative pb-[var(--kf-nav-h)] md:pb-0 overflow-x-hidden">
       {loading && <SplashScreen exiting={splashExiting} logo={logo} />}
 
-      {/* Header limpo */}
+      {/* Soft orbs — Yampi-like atmosphere (v3) */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#FFD100]/25 blur-3xl" />
+        <div className="absolute top-1/3 -left-20 w-64 h-64 rounded-full bg-white/40 blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-[#221D25]/[0.04] blur-3xl" />
+      </div>
+
+      {/* Promo bar — sorteio Instagram (v3) */}
+      <a
+        href={SORTEIO_IG_POST_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 z-40 block bg-[#221D25] text-[#E2DDCF] text-center text-[11px] sm:text-xs font-extrabold tracking-wide uppercase px-3 py-2.5 hover:bg-[#221D25]/90 active:scale-[0.99] transition"
+      >
+        Sorteio no Instagram · comenta AÇAÍ e participa →
+      </a>
+
+      {/* Header (v3) */}
       <header
-        className={`sticky top-0 z-40 bg-[#F5F1E8]/95 backdrop-blur-md border-b border-ink/5 transition-all duration-300 ${
-          scrolled ? 'shadow-sm' : ''
+        className={`sticky top-0 z-40 border-b transition-all duration-300 ${
+          scrolled ? 'bg-[#E2DDCF]/90 backdrop-blur-md border-[#221D25]/10' : 'bg-transparent border-transparent'
         }`}
       >
-        <div className="flex items-center justify-between px-4 py-2.5 max-w-5xl mx-auto w-full gap-2">
-          <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="md:hidden w-11 h-11 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-ink/5 transition active:scale-90 shrink-0"
+              className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-[#221D25]/5 transition active:scale-90"
               aria-label="Abrir menu"
             >
-              <span className="block w-5 h-0.5 bg-ink rounded" />
-              <span className="block w-5 h-0.5 bg-ink rounded" />
-              <span className="block w-5 h-0.5 bg-ink rounded" />
+              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
+              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
+              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
             </button>
-            <Link to="/" className="flex items-center min-w-0" aria-label="King Food — início">
-              <p className="font-extrabold text-base tracking-tight truncate text-ink">King Food</p>
+            <Link to="/" className="flex items-center gap-2.5 active:scale-95 transition-all duration-300" aria-label="King Food — início">
+              <img src={logo} alt="King Food" className="w-8 h-8 object-contain rounded-lg" />
+              <div className="leading-tight text-left">
+                <p className="font-bold text-sm tracking-tight text-[#221D25]">King Food</p>
+                <p className="text-[10px] text-[#221D25]/45">Açaí • Delivery</p>
+              </div>
             </Link>
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
-            <Link to="/" className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-bold text-primary-600">
-              Início
-            </Link>
-            <Link
-              to="/menu"
-              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-ink/5"
-            >
-              Cardápio
-            </Link>
+            <Link to="/" className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]">Início</Link>
+            <Link to="/menu" className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]/50 hover:text-[#221D25] hover:bg-[#221D25]/5">Cardápio</Link>
             <button
               type="button"
               onClick={() => setShowHours(true)}
-              className="min-h-[44px] px-3 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-ink/5"
+              className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]/50 hover:text-[#221D25] hover:bg-[#221D25]/5"
             >
               Horários
             </button>
+            <Link to="/menu" className="ml-2 px-5 py-2 kf-btn-ink text-sm">Pedir agora</Link>
             <a
               href={myWaUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="ml-2 min-h-[44px] px-4 py-2 rounded-xl text-sm font-bold bg-[#25D366] text-white"
+              className="ml-1 px-4 py-2 rounded-pill text-sm font-bold bg-[#25D366] text-white hover:bg-[#25D366]/90 transition"
             >
               WhatsApp
             </a>
@@ -348,22 +320,16 @@ export default function Home() {
               type="button"
               onClick={() => setShowHours(true)}
               className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-bold border ${
-                openStatus.open
-                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                  : 'bg-gray-100 border-gray-300 text-gray-600'
+                openStatus.open ? 'bg-emerald-50 border-emerald-300 text-emerald-700' : 'bg-gray-100 border-gray-300 text-gray-600'
               }`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  openStatus.open ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'
-                }`}
-              />
+              <span className={`w-1.5 h-1.5 rounded-full ${openStatus.open ? 'bg-emerald-500 animate-pulse' : 'bg-gray-400'}`} />
               <span className="sm:hidden">{openStatus.open ? 'Aberto' : 'Fechado'}</span>
               <span className="hidden sm:inline">{openStatus.label}</span>
             </button>
             <Link
               to="/menu"
-              className="shrink-0 min-h-[44px] px-4 py-2 rounded-xl bg-[#FFD100] text-ink text-sm font-extrabold shadow-sm active:scale-[0.98] transition"
+              className="md:hidden text-xs font-extrabold text-[#E2DDCF] bg-[#221D25] px-3.5 py-1.5 rounded-pill shadow-cta active:scale-95 transition"
             >
               Pedir
             </Link>
@@ -373,131 +339,155 @@ export default function Home() {
 
       {/* Drawer overlay */}
       <div
-        className={`fixed inset-0 z-50 bg-ink/50 transition-opacity duration-300 ${
+        className={`fixed inset-0 z-50 bg-[#221D25]/40 transition-opacity duration-300 ${
           drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setDrawerOpen(false)}
       />
 
-      {/* Drawer */}
+      {/* Drawer (v3) */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#F5F1E8] border-r border-ink/10 shadow-2xl transition-transform duration-300 ${
+        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#E2DDCF] border-r border-[#221D25]/10 shadow-2xl transition-transform duration-300 ease-out ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="px-4 py-5 flex items-center justify-between border-b border-ink/10">
+        <div className="px-4 py-5 flex items-center justify-between border-b border-[#221D25]/10">
           <div className="flex items-center gap-3">
-            <img src={logo} alt="King Food" className="w-10 h-10 object-cover rounded-xl bg-[#FFD100]" />
+            <img src={logo} alt="King Food" className="w-10 h-10 object-contain rounded-lg" />
             <div>
-              <p className="font-bold text-ink">King Food</p>
-              <p className="text-xs text-gray-500">Menu</p>
+              <p className="font-bold text-[#221D25]">King Food</p>
+              <p className="text-xs text-[#221D25]/40">Menu</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setDrawerOpen(false)}
-            className="w-11 h-11 rounded-full bg-ink/5 text-ink"
+            className="w-9 h-9 rounded-full bg-[#221D25]/5 flex items-center justify-center text-[#221D25] hover:bg-[#221D25]/10 transition active:scale-90"
             aria-label="Fechar"
           >
             ✕
           </button>
         </div>
         <nav className="py-2">
-          <Link
-            to="/menu"
-            onClick={() => setDrawerOpen(false)}
-            className="block w-full text-left px-5 py-4 text-sm font-medium text-ink hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
-          >
-            <span className="mr-3">🛒</span>
-            Pedir agora
-          </Link>
-          {mySideLinks.map((link) =>
-            link.action === 'hours' ? (
-              <button
-                key={link.label}
-                type="button"
-                onClick={() => {
-                  setDrawerOpen(false);
-                  setShowHours(true);
-                }}
-                className="w-full text-left px-5 py-4 text-sm font-medium text-ink/80 hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
-              >
-                <span className="mr-3">{link.icon}</span>
-                {link.label}
-              </button>
-            ) : (
+          {mySideLinks.map((link) => {
+            if (link.action === 'hours') {
+              return (
+                <button
+                  key={link.label}
+                  type="button"
+                  onClick={() => { setDrawerOpen(false); setShowHours(true); }}
+                  className="w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
+                >
+                  <span className="mr-3">{link.icon}</span>
+                  {link.label}
+                </button>
+              );
+            }
+            if (link.action === 'menu') {
+              return (
+                <Link
+                  key={link.label}
+                  to="/menu"
+                  onClick={() => setDrawerOpen(false)}
+                  className="block w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
+                >
+                  <span className="mr-3">{link.icon}</span>
+                  {link.label}
+                </Link>
+              );
+            }
+            return (
               <a
                 key={link.label}
                 href={link.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => setDrawerOpen(false)}
-                className="block w-full text-left px-5 py-4 text-sm font-medium text-ink/80 hover:bg-[#FFD100] hover:text-ink border-b border-ink/5"
+                className="block w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
               >
                 <span className="mr-3">{link.icon}</span>
                 {link.label}
               </a>
-            )
-          )}
+            );
+          })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-ink/10">
-          <p
-            className={`text-xs text-center font-semibold ${
-              openStatus.open ? 'text-emerald-600' : 'text-gray-500'
-            }`}
-          >
-            {openStatus.open ? '● ' : '○ '}
-            {openStatus.label} · {openStatus.detail}
-          </p>
-          <p className="text-xs text-gray-400 text-center mt-1">Delivery · Columbus, OH</p>
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#221D25]/10">
+          <p className="text-xs text-[#221D25]/35 text-center">Entrega em até 40 min • Columbus, OH</p>
         </div>
       </aside>
 
-      {/* Main home content — hero compacto + navegação rápida + destaques */}
-      <main className="max-w-5xl mx-auto w-full pb-[calc(var(--kf-nav-h)+2rem)]">
-        {/* Hero compacto */}
-        <section className="px-4 sm:px-6 pt-8 sm:pt-12 pb-4 text-center">
-          <div className="flex justify-center mb-3">
-            <img
-              src={logo}
-              alt="King Food"
-              className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-2xl bg-kf-primary shadow-lg shadow-kf-primary/20"
-            />
+      {/* Main home content — v3 hero + destaques */}
+      <main ref={mainRef} className="max-w-5xl mx-auto w-full pb-[calc(var(--kf-nav-h)+2rem)]">
+        <div className="max-w-sm md:max-w-lg mx-auto flex flex-col items-center md:items-start text-center md:text-left px-5 pt-8 pb-8 md:pt-20">
+          {/* Logo com glow */}
+          <div className="relative mb-4">
+            <div className="absolute inset-0 -m-3 rounded-3xl bg-white/50 blur-sm" aria-hidden />
+            <img src={logo} alt="King Food" className="relative w-20 h-20 md:w-28 md:h-28 object-contain rounded-2xl" />
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-ink tracking-tight mb-1">
-            King Food
-          </h1>
-          <p className="text-base sm:text-lg font-semibold text-kf-foreground mb-1">Açaí brasileiro de verdade</p>
-          <p className="text-sm text-kf-muted max-w-md mx-auto mb-4">
+
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#221D25]/45 mb-2">
             Delivery · Columbus, OH
           </p>
+          <h1 className="kf-display text-3xl md:text-5xl text-[#221D25] mb-2">King Food</h1>
+          <p className="text-sm md:text-base text-[#221D25]/70 font-semibold mb-1">Açaí brasileiro de verdade</p>
+          <p className="text-sm md:text-base text-[#221D25]/55 leading-relaxed mb-7 max-w-md">
+            Sabor do Brasil pra sua casa. Peça agora.
+          </p>
 
-          {/* CTA principal */}
+          {/* CTA principal (v3 kf-btn-ink) */}
           <Link
             to="/menu"
-            className="w-full sm:w-auto sm:min-w-[260px] min-h-[48px] inline-flex items-center justify-center bg-kf-primary hover:bg-kf-primary-hover text-kf-primary-fg font-extrabold text-sm px-6 py-3 rounded-kf-lg shadow-kf-card active:scale-[0.98] transition"
+            className="w-full md:w-auto md:min-w-[240px] kf-btn-ink py-3.5 text-base text-center will-change-transform"
           >
             Pedir agora →
           </Link>
-        </section>
 
+          {/* Chips 2x2 (v3) */}
+          <div className="w-full mt-5 grid grid-cols-2 gap-2">
+            <a href={GROUP_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+              Grupo WA
+            </a>
+            <a href={MAPS_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+              Maps · avaliações
+            </a>
+            <button type="button" onClick={() => setShowHours(true)} className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25]">
+              Horários
+            </button>
+            <a href={myInstagramUrl} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+              Instagram
+            </a>
+          </div>
+
+          {/* Destaque — Açaí No Abacaxi (v3) */}
+          <button
+            type="button"
+            onClick={() => navigate('/menu')}
+            className="w-full mt-7 kf-card p-3 flex items-center gap-3 overflow-hidden text-left hover:bg-white/70 active:scale-[0.99] transition"
+          >
+            <img src={FEATURED_IMG} alt="Açaí No Abacaxi" className="shrink-0 w-16 h-16 rounded-2xl object-cover shadow-soft" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#221D25]/40">Destaque</p>
+              <p className="text-sm font-extrabold text-[#221D25] truncate">Açaí No Abacaxi 🍍</p>
+              <p className="mt-0.5 text-xs font-bold text-[#221D25]/55">US$ 27.00 · Ver no cardápio →</p>
+            </div>
+          </button>
+        </div>
+
+        {/* Seções Foundation (cardápio rápido) */}
         <QuickSearch />
         <CategoryPills categories={categories} />
         <PromoBanner />
-        <FeaturedProductGrid
-          onAdd={(p) => navigate('/menu')}
-          onClick={(p) => navigate('/menu')}
-        />
+        <FeaturedProductGrid onAdd={(p) => navigate('/menu')} onClick={(p) => navigate('/menu')} />
 
         {/* Sobre rápido */}
         <section className="px-4 sm:px-6 pt-8 pb-10 text-center">
-          <div className="max-w-md mx-auto rounded-kf-lg border border-kf-border bg-kf-surface p-4">
-            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-kf-success' : 'text-kf-muted'}`}>
+          <div className="max-w-md mx-auto kf-card p-4">
+            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-emerald-600' : 'text-[#221D25]/50'}`}>
               {openStatus.open ? '● ' : '○ '}
               {openStatus.label}
               {openStatus.detail ? ` · ${openStatus.detail}` : ''}
             </p>
-            <p className="text-sm text-kf-muted leading-relaxed">
+            <p className="text-sm text-[#221D25]/55 leading-relaxed">
               Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
             </p>
           </div>
@@ -507,6 +497,17 @@ export default function Home() {
         <Footer />
       </main>
 
+      {/* Floating WhatsApp - mobile (v3) */}
+      <a
+        href={myWaUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="md:hidden fixed z-[45] right-4 bottom-16 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-lg shadow-[#25D366]/30 flex items-center justify-center active:scale-90 transition"
+        aria-label="WhatsApp"
+      >
+        <WhatsAppIcon className="w-7 h-7" />
+      </a>
+
       {/* Hours sheet */}
       {showHours && (
         <div className="fixed inset-0 z-[80]">
@@ -514,12 +515,7 @@ export default function Home() {
           <div className="absolute bottom-0 left-0 right-0 sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-md sm:rounded-3xl w-full rounded-t-3xl border border-white/10 bg-black/95 p-5 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-extrabold">Horários e entrega</h2>
-              <button
-                type="button"
-                onClick={() => setShowHours(false)}
-                className="w-10 h-10 rounded-full bg-white/10"
-                aria-label="Fechar"
-              >
+              <button type="button" onClick={() => setShowHours(false)} className="w-10 h-10 rounded-full bg-white/10" aria-label="Fechar">
                 ✕
               </button>
             </div>
@@ -530,25 +526,12 @@ export default function Home() {
               {myHours.map((row) => {
                 const isToday = row.day === today;
                 return (
-                  <li
-                    key={row.day}
-                    className={`flex justify-between gap-3 px-4 py-3 text-sm ${
-                      isToday ? 'bg-[#FFD100]/10' : ''
-                    }`}
-                  >
+                  <li key={row.day} className={`flex justify-between gap-3 px-4 py-3 text-sm ${isToday ? 'bg-[#FFD100]/10' : ''}`}>
                     <span className={isToday ? 'font-bold text-[#FFD100]' : 'text-white/80'}>
                       {row.label}
                       {isToday ? ' · hoje' : ''}
                     </span>
-                    <span
-                      className={
-                        isToday
-                          ? 'font-bold text-[#FFD100]'
-                          : row.hours === 'Fechado'
-                            ? 'text-white/30'
-                            : 'text-white/60'
-                      }
-                    >
+                    <span className={isToday ? 'font-bold text-[#FFD100]' : row.hours === 'Fechado' ? 'text-white/30' : 'text-white/60'}>
                       {row.hours}
                     </span>
                   </li>

@@ -152,3 +152,72 @@ html.dark {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* === King Food v3 landing classes (cloned from king-food-v3) === */
+.kf-display {
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+  line-height: 0.95;
+}
+
+.kf-card {
+  background: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(34, 29, 37, 0.08);
+  border-radius: 1.25rem;
+}
+
+.kf-chip {
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(34, 29, 37, 0.1);
+  border-radius: 1rem;
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.kf-chip:hover {
+  background: rgba(255, 255, 255, 0.85);
+}
+.kf-chip:active {
+  transform: scale(0.98);
+}
+
+.kf-btn-ink {
+  background: #221d25;
+  color: #e2ddcf;
+  border-radius: 48px;
+  font-weight: 700;
+  box-shadow: 0 10px 28px -8px rgba(34, 29, 37, 0.35);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.kf-btn-ink:hover {
+  background: #2e2732;
+}
+.kf-btn-ink:active {
+  transform: scale(0.98);
+}
+
+.kf-btn-gold {
+  background: #ffd100;
+  color: #221d25;
+  border-radius: 48px;
+  font-weight: 800;
+  box-shadow: 0 10px 28px -8px rgba(255, 209, 0, 0.45);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+.kf-btn-gold:hover {
+  background: #ffe14a;
+}
+.kf-btn-gold:active {
+  transform: scale(0.98);
+}
+
+.rounded-pill {
+  border-radius: 48px;
+}
+
+.shadow-cta {
+  box-shadow: 0 10px 28px -8px rgba(34, 29, 37, 0.35);
+}
+
+.shadow-soft {
+  box-shadow: 0 8px 24px -12px rgba(34, 29, 37, 0.25);
+}
