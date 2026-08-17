@@ -254,14 +254,18 @@ export default function Menu() {
           <p className="text-sm text-kf-muted">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
         </header>
 
-        {/* Categorias (barra sticky com scroll horizontal) */}
-        <CategoryPills
-          categories={categoryList}
-          selected={activeCategory}
-          onSelect={handleCategoryClick}
-          loading={categoriesLoading}
-          headerOffset={HEADER_OFFSET}
-        />
+        {/* Categorias (barra sticky com scroll horizontal) — somente na listagem.
+            Com o detalhe do produto aberto (MenuItemModal) a barra é removida do DOM
+            para não ficar sobreposta nem reservar espaço. */}
+        {!selectedItemId && (
+          <CategoryPills
+            categories={categoryList}
+            selected={activeCategory}
+            onSelect={handleCategoryClick}
+            loading={categoriesLoading}
+            headerOffset={HEADER_OFFSET}
+          />
+        )}
 
         {/* Produtos agrupados por categoria */}
         <div className="mt-4">
