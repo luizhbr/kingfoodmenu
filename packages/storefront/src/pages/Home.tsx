@@ -149,6 +149,114 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+
+/* ===== Google Reviews (reais, do Google Maps) ===== */
+interface GoogleReview {
+  name: string;
+  initials: string;
+  color: string;
+  count: string;
+  time: string;
+  text: string;
+  mentionsAcai: boolean;
+}
+
+const GOOGLE_REVIEWS: GoogleReview[] = [
+  {
+    name: 'Jadina Queiroz',
+    initials: 'JQ',
+    color: '#7B6DA8',
+    count: '4 avaliações',
+    time: '2 anos atrás',
+    text: 'Ótimo atendimento. Lanche muito bom bem idêntico ao nosso lanche brasileiro. Açaí maravilhoso.',
+    mentionsAcai: true,
+  },
+  {
+    name: 'Mariana Microni',
+    initials: 'MM',
+    color: '#B8C438',
+    count: '6 avaliações',
+    time: '3 anos atrás',
+    text: 'O melhor de Philadelphia!! O pastel excelente, açaí maravilhoso!! Estão de parabéns, sempre peço e nunca me decepcionou.',
+    mentionsAcai: true,
+  },
+  {
+    name: 'Amanda Severo De Oliveira',
+    initials: 'AS',
+    color: '#E07A5F',
+    count: '2 avaliações',
+    time: '1 ano atrás',
+    text: 'Melhor lanche e melhor açaí de Columbus.',
+    mentionsAcai: true,
+  },
+];
+
+function GoogleReviews() {
+  return (
+    <section className="w-full px-4 py-10 md:py-14" aria-label="Avaliações reais do Google">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-8">
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#221D25]/45 mb-2">
+            Google Maps · 5,0 ★
+          </p>
+          <h2 className="kf-display text-2xl md:text-3xl text-[#221D25] mb-2">Quem prova, recomenda</h2>
+          <p className="text-sm text-[#221D25]/55">
+            Avaliações reais de quem já pediu — as que falam de açaí em destaque 🍧
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {GOOGLE_REVIEWS.map((r) => (
+            <article
+              key={r.name}
+              className="kf-card p-4 flex flex-col gap-3 hover:bg-white/70 transition"
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white"
+                  style={{ backgroundColor: r.color }}
+                  aria-hidden
+                >
+                  {r.initials}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold text-[#221D25] truncate">{r.name}</p>
+                  <p className="text-[11px] text-[#221D25]/45">{r.count} · {r.time}</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1 text-[#FFD100]" aria-label="5 estrelas">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className="text-sm leading-none">★</span>
+                ))}
+              </div>
+
+              <p className="text-sm text-[#221D25]/75 leading-relaxed flex-1">{r.text}</p>
+
+              {r.mentionsAcai && (
+                <span className="self-start inline-flex items-center gap-1 rounded-full bg-[#FFD100]/15 border border-[#FFD100]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#221D25]/70">
+                  🍧 Fala de açaí
+                </span>
+              )}
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-6 text-center">
+          <a
+            href={MAPS_URL_DEF}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 kf-chip px-4 py-2.5 text-sm font-bold text-[#221D25]"
+          >
+            📍 Ver todas no Google Maps
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function Home() {
   const { settings } = useTheme();
   const logo = settings.logo || LOGO_DEF;
@@ -441,6 +549,9 @@ export default function Home() {
             </div>
           </button>
         </div>
+
+        {/* Avaliações reais do Google Maps */}
+        <GoogleReviews />
 
         {/* Footer */}
         <Footer />
