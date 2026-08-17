@@ -679,10 +679,25 @@ model SiteSettings {
   reviewSettings      Json?  // { enabled, requireOrder, autoApprove, minimumRating }
   advancedSettings    Json?  // { maintenanceMode, maintenanceMessage, enableRateLimiting }
 
+  // Visual Experience Builder (Fase 3)
+  visualDraft         Json?  // BuilderConfig completo — rascunho (não afeta a loja)
+  visualPublished     Json?  // BuilderConfig completo — versão publicada (a loja consome)
+
   updatedAt       DateTime @updatedAt
   createdAt       DateTime @default(now())
 
   @@map("site_settings")
+}
+
+model DesignVersion {
+  id            String   @id @default(cuid())
+  version       Int      @unique @default(1)
+  configuration Json
+  note          String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+
+  @@map("design_versions")
 }
 
 enum GalleryCategory {

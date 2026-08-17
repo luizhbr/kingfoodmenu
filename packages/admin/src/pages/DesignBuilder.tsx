@@ -1,4 +1,44 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+/* ════════════════════════════════════════════════════════════════════
+   KING FOOD — VISUAL EXPERIENCE BUILDER (FASE 3)
+   Draft → Preview privado → Revisar → Publicar → Histórico/Rollback.
+   A loja pública SÓ muda quando o admin publica explicitamente.
+   ════════════════════════════════════════════════════════════════════ */
+
+const API = {
+  draft: '/api/settings/visual/draft',
+  published: '/api/settings/visual/published',
+  publish: '/api/settings/visual/publish',
+  history: '/api/settings/visual/history',
+  restore: (id: string) => `/api/settings/visual/restore/${id}`,
+};
+
+interface DesignVersion {
+  id: string;
+  version: number;
+  configuration: BuilderConfig;
+  note: string | null;
+  createdBy: string | null;
+  createdAt: string;
+}
+
+async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
+  const token = localStorage.getItem('token') || '';
+  const res = await fetch(url, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      ...(init?.headers || {}),
+    },
+  });
+  const json = await res.json().catch(() => ({ success: false, error: 'Resposta inválida' }));
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || `Erro ${res.status}`);
+  }
+  return json.data as T;
+}
 
 /* ════════════════════════════════════════════════════════════════════
    KING FOOD — VISUAL EXPERIENCE BUILDER (FASE 2)
@@ -762,7 +802,28 @@ export default function DesignBuilder() {
   const [dirty, setDirty] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
   const [showDiscard, setShowDiscard] = useState(false);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [history, setHistory] = useState<DesignVersion[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [loadedFromServer, setLoadedFromServer] = useState(false);
   const [toast, setToast] = useState('');
+
+  // Carrega o rascunho salvo (se houver) + histórico ao abrir o Builder
+  useEffect(() => {
+    let mounted = true;
+    apiFetch<BuilderConfig | null>(API.draft)
+      .then((draft) => {
+        if (!mounted) return;
+        if (draft) setConfig({ ...DEFAULT_CONFIG, ...draft });
+        setLoadedFromServer(true);
+      })
+      .catch(() => { if (mounted) setLoadedFromServer(true); });
+    apiFetch<DesignVersion[]>(API.history)
+      .then((v) => { if (mounted) setHistory(v || []); })
+      .catch(() => {});
+    return () => { mounted = false; };
+  }, []);
 
   function update<K extends keyof BuilderConfig>(key: K, value: BuilderConfig[K]) {
     setConfig((prev) => ({ ...prev, [key]: value }));
@@ -788,21 +849,73 @@ export default function DesignBuilder() {
     }
   }
 
-  function restoreDefault() {
-    setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-    setDirty(false);
-    setSelected(null);
-    setShowRestore(false);
-    setToast('Aparência restaurada para o padrão');
-    setTimeout(() => setToast(''), 2500);
+  async function saveDraft() {
+    setSaving(true);
+    try {
+      await apiFetch(API.draft, { method: 'PUT', body: JSON.stringify(config) });
+      setDirty(false);
+      setToast('Rascunho salvo');
+    } catch (e: any) {
+      setToast(e.message || 'Falha ao salvar rascunho');
+    } finally {
+      setSaving(false);
+      setTimeout(() => setToast(''), 2500);
+    }
   }
 
-  function discard() {
+  async function publish(note?: string) {
+    setPublishing(true);
+    try {
+      const result = await apiFetch<{ published: BuilderConfig; version: number }>(API.publish, {
+        method: 'POST',
+        body: JSON.stringify({ note: note || null }),
+      });
+      setConfig(JSON.parse(JSON.stringify(result.published)));
+      setDirty(false);
+      setShowPublishModal(false);
+      setToast(`Publicado como versão v${result.version} — a loja já está usando`);
+      // recarrega histórico
+      apiFetch<DesignVersion[]>(API.history).then((v) => setHistory(v || [])).catch(() => {});
+    } catch (e: any) {
+      setToast(e.message || 'Falha ao publicar');
+    } finally {
+      setPublishing(false);
+      setTimeout(() => setToast(''), 3500);
+    }
+  }
+
+  async function restoreVersion(id: string) {
+    try {
+      const result = await apiFetch<{ restored: number; draft: BuilderConfig }>(API.restore(id), { method: 'POST' });
+      setConfig({ ...DEFAULT_CONFIG, ...result.draft });
+      setDirty(true);
+      setToast(`Versão v${result.restored} restaurada como rascunho — revise antes de publicar`);
+    } catch (e: any) {
+      setToast(e.message || 'Falha ao restaurar versão');
+    }
+    setTimeout(() => setToast(''), 3500);
+  }
+
+  function restoreDefault() {
     setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
-    setDirty(false);
+    setDirty(true);
     setSelected(null);
-    setShowDiscard(false);
-    setToast('Alterações descartadas');
+    setShowRestore(false);
+    setToast('Aparência restaurada para o padrão (rascunho) — salve para persistir');
+    setTimeout(() => setToast(''), 3000);
+  }
+
+  async function discard() {
+    try {
+      await apiFetch(API.draft, { method: 'DELETE' });
+      setConfig(JSON.parse(JSON.stringify(DEFAULT_CONFIG)));
+      setDirty(false);
+      setSelected(null);
+      setShowDiscard(false);
+      setToast('Rascunho descartado');
+    } catch (e: any) {
+      setToast(e.message || 'Falha ao descartar');
+    }
     setTimeout(() => setToast(''), 2500);
   }
 
@@ -848,26 +961,27 @@ export default function DesignBuilder() {
             <button
               type="button"
               onClick={() => setShowDiscard(true)}
-              disabled={!dirty}
+              disabled={!dirty || saving || publishing}
               className="min-h-[44px] px-4 rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
               Descartar
             </button>
             <button
               type="button"
-              onClick={() => setToast('Salvar estará disponível quando a persistência do construtor for habilitada.')}
-              disabled={!dirty}
+              onClick={saveDraft}
+              disabled={!dirty || saving || publishing}
               className="min-h-[44px] px-4 rounded-xl border border-gray-300 text-sm font-semibold text-gray-800 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none transition-colors"
             >
-              Salvar rascunho
+              {saving ? 'Salvando...' : 'Salvar rascunho'}
             </button>
             <button
               type="button"
-              disabled
-              title="Publicação será habilitada na próxima etapa"
-              className="min-h-[44px] px-5 rounded-xl bg-[#FFD100]/50 text-[#221D25]/60 text-sm font-bold cursor-not-allowed transition-colors shadow-sm"
+              onClick={() => setShowPublishModal(true)}
+              disabled={!dirty || saving || publishing}
+              title={!dirty ? 'Salve o rascunho antes de publicar' : 'Publica a configuração na loja'}
+              className="min-h-[44px] px-5 rounded-xl bg-[#FFD100] text-[#221D25] text-sm font-bold hover:bg-[#E6BC00] disabled:opacity-40 disabled:pointer-events-none transition-colors shadow-sm"
             >
-              Publicar
+              {publishing ? 'Publicando...' : 'Publicar'}
             </button>
           </div>
         </div>
@@ -1265,10 +1379,94 @@ export default function DesignBuilder() {
         </div>
       </div>
 
+      {/* Histórico de versões */}
+      {history.length > 0 && (
+        <div className="max-w-[1400px] mx-auto px-4 pb-6">
+          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-sm font-bold text-gray-800">Histórico de versões</h2>
+              <span className="text-xs text-gray-400">{history.length} versão{history.length === 1 ? '' : 'ões'}</span>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {history.map((v) => (
+                <div key={v.id} className="px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-800">v{v.version}</span>
+                      {v.version === Math.max(...history.map((h) => h.version)) && (
+                        <span className="text-[10px] font-bold text-[#221D25] bg-[#FFD100] rounded-full px-2 py-0.5">ATUAL</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[420px]">
+                      {v.note || 'Sem descrição'} · {v.createdBy || '—'} · {new Date(v.createdAt).toLocaleString('pt-BR')}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => restoreVersion(v.id)}
+                    className="min-h-[40px] px-3 rounded-lg border border-gray-300 text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    Restaurar
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast */}
       {toast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#221D25] text-[#E2DDCF] text-sm font-medium rounded-full px-5 py-3 shadow-lg kf-anim-scale-in max-w-[90vw] text-center" role="status">
           {toast}
+        </div>
+      )}
+
+      {/* Modal Publicar */}
+      {showPublishModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 kf-anim-fade-in"
+          onClick={() => setShowPublishModal(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Publicar configuração"
+        >
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-xl p-6 kf-anim-scale-in" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-bold text-gray-900 mb-2">Publicar configuração?</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              A loja pública passará a usar esta aparência imediatamente. Uma nova versão será registrada no histórico.
+            </p>
+            <div className="mb-4">
+              <label className="block text-xs font-medium text-gray-600 mb-1">Nota da versão (opcional)</label>
+              <input
+                id="publish-note"
+                type="text"
+                placeholder="Ex.: Novo tema de inverno"
+                maxLength={200}
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setShowPublishModal(false)}
+                className="flex-1 min-h-[48px] rounded-xl border border-gray-300 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const note = (document.getElementById('publish-note') as HTMLInputElement)?.value;
+                  publish(note);
+                }}
+                disabled={publishing}
+                className="flex-1 min-h-[48px] rounded-xl bg-[#FFD100] text-[#221D25] text-sm font-bold hover:bg-[#E6BC00] disabled:opacity-50 transition-colors"
+              >
+                {publishing ? 'Publicando...' : 'Publicar agora'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

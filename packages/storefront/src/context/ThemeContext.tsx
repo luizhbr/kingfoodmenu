@@ -36,6 +36,11 @@ export interface SiteSettings {
   landingSocial?: { platform: string; label: string; url: string; icon?: string; enabled?: boolean }[];
   landingHours?: { enabled?: boolean; rows?: { day: number; label: string; hours: string }[]; timezone?: string };
   landingContact?: { phone?: string; whatsapp?: string; email?: string; address?: string };
+  visualPublished?: {
+    colors?: { primary?: string; secondary?: string; background?: string; surface?: string; text?: string; textMuted?: string; border?: string; price?: string };
+    typography?: { font?: string; weight?: string; baseSize?: number; headingScale?: number };
+    components?: { cardRadius?: number; buttonRadius?: number; buttonStyle?: string };
+  } | null;
 }
 interface ThemeContextType {
   settings: SiteSettings;
@@ -145,6 +150,45 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyColorVars('primary', settings.colorPrimary || '#FFD100');
     applyColorVars('secondary', settings.colorSecondary || '#E31818');
   }, [settings.colorPrimary, settings.colorSecondary]);
+  // Aplica a configuração visual PUBLICADA (Fase 3) — a loja só muda
+  // quando o admin publica explicitamente. Nunca usa o rascunho.
+  useEffect(() => {
+    const v = settings.visualPublished;
+    if (!v) return;
+    const root = document.documentElement;
+    const FONT_STACKS: Record<string, string> = {
+      system: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+      serif: 'Georgia, "Times New Roman", serif',
+      mono: 'ui-monospace, "Cascadia Code", "Courier New", monospace',
+    };
+    if (v.colors?.primary) {
+      applyColorVars('primary', v.colors.primary);
+      root.style.setProperty('--kf-primary', v.colors.primary);
+    }
+    if (v.colors?.secondary) {
+      applyColorVars('secondary', v.colors.secondary);
+      root.style.setProperty('--kf-secondary', v.colors.secondary);
+    }
+    if (v.colors?.background) root.style.setProperty('--kf-bg', v.colors.background);
+    if (v.colors?.surface) root.style.setProperty('--kf-surface', v.colors.surface);
+    if (v.colors?.text) root.style.setProperty('--kf-foreground', v.colors.text);
+    if (v.colors?.textMuted) root.style.setProperty('--kf-muted', v.colors.textMuted);
+    if (v.colors?.border) root.style.setProperty('--kf-border', v.colors.border);
+    if (v.typography?.font) {
+      const stack = FONT_STACKS[v.typography.font] || FONT_STACKS.system;
+      root.style.setProperty('--kf-font-sans', stack);
+      root.style.setProperty('--kf-font-display', stack);
+    }
+    if (v.components?.cardRadius != null) {
+      root.style.setProperty('--kf-radius-lg', `${v.components.cardRadius}px`);
+      root.style.setProperty('--kf-radius-md', `${Math.max(6, Math.round(v.components.cardRadius * 0.6))}px`);
+    }
+    if (v.components?.buttonStyle && v.components?.buttonRadius != null) {
+      const r = v.components.buttonStyle === 'pill' ? 9999 : v.components.buttonRadius;
+      root.style.setProperty('--kf-radius-pill', `${r}px`);
+    }
+  }, [settings.visualPublished]);
+
   useEffect(() => {
     const { darkMode } = settings;
     let dark = false;

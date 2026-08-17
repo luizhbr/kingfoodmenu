@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import nodemailer from 'nodemailer';
 import prisma from '../lib/db.js';
+import { Prisma } from '@prisma/client';
 import { auditLog } from '../lib/audit.js';
 
 const updateSettingsSchema = z.object({
@@ -81,6 +82,7 @@ function toPublicSettings(settings: Awaited<ReturnType<typeof getOrCreateSetting
     landingSocial: settings.landingSocial,
     landingHours: settings.landingHours,
     landingContact: settings.landingContact,
+    visualPublished: settings.visualPublished,
     createdAt: settings.createdAt,
     updatedAt: settings.updatedAt,
   };
@@ -470,4 +472,143 @@ export async function updateAdvancedSettings(req: Request, res: Response): Promi
   }
   const data = await updateSettingsGroup('advancedSettings', parsed.data);
   res.json({ success: true, data });
+}
+
+
+// ============================================================
+// VISUAL EXPERIENCE BUILDER (Fase 3) — draft/publish/history
+// ============================================================
+// O Builder do admin edita um JSON estruturado (BuilderConfig).
+// Fluxo: editar → salvar RASCUNHO → REVISAR → PUBLICAR → loja muda.
+// A loja pública só consome visualPublished (nunca o draft).
+
+const visualSchema = z.object({
+  preset: z.string().optional(),
+  colors: z.record(z.string()).optional(),
+  typography: z.record(z.any()).optional(),
+  components: z.record(z.any()).optional(),
+  landing: z.record(z.any()).optional(),
+  menu: z.record(z.any()).optional(),
+  nav: z.record(z.any()).optional(),
+  mobile: z.record(z.any()).optional(),
+});
+
+/** GET rascunho atual (ou null). Somente MANAGER+. */
+export async function getVisualDraft(_req: Request, res: Response): Promise<void> {
+  try {
+    const settings = await getOrCreateSettings();
+    res.json({ success: true, data: settings.visualDraft ?? null });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** Salva o rascunho. NUNCA altera visualPublished. Somente MANAGER+. */
+export async function saveVisualDraft(req: Request, res: Response): Promise<void> {
+  const parsed = visualSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: 'Configuração inválida' });
+    return;
+  }
+  try {
+    await getOrCreateSettings();
+    const updated = await prisma.siteSettings.update({
+      where: { id: 'default' },
+      data: { visualDraft: parsed.data },
+    });
+    res.json({ success: true, data: updated.visualDraft });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** GET versão publicada (a loja consome isso). Público (storefront). */
+export async function getVisualPublished(_req: Request, res: Response): Promise<void> {
+  try {
+    const settings = await getOrCreateSettings();
+    res.json({ success: true, data: settings.visualPublished ?? null });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** PUBLICAR: promove o rascunho para visualPublished + cria DesignVersion. */
+export async function publishVisual(req: Request, res: Response): Promise<void> {
+  const note = typeof req.body?.note === 'string' ? req.body.note.slice(0, 200) : null;
+  try {
+    await getOrCreateSettings();
+    const current = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
+    const draft = current?.visualDraft;
+    if (!draft) {
+      res.status(400).json({ success: false, error: 'Não há rascunho para publicar' });
+      return;
+    }
+    // próxima versão
+    const last = await prisma.designVersion.findFirst({ orderBy: { version: 'desc' } });
+    const nextVersion = last ? last.version + 1 : 1;
+    const [updated, _version] = await prisma.$transaction([
+      prisma.siteSettings.update({
+        where: { id: 'default' },
+        data: { visualPublished: draft },
+      }),
+      prisma.designVersion.create({
+        data: {
+          version: nextVersion,
+          configuration: draft as any,
+          note,
+          createdBy: (req as any).user?.email ?? null,
+        },
+      }),
+    ]);
+    res.json({ success: true, data: { published: updated.visualPublished, version: nextVersion } });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** GET histórico de versões (mais recente primeiro). */
+export async function getVisualHistory(_req: Request, res: Response): Promise<void> {
+  try {
+    const versions = await prisma.designVersion.findMany({
+      orderBy: { version: 'desc' },
+      take: 50,
+    });
+    res.json({ success: true, data: versions });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** RESTAURAR versão: vira o novo rascunho (NÃO publica automaticamente). */
+export async function restoreVisualVersion(req: Request, res: Response): Promise<void> {
+  const id = (req.params as any).id as string;
+  try {
+    const version = await prisma.designVersion.findUnique({ where: { id } });
+    if (!version) {
+      res.status(404).json({ success: false, error: 'Versão não encontrada' });
+      return;
+    }
+    await getOrCreateSettings();
+    await prisma.siteSettings.update({
+      where: { id: 'default' },
+      data: { visualDraft: version.configuration as any },
+    });
+    res.json({ success: true, data: { restored: version.version, draft: version.configuration } });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+}
+
+/** DESCARTA rascunho. */
+export async function discardVisualDraft(_req: Request, res: Response): Promise<void> {
+  try {
+    await getOrCreateSettings();
+    await prisma.siteSettings.update({
+      where: { id: 'default' },
+      data: { visualDraft: Prisma.JsonNull },
+    });
+    res.json({ success: true, data: null });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
 }

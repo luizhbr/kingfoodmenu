@@ -6,6 +6,13 @@ import {
   updateSettings,
   uploadLogo,
   uploadFavicon,
+  getVisualDraft,
+  saveVisualDraft,
+  getVisualPublished,
+  publishVisual,
+  getVisualHistory,
+  restoreVisualVersion,
+  discardVisualDraft,
   getGeneralSettings,
   updateGeneralSettings,
   getOrderSettings,
@@ -59,5 +66,15 @@ router.put('/review', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), updat
 // Advanced — SUPER_ADMIN only
 router.get('/advanced', authenticate, requireRole('SUPER_ADMIN'), getAdvancedSettings);
 router.put('/advanced', authenticate, requireRole('SUPER_ADMIN'), updateAdvancedSettings);
+
+// Visual Experience Builder (Fase 3) — MANAGER+
+router.get('/visual/draft', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), getVisualDraft);
+router.put('/visual/draft', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), saveVisualDraft);
+router.delete('/visual/draft', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), discardVisualDraft);
+// Published é público (storefront consome via GET /api/settings)
+router.get('/visual/published', getVisualPublished);
+router.post('/visual/publish', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), publishVisual);
+router.get('/visual/history', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), getVisualHistory);
+router.post('/visual/restore/:id', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), restoreVisualVersion);
 
 export default router;
