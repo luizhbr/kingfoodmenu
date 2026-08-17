@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -9,7 +9,6 @@ import {
   ProductCard,
   Skeleton,
 } from '@kitchenasty/shared-ui';
-import { QuickSearch } from '../components/QuickSearch.js';
 import CartBar from '../components/CartBar.js';
 import { CategoryPills } from '../components/CategoryPills.js';
 import MenuItemModal from '../components/MenuItemModal.js';
@@ -44,13 +43,22 @@ interface MenuResponse {
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
+/** Altura do header fixo do site (h-16) — a barra de categorias fica sticky abaixo dele. */
+const HEADER_OFFSET = 64;
+/** Altura aproximada da barra sticky de categorias (offset do scroll-margin das seções). */
+const CATEGORY_BAR_OFFSET = 60;
+
+function sectionId(catId: string, page: number): string {
+  return page > 1 ? `menu-section-${catId}-p${page}` : `menu-section-${catId}`;
+}
+
 export default function Menu() {
   const { t } = useTranslation();
   const { addItem } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [debouncedSearch, setDebouncedSearch] = useState(search);
+  /** Categoria ativa durante o scroll (sincronizada com a seção visível). */
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
@@ -62,14 +70,11 @@ export default function Menu() {
   const [itemsLoading, setItemsLoading] = useState(true);
   const [itemsError, setItemsError] = useState<Error | null>(null);
 
-  // Debounce search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  // Refs das seções (âncoras estáveis para o IntersectionObserver)
+  const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const firstSectionRef = useRef<HTMLElement | null>(null);
+  /** Categoria clicada aguardando o carregamento dos itens filtrados para scrollar. */
+  const pendingScrollRef = useRef<{ catId: string } | null>(null);
 
   // Fetch categories
   useEffect(() => {
@@ -80,16 +85,15 @@ export default function Menu() {
       .finally(() => setCategoriesLoading(false));
   }, []);
 
-  // Build items URL
+  // Build items URL (busca removida — sem filtro de search)
   const itemsUrl = useMemo(() => {
     const params = new URLSearchParams();
     if (selectedCategory) params.set('categoryId', selectedCategory);
-    if (debouncedSearch) params.set('search', debouncedSearch);
     if (page > 1) params.set('page', String(page));
-    params.set('limit', '12');
+    params.set('limit', '50');
     const apiBase = import.meta.env.VITE_API_URL || '';
     return `${apiBase}/api/menu/items?${params}`;
-  }, [selectedCategory, debouncedSearch, page]);
+  }, [selectedCategory, page]);
 
   // Fetch items
   useEffect(() => {
@@ -116,14 +120,13 @@ export default function Menu() {
     return () => { mounted = false; };
   }, [itemsUrl, selectedCategory]);
 
-  // Sync URL params
+  // Sync URL params (apenas categoria e página — busca removida)
   useEffect(() => {
     const params: Record<string, string> = {};
     if (selectedCategory) params.category = selectedCategory;
-    if (debouncedSearch) params.search = debouncedSearch;
     if (page > 1) params.page = String(page);
     setSearchParams(params, { replace: true });
-  }, [selectedCategory, debouncedSearch, page, setSearchParams]);
+  }, [selectedCategory, page, setSearchParams]);
 
   const categoryList = useMemo(
     () => (categoriesLoading ? [] : categories.map((c) => ({ id: c.id, name: c.name }))),
@@ -135,14 +138,98 @@ export default function Menu() {
     [items]
   );
 
+  /** Produtos agrupados por categoria, na ordem atual das categorias. */
+  const grouped = useMemo(() => {
+    const groups: { category: { id: string; name: string }; items: MenuItem[] }[] = [];
+    const byCat = new Map<string, MenuItem[]>();
+    for (const item of activeItems) {
+      const arr = byCat.get(item.category.id) ?? [];
+      arr.push(item);
+      byCat.set(item.category.id, arr);
+    }
+    // Ordem: categorias conhecidas primeiro; categorias desconhecidas (edge) no final
+    const knownIds = new Set(categories.map((c) => c.id));
+    const orderedIds = [...categories.map((c) => c.id), ...[...byCat.keys()].filter((id) => !knownIds.has(id))];
+    for (const id of orderedIds) {
+      const cat = categories.find((c) => c.id === id);
+      const groupItems = byCat.get(id);
+      if (!groupItems || groupItems.length === 0) continue;
+      groups.push({ category: { id, name: cat?.name ?? groupItems[0].category.name }, items: groupItems });
+    }
+    return groups;
+  }, [activeItems, categories]);
+
+  const gridColumns =
+    'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
+
+  // Scroll vertical -> categoria ativa (IntersectionObserver, sem listener por pixel)
+  useEffect(() => {
+    if (itemsLoading || grouped.length === 0) return;
+    const refs = sectionRefs.current;
+    const first = firstSectionRef.current;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible: { id: string | null; top: number }[] = [];
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          const id = (entry.target as HTMLElement).dataset.categoryId ?? null;
+          visible.push({ id, top: entry.boundingClientRect.top });
+        }
+        if (visible.length > 0) {
+          // Seção mais próxima do topo da área de leitura vence
+          visible.sort((a, b) => a.top - b.top);
+          setActiveCategory(visible[0].id);
+        } else if (first) {
+          // Nada na faixa de leitura: acima da primeira seção = topo do cardápio = "Todos"
+          const absTop = first.getBoundingClientRect().top + window.scrollY;
+          if (window.scrollY < absTop - 80) setActiveCategory(null);
+        }
+      },
+      { rootMargin: `-${HEADER_OFFSET}px 0px -55% 0px`, threshold: 0 }
+    );
+
+    const seen = new Set<string>();
+    refs.forEach((el) => {
+      const id = el.dataset.categoryId;
+      if (id) {
+        if (seen.has(id)) return; // primeira seção de cada categoria (página atual)
+        seen.add(id);
+      }
+      observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [grouped, itemsLoading]);
+
   function handleCategoryClick(catId: string | null) {
     setSelectedCategory(catId);
+    setActiveCategory(catId);
     setPage(1);
+    if (catId) {
+      // Espera os itens filtrados carregarem: as seções mudam (skeleton -> grid)
+      // e um scroll prematuro seria cancelado no meio do caminho.
+      pendingScrollRef.current = { catId };
+    } else {
+      // "Todos" volta ao início do cardápio
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   }
 
-  function handleSearch(q: string) {
-    setSearch(q);
-  }
+  // Scroll pós-carregamento do clique em categoria
+  useEffect(() => {
+    if (itemsLoading || !pendingScrollRef.current) return;
+    const { catId } = pendingScrollRef.current;
+    pendingScrollRef.current = null;
+    const el = document.getElementById(sectionId(catId, page));
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      // Categoria sem produtos: volta ao topo (EmptyState)
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [itemsLoading, grouped, page]);
 
   function handleQuickAdd(item: MenuItem) {
     if (item._count.options > 0) {
@@ -163,25 +250,23 @@ export default function Menu() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header compacto */}
         <header className="mb-4">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-kf-foreground">{t('menu.title', 'Cardápio')}</h1>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-kf-foreground">{t('menu.title', 'Nosso Cardápio')}</h1>
           <p className="text-sm text-kf-muted">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
         </header>
 
-        {/* Busca */}
-        <QuickSearch initialValue={search} />
-
-        {/* Categorias */}
+        {/* Categorias (barra sticky com scroll horizontal) */}
         <CategoryPills
           categories={categoryList}
-          selected={selectedCategory}
+          selected={activeCategory}
           onSelect={handleCategoryClick}
           loading={categoriesLoading}
+          headerOffset={HEADER_OFFSET}
         />
 
-        {/* Grid de produtos */}
+        {/* Produtos agrupados por categoria */}
         <div className="mt-4">
           {itemsLoading && (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4" aria-busy="true" aria-label={t('menu.loading', 'Carregando cardápio')}>
+            <div className={gridColumns} aria-busy="true" aria-label={t('menu.loading', 'Carregando cardápio')}>
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="rounded-kf-lg border border-kf-border bg-kf-surface p-3">
                   <Skeleton className="aspect-[4/3] rounded-kf-md" />
@@ -206,29 +291,67 @@ export default function Menu() {
 
           {!itemsLoading && !itemsError && activeItems.length === 0 && (
             <EmptyState
-              title={t('menu.noItemsTitle', 'Nenhum produto encontrado')}
-              description={t('menu.noItemsDesc', 'Tente outra busca ou categoria.')}
-              action={{ label: t('menu.clearFilters', 'Limpar filtros'), onClick: () => { setSelectedCategory(null); setSearch(''); } }}
+              title={
+                selectedCategory
+                  ? t('menu.noItemsInCategoryTitle', 'Categoria vazia')
+                  : t('menu.noItemsTitle', 'Nenhum produto encontrado')
+              }
+              description={
+                selectedCategory
+                  ? t('menu.noItemsInCategoryDesc', 'Não há produtos nesta categoria ainda.')
+                  : t('menu.noItemsDesc', 'Tente outra categoria.')
+              }
+              action={
+                selectedCategory
+                  ? {
+                      label: t('menu.clearFilters', 'Ver todos os produtos'),
+                      onClick: () => { setSelectedCategory(null); setPage(1); },
+                    }
+                  : undefined
+              }
             />
           )}
 
-          {!itemsLoading && activeItems.length > 0 && (
+          {!itemsLoading && !itemsError && activeItems.length > 0 && (
             <>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-                {activeItems.map((item) => (
-                  <ProductCard
-                    key={item.id}
-                    id={item.id}
-                    name={item.name}
-                    description={item.description || undefined}
-                    price={item.price}
-                    image={item.image || undefined}
-                    badge={item._count.options > 0 ? t('menu.options', 'Opções') : undefined}
-                    onClick={() => setSelectedItemId(item.id)}
-                    onAdd={() => handleQuickAdd(item)}
-                  />
-                ))}
-              </div>
+              {grouped.map((group, gi) => {
+                const id = sectionId(group.category.id, page);
+                return (
+                  <section
+                    key={id}
+                    id={id}
+                    ref={(el) => {
+                      if (el) {
+                        sectionRefs.current.set(group.category.id, el);
+                        if (gi === 0) firstSectionRef.current = el;
+                      }
+                    }}
+                    data-category-id={group.category.id}
+                    className="scroll-mt-[calc(4rem+3.75rem)]"
+                    aria-label={group.category.name}
+                  >
+                    <h2 className="mb-3 flex items-center gap-3 text-base font-extrabold uppercase tracking-wide text-kf-foreground">
+                      {group.category.name}
+                      <span className="h-px flex-1 bg-kf-border" aria-hidden />
+                    </h2>
+                    <div className={gridColumns}>
+                      {group.items.map((item) => (
+                        <ProductCard
+                          key={item.id}
+                          id={item.id}
+                          name={item.name}
+                          description={item.description || undefined}
+                          price={item.price}
+                          image={item.image || undefined}
+                          badge={item._count.options > 0 ? t('menu.options', 'Opções') : undefined}
+                          onClick={() => setSelectedItemId(item.id)}
+                          onAdd={() => handleQuickAdd(item)}
+                        />
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
 
               {pagination && pagination.totalPages > 1 && (
                 <div className="mt-6 flex items-center justify-center gap-3">

@@ -108,7 +108,6 @@
   },
   "menu": {
     "title": "Unsere Speisekarte",
-    "searchPlaceholder": "Speisekarte durchsuchen...",
     "allCategories": "Alle",
     "categories": "Kategorien",
     "noItems": "Keine Gerichte gefunden.",
@@ -121,7 +120,14 @@
     "allergens": "Allergene",
     "maxSelect": "max {{max}}",
     "comment": "Note (optional)",
-    "commentPlaceholder": "E.g.: no onion, well done..."
+    "commentPlaceholder": "E.g.: no onion, well done...",
+    "subtitle": "Wähle deine Favoriten",
+    "allItems": "Alle Produkte",
+    "noItemsTitle": "Keine Produkte gefunden",
+    "noItemsDesc": "Versuche eine andere Kategorie.",
+    "clearFilters": "Alle Produkte anzeigen",
+    "noItemsInCategoryTitle": "Leere Kategorie",
+    "noItemsInCategoryDesc": "In dieser Kategorie gibt es noch keine Produkte."
   },
   "cart": {
     "title": "Ihr Warenkorb",

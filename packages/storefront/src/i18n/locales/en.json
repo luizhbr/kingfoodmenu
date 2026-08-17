@@ -108,7 +108,6 @@
   },
   "menu": {
     "title": "Our Menu",
-    "searchPlaceholder": "Search menu items...",
     "allCategories": "All",
     "categories": "Categories",
     "noItems": "No menu items found.",
@@ -121,7 +120,14 @@
     "allergens": "Allergens",
     "maxSelect": "max {{max}}",
     "comment": "Note (optional)",
-    "commentPlaceholder": "E.g.: no onion, well done..."
+    "commentPlaceholder": "E.g.: no onion, well done...",
+    "subtitle": "Choose your favorites",
+    "allItems": "All products",
+    "noItemsTitle": "No products found",
+    "noItemsDesc": "Try another category.",
+    "clearFilters": "View all products",
+    "noItemsInCategoryTitle": "Empty category",
+    "noItemsInCategoryDesc": "There are no products in this category yet."
   },
   "cart": {
     "title": "Your cart",

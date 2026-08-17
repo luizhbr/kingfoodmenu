@@ -108,7 +108,6 @@
   },
   "menu": {
     "title": "Nosso Cardápio",
-    "searchPlaceholder": "Pesquisar no cardápio...",
     "allCategories": "Todos",
     "categories": "Categorias",
     "noItems": "Nenhum item encontrado.",
@@ -121,7 +120,14 @@
     "allergens": "Alérgenos",
     "maxSelect": "máx {{max}}",
     "comment": "Observação (opcional)",
-    "commentPlaceholder": "Ex: sem cebola, bem passado..."
+    "commentPlaceholder": "Ex: sem cebola, bem passado...",
+    "subtitle": "Escolha seus favoritos",
+    "allItems": "Todos os produtos",
+    "noItemsTitle": "Nenhum produto encontrado",
+    "noItemsDesc": "Tente outra categoria.",
+    "clearFilters": "Ver todos os produtos",
+    "noItemsInCategoryTitle": "Categoria vazia",
+    "noItemsInCategoryDesc": "Não há produtos nesta categoria ainda."
   },
   "cart": {
     "title": "Seu carrinho",

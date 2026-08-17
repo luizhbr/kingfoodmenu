@@ -108,7 +108,6 @@
   },
   "menu": {
     "title": "Il Nostro Menu",
-    "searchPlaceholder": "Cerca nel menu...",
     "allCategories": "Tutto",
     "categories": "Categorie",
     "noItems": "Nessun piatto trovato.",
@@ -121,7 +120,14 @@
     "allergens": "Allergeni",
     "maxSelect": "max {{max}}",
     "comment": "Note (optional)",
-    "commentPlaceholder": "E.g.: no onion, well done..."
+    "commentPlaceholder": "E.g.: no onion, well done...",
+    "subtitle": "Scegli i tuoi preferiti",
+    "allItems": "Tutti i prodotti",
+    "noItemsTitle": "Nessun prodotto trovato",
+    "noItemsDesc": "Prova un'altra categoria.",
+    "clearFilters": "Vedi tutti i prodotti",
+    "noItemsInCategoryTitle": "Categoria vuota",
+    "noItemsInCategoryDesc": "Non ci sono ancora prodotti in questa categoria."
   },
   "cart": {
     "title": "Il Tuo Carrello",

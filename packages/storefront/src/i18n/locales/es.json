@@ -108,7 +108,6 @@
   },
   "menu": {
     "title": "Nuestro Menú",
-    "searchPlaceholder": "Buscar en el menú...",
     "allCategories": "Todos",
     "categories": "Categorías",
     "noItems": "No se encontraron elementos del menú.",
@@ -121,7 +120,14 @@
     "allergens": "Alérgenos",
     "maxSelect": "máx {{max}}",
     "comment": "Nota (opcional)",
-    "commentPlaceholder": "Ej.: sin cebolla, bien cocido..."
+    "commentPlaceholder": "Ej.: sin cebolla, bien cocido...",
+    "subtitle": "Elige tus favoritos",
+    "allItems": "Todos los productos",
+    "noItemsTitle": "Ningún producto encontrado",
+    "noItemsDesc": "Prueba otra categoría.",
+    "clearFilters": "Ver todos los productos",
+    "noItemsInCategoryTitle": "Categoría vacía",
+    "noItemsInCategoryDesc": "Aún no hay productos en esta categoría."
   },
   "cart": {
     "title": "Tu carrito",
