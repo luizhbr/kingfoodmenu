@@ -6,6 +6,7 @@ import AdminLayout from './components/AdminLayout.js';
 import RequireRole from './components/RequireRole.js';
 import Login from './pages/Login.js';
 import Dashboard from './pages/Dashboard.js';
+import Manage from './pages/Manage.js';
 import LocationList from './pages/LocationList.js';
 import LocationForm from './pages/LocationForm.js';
 import CategoryList from './pages/CategoryList.js';
@@ -80,6 +81,7 @@ function AppRoutes() {
       <Routes>
         {/* All roles */}
         <Route path="/" element={<Dashboard />} />
+        <Route path="/manage" element={<Manage />} />
         <Route path="/reports" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Reports /></RequireRole>} />
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />

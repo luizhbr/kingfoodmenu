@@ -2,55 +2,36 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import MobileBottomNav from './MobileBottomNav';
+import { PendingOrdersContext } from './PendingOrdersContext.js';
+import {
+  StorefrontIcon, ClipboardIcon, ChartBarIcon, GridIcon, FlameIcon,
+  CalendarIcon, MapPinIcon, StarIcon, TicketIcon, GiftIcon, BoltIcon,
+  CreditCardIcon, EnvelopeIcon, BookOpenIcon, PaintBrushIcon, CogIcon,
+  PrinterIcon, ScaleIcon, CodeBracketIcon, ShieldCheckIcon, UsersIcon,
+} from './AdminIcons.js';
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
 
 interface NavItem {
   path: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   roles: Role[];
-  section: 'operar' | 'gerenciar' | 'crescer';
+  section: 'loja' | 'pedidos' | 'crescer' | 'integracoes' | 'conta' | 'sistema';
   children?: { path: string; label: string }[];
 }
 
 const navItems: NavItem[] = [
-  { path: '/', label: 'Painel', icon: '\u25A1', roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'operar' },
-  { path: '/orders', label: 'Pedidos', icon: '\uD83D\uDCCB', roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'operar' },
-  {
-    path: '/reservations',
-    section: 'operar',
-    label: 'Reservas',
-    icon: '\uD83D\uDDD3',
-    roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
-    children: [
-      { path: '/reservations', label: 'Todas as reservas' },
-      { path: '/reservations/trends', label: 'Tendências' },
-    ],
-  },
-  { path: '/reviews', label: 'Avaliações', icon: '\u2B50', roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'crescer' },
-  { path: '/kitchen', label: 'Cozinha', icon: '\uD83C\uDF73', roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'operar' },
-  { path: '/locations', label: 'Locais', icon: '\u25CE', roles: ['SUPER_ADMIN', 'MANAGER'], section: 'gerenciar' },
-  {
-    path: '/menu',
-    section: 'gerenciar',
-    label: 'Cardápio',
-    icon: '\u2630',
-    roles: ['SUPER_ADMIN', 'MANAGER'],
-    children: [
-      { path: '/menu/items', label: 'Itens' },
-      { path: '/menu/categories', label: 'Categorias' },
-    ],
-  },
-  { path: '/reports', label: 'Relatórios', icon: '\uD83D\uDCCA', roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
-  { path: '/coupons', label: 'Cupons', icon: '\uD83C\uDFF7', roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
-  { path: '/automation', label: 'Automação', icon: '\u26A1', roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
-  { path: '/loyalty', label: 'Fidelidade', icon: '\uD83C\uDF81', roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
+  // LOJA
+  { path: '/', label: 'Painel', icon: <StorefrontIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'loja' },
+  { path: '/manage', label: 'Gestão', icon: <GridIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'loja' },
+  { path: '/kitchen', label: 'Cozinha', icon: <FlameIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'loja' },
+  { path: '/locations', label: 'Locais', icon: <MapPinIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'loja' },
   {
     path: '/design',
-    section: 'gerenciar',
-    label: 'Design',
-    icon: '\uD83C\uDFA8',
+    section: 'loja',
+    label: 'Personalização',
+    icon: <PaintBrushIcon className="w-5 h-5" />,
     roles: ['SUPER_ADMIN', 'MANAGER'],
     children: [
       { path: '/design/landing', label: 'Página inicial' },
@@ -62,10 +43,79 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    path: '/menu',
+    section: 'loja',
+    label: 'Cardápio',
+    icon: <BookOpenIcon className="w-5 h-5" />,
+    roles: ['SUPER_ADMIN', 'MANAGER'],
+    children: [
+      { path: '/menu/items', label: 'Itens' },
+      { path: '/menu/categories', label: 'Categorias' },
+    ],
+  },
+
+  // PEDIDOS
+  { path: '/orders', label: 'Pedidos', icon: <ClipboardIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'pedidos' },
+  {
+    path: '/reservations',
+    section: 'pedidos',
+    label: 'Reservas',
+    icon: <CalendarIcon className="w-5 h-5" />,
+    roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
+    children: [
+      { path: '/reservations', label: 'Todas as reservas' },
+      { path: '/reservations/trends', label: 'Tendências' },
+    ],
+  },
+
+  // CRESCER
+  { path: '/reports', label: 'Relatórios', icon: <ChartBarIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
+  { path: '/reviews', label: 'Avaliações', icon: <StarIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], section: 'crescer' },
+  { path: '/coupons', label: 'Cupons', icon: <TicketIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
+  { path: '/loyalty', label: 'Fidelidade', icon: <GiftIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
+  { path: '/automation', label: 'Automação', icon: <BoltIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'crescer' },
+
+  // INTEGRAÇÕES
+  { path: '/settings/printers', label: 'Impressoras', icon: <PrinterIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'integracoes' },
+  { path: '/settings/print', label: 'Modelos de impressão', icon: <ScaleIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], section: 'integracoes' },
+  { path: '/settings/payment', label: 'Pagamentos online', icon: <CreditCardIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'], section: 'integracoes' },
+  { path: '/settings/mail', label: 'E-mail', icon: <EnvelopeIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'], section: 'integracoes' },
+
+  // CONTA
+  {
+    path: '/settings',
+    section: 'conta',
+    label: 'Configurações',
+    icon: <CogIcon className="w-5 h-5" />,
+    roles: ['SUPER_ADMIN', 'MANAGER'],
+    children: [
+      { path: '/settings', label: 'Todas as configurações' },
+      { path: '/settings/general', label: 'Geral' },
+      { path: '/settings/order', label: 'Pedidos' },
+      { path: '/settings/reservation', label: 'Reservas' },
+      { path: '/settings/review', label: 'Avaliações' },
+      { path: '/settings/advanced', label: 'Avançado' },
+    ],
+  },
+  { path: '/staff', label: 'Funcionários', icon: <UsersIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'], section: 'conta' },
+
+  // SISTEMA
+  {
+    path: '/developer',
+    section: 'sistema',
+    label: 'Desenvolvedor',
+    icon: <CodeBracketIcon className="w-5 h-5" />,
+    roles: ['SUPER_ADMIN', 'MANAGER'],
+    children: [
+      { path: '/developer/metrics', label: 'Métricas da API' },
+      { path: '/developer/audit-log', label: 'Registro de auditoria' },
+    ],
+  },
+  {
     path: '/legal',
-    section: 'gerenciar',
+    section: 'sistema',
     label: 'Jurídico',
-    icon: '\u2696',
+    icon: <ShieldCheckIcon className="w-5 h-5" />,
     roles: ['SUPER_ADMIN', 'MANAGER'],
     children: [
       { path: '/legal/pages', label: 'Páginas' },
@@ -73,33 +123,6 @@ const navItems: NavItem[] = [
       { path: '/legal/consent', label: 'Registro de consentimento' },
     ],
   },
-  {
-    path: '/settings',
-    section: 'gerenciar',
-    label: 'Configurações',
-    icon: '\u2699',
-    roles: ['SUPER_ADMIN', 'MANAGER'],
-    children: [
-      { path: '/settings', label: 'Todas as configurações' },
-      { path: '/settings/general', label: 'Geral' },
-      { path: '/settings/order', label: 'Pedidos' },
-      { path: '/settings/print', label: 'Modelos de Impressão/Recibo' },
-      { path: '/settings/printers', label: 'Impressoras' },
-      { path: '/settings/review', label: 'Avaliações' },
-    ],
-  },
-  {
-    path: '/developer',
-    section: 'gerenciar',
-    label: 'Desenvolvedor',
-    icon: '\uD83D\uDEE0',
-    roles: ['SUPER_ADMIN', 'MANAGER'],
-    children: [
-      { path: '/developer/metrics', label: 'Métricas da API' },
-      { path: '/developer/audit-log', label: 'Registro de auditoria' },
-    ],
-  },
-  { path: '/staff', label: 'Funcionários', icon: '\uD83D\uDC65', roles: ['SUPER_ADMIN'], section: 'gerenciar' },
 ];
 
 const ROLE_COLORS: Record<Role, string> = {
@@ -182,12 +205,15 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
   const isManagerPlus = user && (user.role === 'SUPER_ADMIN' || user.role === 'MANAGER');
 
   const SECTION_LABELS: Record<string, string> = {
-    operar: 'Operar',
-    gerenciar: 'Gerenciar',
+    loja: 'Loja',
+    pedidos: 'Pedidos',
     crescer: 'Crescer',
+    integracoes: 'Integrações',
+    conta: 'Conta',
+    sistema: 'Sistema',
   };
 
-  const groupedNav = (['operar', 'gerenciar', 'crescer'] as const)
+  const groupedNav = (['loja', 'pedidos', 'crescer', 'integracoes', 'conta', 'sistema'] as const)
     .map((section) => ({
       section,
       items: filteredNav.filter((item) => item.section === section),
@@ -216,8 +242,13 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
                     : 'text-cream/70 hover:bg-ink/60 hover:text-cream'
                     }`}
                 >
-                  <span className="mr-3 text-base">{item.icon}</span>
-                  {item.label}
+                  <span className="mr-3 text-cream/70">{item.icon}</span>
+                  <span className="flex-1">{item.label}</span>
+                  {item.path === '/orders' && pendingCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-gold text-ink text-[10px] font-bold">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </span>
+                  )}
                 </Link>
                 {item.children && isActive && (
                   <div className="bg-ink/40">
@@ -308,8 +339,8 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <span className="lg:hidden text-sm font-semibold text-gray-800 truncate">
-              King Food
+            <span className="lg:hidden text-sm font-extrabold tracking-wide text-kf-ink truncate">
+              KING FOOD
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
@@ -398,7 +429,9 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
             )}
           </div>
         </header>
-        <main className="flex-1 p-3 sm:p-6 w-full max-w-full overflow-x-hidden pb-24 lg:pb-6">{children}</main>
+        <main className="flex-1 p-3 sm:p-6 w-full max-w-full overflow-x-hidden pb-24 lg:pb-6">
+          <PendingOrdersContext.Provider value={pendingCount}>{children}</PendingOrdersContext.Provider>
+        </main>
       </div>
       <MobileBottomNav />
     </div>

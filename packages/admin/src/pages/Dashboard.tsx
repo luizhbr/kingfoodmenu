@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { usePendingOrders } from '../components/PendingOrdersContext.js';
+import { ClipboardIcon, ChartBarIcon, BookOpenIcon, FlameIcon } from '../components/AdminIcons.js';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -67,6 +69,7 @@ export default function Dashboard() {
   const [analyticsDays, setAnálisesDays] = useState(30);
 
   const token = localStorage.getItem('token') || '';
+  const pendingCount = usePendingOrders();
 
   useEffect(() => {
     fetch(`/api/dashboard/stats`, {
@@ -156,50 +159,33 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Key Metrics — always visible */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Pedidos hoje</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{m.ordersToday}</p>
-          <p className="text-xs text-gray-400 mt-1">{m.ordersThisWeek} this week</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Receita hoje</p>
-          <p className="text-3xl font-bold text-primary-600 mt-1">${m.revenueToday.toFixed(2)}</p>
-          <p className="text-xs text-gray-400 mt-1">${m.revenueThisMonth.toFixed(2)} this month</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Reservas pendentes</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{m.pendingReservations}</p>
-          <p className="text-xs text-gray-400 mt-1">{m.totalCustomers} total customers</p>
-        </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Itens ativos no cardápio</p>
-          <p className="text-3xl font-bold text-gray-900 mt-1">{m.activeItems}</p>
-          <p className="text-xs text-gray-400 mt-1">{m.pendingReviews} reviews pending</p>
+      {/* Resumo da loja — grid 2x2 no mobile (4 cards desktop) */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4 mb-6">
+        <StatCard label="Pedidos hoje" value={String(m.ordersToday)} sub={`${m.ordersThisWeek} esta semana`} />
+        <StatCard label="Vendas hoje" value={`$${m.revenueToday.toFixed(2)}`} sub={`$${m.revenueThisMonth.toFixed(2)} este mês`} highlight />
+        <StatCard label="Ticket médio" value={m.ordersToday > 0 ? `$${(m.revenueToday / m.ordersToday).toFixed(2)}` : '—'} sub="por pedido hoje" />
+        <StatCard label="Reservas pendentes" value={String(m.pendingReservations)} sub={`${m.totalCustomers} clientes`} />
+      </div>
+
+      {/* Ações rápidas — operação diária (Nível 1) */}
+      <div className="mb-6">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-kf-muted mb-2">Ações rápidas</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <QuickAction to="/orders" icon={<ClipboardIcon className="w-5 h-5" />} label="Novo pedido" badge={pendingCount > 0 ? pendingCount : undefined} />
+          <QuickAction to="/kitchen" icon={<FlameIcon className="w-5 h-5" />} label="Cozinha" />
+          <QuickAction to="/reports" icon={<ChartBarIcon className="w-5 h-5" />} label="Relatórios" />
+          <QuickAction to="/menu/items" icon={<BookOpenIcon className="w-5 h-5" />} label="Cardápio" />
         </div>
       </div>
 
       {tab === 'overview' && (
         <>
           {/* Summary Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{m.totalOrders}</p>
-              <p className="text-xs text-gray-500">Total de pedidos</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">${m.totalRevenue.toFixed(2)}</p>
-              <p className="text-xs text-gray-500">Receita total</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">{m.ordersThisMonth}</p>
-              <p className="text-xs text-gray-500">Pedidos este mês</p>
-            </div>
-            <div className="bg-gray-50 rounded-lg p-4 text-center">
-              <p className="text-2xl font-bold text-gray-900">${m.revenueThisWeek.toFixed(2)}</p>
-              <p className="text-xs text-gray-500">Receita esta semana</p>
-            </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8">
+            <SummaryStat value={String(m.totalOrders)} label="Total de pedidos" />
+            <SummaryStat value={`$${m.totalRevenue.toFixed(2)}`} label="Receita total" />
+            <SummaryStat value={String(m.ordersThisMonth)} label="Pedidos este mês" />
+            <SummaryStat value={`$${m.revenueThisWeek.toFixed(2)}`} label="Receita esta semana" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -257,7 +243,7 @@ export default function Dashboard() {
                         <span className="text-sm font-bold text-gray-400 w-5">{idx + 1}</span>
                         <span className="text-sm font-medium text-gray-900">{item.name}</span>
                       </div>
-                      <span className="text-sm text-gray-600">{item.totalQuantity} sold</span>
+                      <span className="text-sm text-gray-600">{item.totalQuantity} vendidos</span>
                     </div>
                   ))}
                 </div>
@@ -275,6 +261,62 @@ export default function Dashboard() {
           onDaysChange={setAnálisesDays}
         />
       )}
+    </div>
+  );
+}
+
+function StatCard({
+  label,
+  value,
+  sub,
+  highlight,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div className={`rounded-kf-lg border p-4 ${highlight ? 'border-kf-primary bg-kf-primary/10' : 'border-kf-border bg-kf-surface'}`}>
+      <p className="text-xs font-medium text-kf-muted">{label}</p>
+      <p className={`text-2xl font-extrabold mt-1 ${highlight ? 'text-kf-ink' : 'text-kf-foreground'}`}>{value}</p>
+      {sub && <p className="text-[11px] text-kf-muted/70 mt-1">{sub}</p>}
+    </div>
+  );
+}
+
+function QuickAction({
+  to,
+  icon,
+  label,
+  badge,
+}: {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  badge?: number;
+}) {
+  return (
+    <Link
+      to={to}
+      className="relative flex flex-col items-center justify-center gap-1.5 rounded-kf-lg border border-kf-border bg-kf-surface p-3 min-h-[72px] transition-all hover:border-kf-primary hover:shadow-kf-card active:scale-[0.98]"
+    >
+      <span className="text-kf-ink/70">{icon}</span>
+      <span className="text-xs font-bold text-kf-foreground">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className="absolute -top-1.5 -right-1.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-kf-primary text-kf-primary-fg text-[10px] font-bold">
+          {badge > 99 ? '99+' : badge}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function SummaryStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-kf-lg bg-kf-surface-muted p-4 text-center">
+      <p className="text-2xl font-extrabold text-kf-foreground">{value}</p>
+      <p className="text-xs text-kf-muted mt-0.5">{label}</p>
     </div>
   );
 }

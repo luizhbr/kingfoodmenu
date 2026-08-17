@@ -11,8 +11,8 @@ interface SettingsCard {
 
 const cards: SettingsCard[] = [
   {
-    title: 'General',
-    description: 'Restaurant name, timezone, currency, contact info',
+    title: 'Geral',
+    description: 'Nome do restaurante, fuso, moeda e contato',
     link: '/settings/general',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -23,7 +23,7 @@ const cards: SettingsCard[] = [
   },
   {
     title: 'Pedidos',
-    description: 'Min order values, lead times, tipping, tax',
+    description: 'Pedido mínimo, tempo de preparo, gorjeta e impostos',
     link: '/settings/order',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -34,7 +34,7 @@ const cards: SettingsCard[] = [
   },
   {
     title: 'Reservas',
-    description: 'Booking intervals, stay time, auto-confirmation',
+    description: 'Intervalos de reserva, permanência e confirmação',
     link: '/settings/reservation',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -44,8 +44,8 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Mail',
-    description: 'SMTP configuration and sender settings',
+    title: 'E-mail',
+    description: 'Configuração de SMTP e remetente',
     link: '/settings/mail',
     roles: ['SUPER_ADMIN'],
     icon: (
@@ -55,8 +55,8 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Payment Gateways',
-    description: 'Stripe, PayPal, cash payment config',
+    title: 'Pagamentos',
+    description: 'Configuração de Stripe, PayPal e dinheiro',
     link: '/settings/payment',
     roles: ['SUPER_ADMIN'],
     icon: (
@@ -67,7 +67,7 @@ const cards: SettingsCard[] = [
   },
   {
     title: 'Avaliações',
-    description: 'Moderation, auto-approve, requirements',
+    description: 'Moderação, aprovação automática e requisitos',
     link: '/settings/review',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -78,7 +78,7 @@ const cards: SettingsCard[] = [
   },
   {
     title: 'Impressoras',
-    description: 'Thermal printers, print-agent pairing, real test print',
+    description: 'Impressoras térmicas, pareamento do agente e teste real',
     link: '/settings/printers',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -89,7 +89,7 @@ const cards: SettingsCard[] = [
   },
   {
     title: 'Imprimir',
-    description: 'Thermal receipt templates, logo, preview',
+    description: 'Modelos de comanda, logo e visualização',
     link: '/settings/print',
     roles: ['SUPER_ADMIN', 'MANAGER'],
     icon: (
@@ -99,8 +99,8 @@ const cards: SettingsCard[] = [
     ),
   },
   {
-    title: 'Advanced',
-    description: 'Maintenance mode and rate limiting',
+    title: 'Avançado',
+    description: 'Modo de manutenção e limites de requisição',
     link: '/settings/advanced',
     roles: ['SUPER_ADMIN'],
     icon: (
