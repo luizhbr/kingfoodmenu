@@ -89,8 +89,38 @@ export function formatDriverWhatsAppMessage(order: DriverOrder): string {
   return lines.join("\n");
 }
 
-/** Gera a URL do WhatsApp com a mensagem pré-preenchida (URL-encoded). */
+/**
+ * Gera a URL do WhatsApp com a mensagem pré-preenchida (URL-encoded).
+ * SEM número de destino: o WhatsApp abre e pede para escolher o contato
+ * (o usuário escolhe o entregador na hora). Usar wa.me/<número fixo>
+ * enviava direto para o número do King — comportamento indesejado.
+ */
 export function buildWhatsAppUrl(order: DriverOrder): string {
   const msg = formatDriverWhatsAppMessage(order);
-  return `https://wa.me/${DRIVER_WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+  return `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+}
+
+/**
+ * Compartilha a comanda pelo fluxo nativo:
+ * 1. Mobile: abre o share sheet do sistema (escolher app — WhatsApp, etc.).
+ * 2. Desktop (sem navigator.share): abre o WhatsApp Web pedindo o contato.
+ * Retorna 'shared' (compartilhado), 'cancelled' (usuário cancelou o sheet)
+ * ou 'fallback' (abriu o link no desktop).
+ */
+export function shareDriverOrder(order: DriverOrder): Promise<'shared' | 'cancelled' | 'fallback'> {
+  const msg = formatDriverWhatsAppMessage(order);
+  if (typeof navigator !== 'undefined' && typeof navigator.share === 'function') {
+    return navigator
+      .share({ title: `Comanda ${order.orderNumber}`, text: msg })
+      .then(() => 'shared' as const)
+      .catch((err) => {
+        // AbortError = usuário fechou o sheet — respeitar, não forçar nada.
+        // Outro erro (share indisponível no browser/OS) = cair no fallback.
+        if (err && (err as Error).name === 'AbortError') return 'cancelled' as const;
+        window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+        return 'fallback' as const;
+      });
+  }
+  window.open(buildWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+  return Promise.resolve('fallback');
 }

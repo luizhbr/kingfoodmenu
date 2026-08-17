@@ -162,9 +162,11 @@ describe('formatDriverWhatsAppMessage', () => {
 });
 
 describe('buildWhatsAppUrl', () => {
-  it('gera URL com número correto', () => {
+  it('gera URL SEM número fixo (usuário escolhe o contato)', () => {
     const url = buildWhatsAppUrl(baseOrder);
-    expect(url).toContain(`wa.me/${DRIVER_WHATSAPP_NUMBER}`);
+    expect(url).toContain('api.whatsapp.com/send');
+    expect(url).not.toContain('wa.me/');
+    expect(url).not.toContain(DRIVER_WHATSAPP_NUMBER);
     expect(url).toContain('text=');
   });
 
