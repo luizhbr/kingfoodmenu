@@ -34,6 +34,7 @@ const navItems: NavItem[] = [
     icon: <PaintBrushIcon className="w-5 h-5" />,
     roles: ['SUPER_ADMIN', 'MANAGER'],
     children: [
+      { path: '/design/builder', label: 'Construtor Visual' },
       { path: '/design/landing', label: 'Página inicial' },
       { path: '/design/branding', label: 'Marca' },
       { path: '/design/theme', label: 'Tema' },

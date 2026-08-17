@@ -32,6 +32,7 @@ import LegalPageForm from './pages/LegalPageForm.js';
 import CookieCategoryList from './pages/CookieCategoryList.js';
 import ConsentLog from './pages/ConsentLog.js';
 import DesignLanding from './pages/DesignLanding.js';
+import DesignBuilder from './pages/DesignBuilder.js';
 import DesignBranding from './pages/DesignBranding.js';
 import DesignTheme from './pages/DesignTheme.js';
 import DesignTemplates from './pages/DesignTemplates.js';
@@ -111,7 +112,8 @@ function AppRoutes() {
         <Route path="/automation/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><AutomationRuleForm /></RequireRole>} />
         <Route path="/automation/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><AutomationRuleForm /></RequireRole>} />
         <Route path="/loyalty" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CustomerLoyalty /></RequireRole>} />
-        <Route path="/design" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/design/landing" replace /></RequireRole>} />
+        <Route path="/design" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/design/builder" replace /></RequireRole>} />
+        <Route path="/design/builder" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignBuilder /></RequireRole>} />
         <Route path="/design/landing" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignLanding /></RequireRole>} />
         <Route path="/design/branding" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignBranding /></RequireRole>} />
         <Route path="/design/theme" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignTheme /></RequireRole>} />
