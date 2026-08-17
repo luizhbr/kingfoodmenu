@@ -45,6 +45,27 @@ const [predictions, setPredictions] = useState<any[]>([]);
 const [selectedPlace, setSelectedPlace] = useState<any>(null);
 const [loadingPredictions, setLoadingPredictions] = useState(false);
 const line1Ref = useRef<HTMLInputElement>(null);
+// Google Places Autocomplete — estados no topo (Rules of Hooks).
+// Sem VITE_GOOGLE_MAPS_API_KEY, o autocomplete fica desativado e o input
+// funciona como campo de texto normal (guard hasGoogleMaps).
+const [isLoaded, setIsLoaded] = useState(false);
+const [loadError, setLoadError] = useState<string | null>(null);
+const googleMapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
+const loader = useMemo(() => {
+  if (!googleMapsKey) return null;
+  return new Loader({ apiKey: googleMapsKey, libraries: ['places'] });
+}, [googleMapsKey]);
+const hasGoogleMaps = !!loader && !loadError && isLoaded;
+
+useEffect(() => {
+  if (!loader) return;
+  let active = true;
+  loader
+    .load()
+    .then(() => { if (active) setIsLoaded(true); })
+    .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : String(error)); });
+  return () => { active = false; };
+}, [loader]);
   const [addressErrors, setAddressErrors] = useState({ line1: '', city: '', state: '', zip: '' });
   function updateAddress(field: keyof typeof address, value: string) {
     setAddress((p) => ({ ...p, [field]: value }));
@@ -188,22 +209,6 @@ const line1Ref = useRef<HTMLInputElement>(null);
               zip: address.zip,
             }),
           });
-          const [isLoaded, setIsLoaded] = useState(false);
-const [loadError, setLoadError] = useState<string | null>(null);
-const loader = useMemo(() => new Loader({
-  apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  libraries: ['places']
-}), []);
-useEffect(() => {
-  loader.load()
-    .then(() => {
-      setIsLoaded(true);
-    })
-    .catch((error) => {
-      setLoadError(error instanceof Error ? error.message : String(error));
-    });
-}, [loader]);
-
           const data = await res.json();
           if (res.ok && data.success) {
             setDeliveryFee(data.data.fee);
@@ -394,7 +399,7 @@ useEffect(() => {
 const handleLine1Change = (event: React.ChangeEvent<HTMLInputElement>) => {
   const value = event.target.value;
   updateAddress('line1', value);
-  if (!isLoaded || loadError || !value.trim()) {
+  if (!hasGoogleMaps || !value.trim() || typeof window === 'undefined' || !window.google?.maps?.places) {
     setPredictions([]);
     return;
   }
@@ -411,6 +416,7 @@ const handleLine1Change = (event: React.ChangeEvent<HTMLInputElement>) => {
 };
 
 const handlePlaceSelect = (place: any) => {
+  if (typeof window === 'undefined' || !window.google?.maps?.places) return;
   setLoadingPredictions(true);
   const geocoder = new window.google.maps.places.PlacesService(new window.google.maps.Map(document.createElement('div')));
   geocoder.getDetails({ placeId: place.place_id }, (result, status) => {
