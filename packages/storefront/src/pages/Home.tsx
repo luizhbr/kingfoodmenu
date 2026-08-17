@@ -6,11 +6,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext.js';
 import Footer from '../components/Footer.js';
-import { CategoryPills } from '../components/CategoryPills.js';
-import { QuickSearch } from '../components/QuickSearch.js';
-import { PromoBanner } from '../components/PromoBanner.js';
-import { FeaturedProductGrid } from '../components/FeaturedProductGrid.js';
-import CartBar from '../components/CartBar.js';
 
 const WA_URL_DEF = 'https://wa.me/12673107535';
 const GROUP_URL_DEF = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
@@ -179,7 +174,6 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
   const [showHours, setShowHours] = useState(false);
-  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [scrolled, setScrolled] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
   const loadingDone = useRef(false);
@@ -190,13 +184,6 @@ export default function Home() {
     setOpenStatus(computeOpenStatus());
     const id = window.setInterval(() => setOpenStatus(computeOpenStatus()), 60_000);
     return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    fetch('/api/menu/categories')
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((d) => setCategories((d?.data || []).slice(0, 10)))
-      .catch(() => setCategories([]));
   }, []);
 
   // Splash (v3 timing)
@@ -473,27 +460,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Seções Foundation (cardápio rápido) */}
-        <QuickSearch />
-        <CategoryPills categories={categories} />
-        <PromoBanner />
-        <FeaturedProductGrid onAdd={(p) => navigate('/menu')} onClick={(p) => navigate('/menu')} />
-
-        {/* Sobre rápido */}
-        <section className="px-4 sm:px-6 pt-8 pb-10 text-center">
-          <div className="max-w-md mx-auto kf-card p-4">
-            <p className={`text-sm font-bold mb-1 ${openStatus.open ? 'text-emerald-600' : 'text-[#221D25]/50'}`}>
-              {openStatus.open ? '● ' : '○ '}
-              {openStatus.label}
-              {openStatus.detail ? ` · ${openStatus.detail}` : ''}
-            </p>
-            <p className="text-sm text-[#221D25]/55 leading-relaxed">
-              Feito pra quem sente falta do Brasil. Açaí de verdade, delivery rápido.
-            </p>
-          </div>
-        </section>
-
-        {/* Footer compacto */}
+        {/* Footer */}
         <Footer />
       </main>
 
