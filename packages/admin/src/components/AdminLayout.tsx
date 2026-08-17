@@ -4,23 +4,8 @@ import { useAuth } from '../context/AuthContext.js';
 import { PendingOrdersContext } from './PendingOrdersContext.js';
 import MobileBottomNav from './MobileBottomNav.js';
 import GlobalSearch from './GlobalSearch.js';
-import { StorefrontIcon, GridIcon, ClipboardIcon } from './AdminIcons.js';
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
-
-interface Area {
-  path: string;
-  label: string;
-  icon: React.ReactNode;
-  roles: Role[];
-}
-
-const AREAS: Area[] = [
-  { path: '/', label: 'Loja', icon: <StorefrontIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/manage', label: 'Gestão', icon: <GridIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/vender', label: 'Vender', icon: <ClipboardIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/pedidos', label: 'Pedidos', icon: <ClipboardIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-];
 
 const ROLE_COLORS: Record<Role, string> = {
   SUPER_ADMIN: 'bg-red-500/20 text-red-300',
@@ -34,6 +19,11 @@ const ROLE_LABELS: Record<Role, string> = {
   STAFF: 'Funcionário',
 };
 
+/**
+ * AdminLayout — header de CONTEXTO/FERRAMENTAS (busca, notificações, perfil).
+ * A navegação principal entre áreas (Loja/Gestão/Vender/Pedidos) é ÚNICA:
+ * fica na MobileBottomNav (fixa em todas as larguras).
+ */
 export default function AdminLayout({ children, onLogout }: { children: React.ReactNode; onLogout?: () => void }) {
   const location = useLocation();
   const { user, token } = useAuth();
@@ -72,39 +62,14 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
   }, []);
 
   const role = user?.role as Role | undefined;
-  const visibleAreas = AREAS.filter((a) => role && a.roles.includes(role));
-
-  function isAreaActive(areaPath: string): boolean {
-    if (areaPath === '/') return location.pathname === '/';
-    return location.pathname === areaPath || location.pathname.startsWith(areaPath + '/');
-  }
 
   return (
     <div className="min-h-screen bg-cream/40 flex flex-col">
       <header className="bg-cream/90 backdrop-blur-md border-b border-ink/10 sticky top-0 z-20">
         <div className="max-w-[1400px] mx-auto px-3 sm:px-6 py-2.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="text-sm sm:text-base font-extrabold tracking-wide text-kf-ink truncate">
-              KING FOOD
-            </span>
-            <nav className="hidden lg:flex items-center gap-1" aria-label="Áreas principais">
-              {visibleAreas.map((area) => (
-                <Link
-                  key={area.path}
-                  to={area.path}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-150 min-h-[40px] ${
-                    isAreaActive(area.path)
-                      ? 'bg-[#FFD100] text-[#221D25]'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                  aria-current={isAreaActive(area.path) ? 'page' : undefined}
-                >
-                  <span aria-hidden="true">{area.icon}</span>
-                  {area.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
+          <span className="text-sm sm:text-base font-extrabold tracking-wide text-kf-ink truncate">
+            KING FOOD
+          </span>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
             <GlobalSearch />
@@ -190,30 +155,13 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
             )}
           </div>
         </div>
-
-        <nav className="lg:hidden flex items-center gap-1 px-3 pb-2 overflow-x-auto no-scrollbar" aria-label="Áreas principais mobile">
-          {visibleAreas.map((area) => (
-            <Link
-              key={area.path}
-              to={area.path}
-              className={`shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all duration-150 min-h-[40px] ${
-                isAreaActive(area.path)
-                  ? 'bg-[#FFD100] text-[#221D25]'
-                  : 'text-gray-500 hover:bg-gray-100'
-              }`}
-              aria-current={isAreaActive(area.path) ? 'page' : undefined}
-            >
-              <span aria-hidden="true">{area.icon}</span>
-              {area.label}
-            </Link>
-          ))}
-        </nav>
       </header>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto p-3 sm:p-6 overflow-x-hidden pb-24 lg:pb-6">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto p-3 sm:p-6 overflow-x-hidden pb-28 lg:pb-10">
         <PendingOrdersContext.Provider value={pendingCount}>{children}</PendingOrdersContext.Provider>
       </main>
 
+      {/* Única navegação principal — fixa em todas as larguras */}
       <MobileBottomNav />
     </div>
   );
