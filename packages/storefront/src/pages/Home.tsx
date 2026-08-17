@@ -31,25 +31,6 @@ const DEFAULT_HOURS: { day: number; label: string; hours: string }[] = [
 function getHours(settings: any): { day: number; label: string; hours: string }[] {
   return settings?.landingHours?.rows || DEFAULT_HOURS;
 }
-function getSocialLinks(settings: any, onHours: () => void): any[] {
-  const stored = settings?.landingSocial || [];
-  if (stored.length > 0) {
-    return stored
-      .filter((s: any) => s.enabled !== false)
-      .map((s: any) => {
-        if (s.platform === 'hours' || s.url === '#hours') return { label: s.label, icon: s.icon || '🕐', action: 'hours' as const };
-        return { label: s.label, icon: s.icon || '🔗', href: s.url };
-      });
-  }
-  return [
-    { label: 'Cardápio', icon: '🥣', action: 'menu' as const },
-    { label: 'Grupo WhatsApp', icon: '💬', href: GROUP_URL_DEF },
-    { label: 'WhatsApp', icon: '📱', href: WA_URL_DEF },
-    { label: 'Instagram', icon: '📸', href: INSTAGRAM_URL_DEF },
-    { label: 'Google Maps', icon: '📍', href: MAPS_URL_DEF },
-    { label: 'Horários e entrega', icon: '🕐', action: 'hours' as const },
-  ];
-}
 
 type OpenStatus =
   | { open: true; label: string; detail: string }
@@ -263,13 +244,11 @@ export default function Home() {
   const bg = settings.heroSection?.backgroundImage || BG_DEF;
   const myTz = settings.landingHours?.timezone || TZ_DEF;
   const myHours = getHours(settings);
-  const mySideLinks = useMemo(() => getSocialLinks(settings, () => setShowHours(true)), [settings]);
   const myContact = settings.landingContact || {};
   const myWaUrl = myContact.whatsapp ? `https://wa.me/${myContact.whatsapp.replace(/[^\d]/g, '')}` : WA_URL_DEF;
   const myInstagramUrl = (settings.landingSocial || []).find((s: any) => s.platform?.toLowerCase() == 'instagram')?.url || INSTAGRAM_URL_DEF;
   const [loading, setLoading] = useState(true);
   const [splashExiting, setSplashExiting] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [openStatus, setOpenStatus] = useState<OpenStatus>(() => computeOpenStatus());
   const [showHours, setShowHours] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -314,9 +293,9 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    document.body.style.overflow = drawerOpen || showHours ? 'hidden' : '';
+    document.body.style.overflow = showHours ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [drawerOpen, showHours]);
+  }, [showHours]);
 
   useEffect(() => {
     const el = mainRef.current;
@@ -359,17 +338,7 @@ export default function Home() {
       >
         <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full">
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setDrawerOpen(true)}
-              className="md:hidden w-10 h-10 flex flex-col items-center justify-center gap-1.5 rounded-xl hover:bg-[#221D25]/5 transition active:scale-90"
-              aria-label="Abrir menu"
-            >
-              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
-              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
-              <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
-            </button>
-            <span className="hidden md:block text-sm font-extrabold tracking-tight text-[#221D25]">King Food</span>
+            <span className="text-sm font-extrabold tracking-tight text-[#221D25]">King Food</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
@@ -414,85 +383,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-
-      {/* Drawer overlay */}
-      <div
-        className={`fixed inset-0 z-50 bg-[#221D25]/40 transition-opacity duration-300 ${
-          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setDrawerOpen(false)}
-      />
-
-      {/* Drawer (v3) */}
-      <aside
-        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#E2DDCF] border-r border-[#221D25]/10 shadow-xl transition-transform duration-300 ease-out ${
-          drawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="px-4 py-5 flex items-center justify-between border-b border-[#221D25]/10">
-          <div className="flex items-center gap-3">
-            <img src={logo} alt="King Food" className="w-10 h-10 object-contain rounded-lg" />
-            <div>
-              <p className="font-bold text-[#221D25]">King Food</p>
-              <p className="text-xs text-[#221D25]/40">Menu</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(false)}
-            className="w-9 h-9 rounded-full bg-[#221D25]/5 flex items-center justify-center text-[#221D25] hover:bg-[#221D25]/10 transition active:scale-90"
-            aria-label="Fechar"
-          >
-            ✕
-          </button>
-        </div>
-        <nav className="py-2">
-          {mySideLinks.map((link) => {
-            if (link.action === 'hours') {
-              return (
-                <button
-                  key={link.label}
-                  type="button"
-                  onClick={() => { setDrawerOpen(false); setShowHours(true); }}
-                  className="w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
-                >
-                  <span className="mr-3">{link.icon}</span>
-                  {link.label}
-                </button>
-              );
-            }
-            if (link.action === 'menu') {
-              return (
-                <Link
-                  key={link.label}
-                  to="/menu"
-                  onClick={() => setDrawerOpen(false)}
-                  className="block w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
-                >
-                  <span className="mr-3">{link.icon}</span>
-                  {link.label}
-                </Link>
-              );
-            }
-            return (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setDrawerOpen(false)}
-                className="block w-full text-left px-5 py-4 text-sm font-medium text-[#221D25]/80 hover:bg-[#221D25] hover:text-[#E2DDCF] border-b border-[#221D25]/5 transition active:bg-[#221D25]/90"
-              >
-                <span className="mr-3">{link.icon}</span>
-                {link.label}
-              </a>
-            );
-          })}
-        </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#221D25]/10">
-          <p className="text-xs text-[#221D25]/35 text-center">Entrega em até 40 min • Columbus, OH</p>
-        </div>
-      </aside>
 
       {/* Main home content — v3 hero + destaques */}
       <main ref={mainRef} className="max-w-5xl mx-auto w-full pb-[calc(var(--kf-nav-h)+2rem)]">
