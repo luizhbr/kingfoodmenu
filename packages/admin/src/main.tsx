@@ -7,6 +7,9 @@ import RequireRole from './components/RequireRole.js';
 import Login from './pages/Login.js';
 import Dashboard from './pages/Dashboard.js';
 import Manage from './pages/Manage.js';
+import LojaHub from './pages/LojaHub.js';
+import VenderHub from './pages/VenderHub.js';
+import PedidosHub from './pages/PedidosHub.js';
 import LocationList from './pages/LocationList.js';
 import LocationForm from './pages/LocationForm.js';
 import CategoryList from './pages/CategoryList.js';
@@ -82,7 +85,10 @@ function AppRoutes() {
       <Routes>
         {/* All roles */}
         <Route path="/" element={<Dashboard />} />
+        <Route path="/loja" element={<LojaHub />} />
         <Route path="/manage" element={<Manage />} />
+        <Route path="/vender" element={<VenderHub />} />
+        <Route path="/pedidos" element={<PedidosHub />} />
         <Route path="/reports" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Reports /></RequireRole>} />
         <Route path="/orders" element={<OrderList />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
