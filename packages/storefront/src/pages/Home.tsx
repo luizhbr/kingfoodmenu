@@ -137,16 +137,6 @@ function SplashScreen({ exiting, logo: logoProp }: { exiting: boolean; logo?: st
       aria-label="Carregando King Food"
     >
       <img src={logoProp || LOGO_DEF} alt="King Food" className="w-40 h-40 sm:w-44 sm:h-44 object-contain" decoding="async" />
-      <div className="mt-7 flex items-end justify-center gap-2.5 h-12" aria-hidden>
-        {[0, 1, 2, 3, 4].map((i) => (
-          <span key={i} className="kf-acai inline-flex">
-            <AcaiBerry />
-          </span>
-        ))}
-      </div>
-      <div className="mt-6 w-36 h-1 rounded-full bg-black/15 overflow-hidden">
-        <div className="kf-splash-bar h-full w-full rounded-full bg-black/70" />
-      </div>
     </div>
   );
 }
@@ -239,9 +229,8 @@ export default function Home() {
 
       {/* Soft orbs — Yampi-like atmosphere (v3) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#FFD100]/25 blur-3xl" />
-        <div className="absolute top-1/3 -left-20 w-64 h-64 rounded-full bg-white/40 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-80 h-80 rounded-full bg-[#221D25]/[0.04] blur-3xl" />
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#FFD100]/10 blur-3xl" />
+        <div className="absolute top-1/3 -left-20 w-64 h-64 rounded-full bg-white/15 blur-3xl" />
       </div>
 
       {/* Promo bar — sorteio Instagram (v3) */}
@@ -272,13 +261,7 @@ export default function Home() {
               <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
               <span className="block w-5 h-0.5 bg-[#221D25] rounded" />
             </button>
-            <Link to="/" className="flex items-center gap-2.5 active:scale-95 transition-all duration-300" aria-label="King Food — início">
-              <img src={logo} alt="King Food" className="w-8 h-8 object-contain rounded-lg" />
-              <div className="leading-tight text-left">
-                <p className="font-bold text-sm tracking-tight text-[#221D25]">King Food</p>
-                <p className="text-[10px] text-[#221D25]/45">Açaí • Delivery</p>
-              </div>
-            </Link>
+            <span className="hidden md:block text-sm font-extrabold tracking-tight text-[#221D25]">King Food</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
@@ -316,7 +299,7 @@ export default function Home() {
             </button>
             <Link
               to="/menu"
-              className="md:hidden text-xs font-extrabold text-[#E2DDCF] bg-[#221D25] px-3.5 py-1.5 rounded-pill shadow-cta active:scale-95 transition"
+              className="md:hidden text-xs font-extrabold text-[#E2DDCF] bg-[#221D25] px-3.5 py-1.5 rounded-pill active:scale-95 transition"
             >
               Pedir
             </Link>
@@ -334,7 +317,7 @@ export default function Home() {
 
       {/* Drawer (v3) */}
       <aside
-        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#E2DDCF] border-r border-[#221D25]/10 shadow-2xl transition-transform duration-300 ease-out ${
+        className={`fixed top-0 left-0 z-50 h-full w-[80%] max-w-xs bg-[#E2DDCF] border-r border-[#221D25]/10 shadow-xl transition-transform duration-300 ease-out ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -407,9 +390,8 @@ export default function Home() {
       <main ref={mainRef} className="max-w-5xl mx-auto w-full pb-[calc(var(--kf-nav-h)+2rem)]">
         <div className="max-w-sm md:max-w-lg mx-auto flex flex-col items-center md:items-start text-center md:text-left px-5 pt-8 pb-8 md:pt-20">
           {/* Logo com glow */}
-          <div className="relative mb-4">
-            <div className="absolute inset-0 -m-3 rounded-3xl bg-white/50 blur-sm" aria-hidden />
-            <img src={logo} alt="King Food" className="relative w-20 h-20 md:w-28 md:h-28 object-contain rounded-2xl" />
+          <div className="mb-4">
+            <img src={logo} alt="King Food" className="w-20 h-20 md:w-28 md:h-28 object-contain rounded-2xl" />
           </div>
 
           <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#221D25]/45 mb-2">
@@ -451,7 +433,7 @@ export default function Home() {
             onClick={() => navigate('/menu')}
             className="w-full mt-7 kf-card p-3 flex items-center gap-3 overflow-hidden text-left hover:bg-white/70 active:scale-[0.99] transition"
           >
-            <img src={FEATURED_IMG} alt="Açaí No Abacaxi" className="shrink-0 w-16 h-16 rounded-2xl object-cover shadow-soft" />
+            <img src={FEATURED_IMG} alt="Açaí No Abacaxi" className="shrink-0 w-16 h-16 rounded-2xl object-cover" />
             <div className="min-w-0 flex-1">
               <p className="text-xs font-bold uppercase tracking-wide text-[#221D25]/40">Destaque</p>
               <p className="text-sm font-extrabold text-[#221D25] truncate">Açaí No Abacaxi 🍍</p>
@@ -469,7 +451,7 @@ export default function Home() {
         href={myWaUrl}
         target="_blank"
         rel="noopener noreferrer"
-        className="md:hidden fixed z-[45] right-4 bottom-16 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-lg shadow-[#25D366]/30 flex items-center justify-center active:scale-90 transition"
+        className="md:hidden fixed z-[45] right-4 bottom-16 w-14 h-14 rounded-full bg-[#25D366] hover:bg-[#25D366]/90 text-white shadow-md shadow-[#25D366]/20 flex items-center justify-center active:scale-90 transition"
         aria-label="WhatsApp"
       >
         <WhatsAppIcon className="w-7 h-7" />

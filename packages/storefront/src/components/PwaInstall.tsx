@@ -104,9 +104,7 @@ export default function PwaInstall() {
       }}
     >
       <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl p-3 flex items-center gap-3">
-        <div className="shrink-0 w-10 h-10 rounded-xl bg-[#FFD100] flex items-center justify-center text-xs font-black text-black">
-          KF
-        </div>
+        <img src="/logo-kingfood.png.png" alt="King Food" className="shrink-0 w-10 h-10 object-contain rounded-lg" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold text-gray-900">Instale o King Food</p>
           <p className="text-xs text-gray-500">Peça mais rápido da tela inicial</p>
