@@ -1,5 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import OrderCard from '../components/OrderCard.js';
+import SoundActivationBanner from '../components/SoundActivationBanner.js';
+import { useOrderAlerts } from '../lib/useOrderAlerts.js';
 
 interface Order {
   id: string;
@@ -30,38 +32,88 @@ export default function OrderList() {
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
+  const [activatingSound, setActivatingSound] = useState(false);
+  const firstLoadRef = useRef(true);
 
   const token = localStorage.getItem('token') || '';
 
-  const loadOrders = useCallback(() => {
-    setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: '20' });
-    if (statusFilter) params.set('status', statusFilter);
-    if (typeFilter) params.set('orderType', typeFilter);
+  const {
+    soundEnabled,
+    showActivateBanner,
+    alertNewOrders,
+    enableSound,
+    markAllAsSeen,
+    requestSoundActivation,
+  } = useOrderAlerts();
 
-    fetch(`/api/orders?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Falha ao carregar pedidos');
-        return res.json();
+  const loadOrders = useCallback(
+    (silent = false) => {
+      if (!silent) setLoading(true);
+      const params = new URLSearchParams({ page: String(page), limit: '20' });
+      if (statusFilter) params.set('status', statusFilter);
+      if (typeFilter) params.set('orderType', typeFilter);
+
+      fetch(`/api/orders?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
       })
-      .then((data) => {
-        setOrders(data.data);
-        setPagination(data.pagination);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [page, statusFilter, typeFilter, token]);
+        .then((res) => {
+          if (!res.ok) throw new Error('Falha ao carregar pedidos');
+          return res.json();
+        })
+        .then((data) => {
+          setOrders(data.data);
+          setPagination(data.pagination);
+          if (firstLoadRef.current) {
+            // Primeira carga: pedidos antigos NÃO tocam o som.
+            markAllAsSeen(data.data);
+            firstLoadRef.current = false;
+          } else {
+            // Cargas seguintes: alerta somente pedidos realmente novos.
+            alertNewOrders(data.data);
+          }
+        })
+        .catch((err) => setError(err.message))
+        .finally(() => setLoading(false));
+    },
+    [page, statusFilter, typeFilter, token, alertNewOrders]
+  );
 
   useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadOrders]);
 
-  // Atualização otimista pós-ação — refetch da lista para sincronizar status
-  const handleStatusChange = useCallback((_orderId: string, _newStatus: string) => {
-    loadOrders();
+  // Polling de novos pedidos (15s) — mesmo padrão do KitchenDisplay.
+  // Sem Socket.IO no Vercel serverless; intervalo limpo no unmount, nunca duplicado.
+  useEffect(() => {
+    const timer = setInterval(() => loadOrders(true), 15000);
+    return () => clearInterval(timer);
   }, [loadOrders]);
+
+  // Ao entrar no painel de pedidos: inicializa o áudio o quanto antes.
+  useEffect(() => {
+    requestSoundActivation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSoundActivate = useCallback(() => {
+    setActivatingSound(true);
+    // Um pequeno delay para o estado visual; o clique desbloqueia o AudioContext.
+    setTimeout(() => {
+      const ok = enableSound();
+      if (ok) {
+        try { sessionStorage.setItem('kf_sound_activated', '1'); } catch { /* ignore */ }
+      }
+      setActivatingSound(false);
+    }, 200);
+  }, [enableSound]);
+
+  const handleStatusChange = useCallback(
+    (_orderId: string, _newStatus: string) => {
+      loadOrders(true);
+    },
+    [loadOrders]
+  );
 
   return (
     <div>
@@ -71,6 +123,19 @@ export default function OrderList() {
           <span className="text-sm text-gray-500">{pagination.total} pedido{pagination.total !== 1 ? 's' : ''}</span>
         )}
       </div>
+
+      {/* Alerta sonoro: ativação explícita exigida pelo navegador */}
+      {showActivateBanner && !soundEnabled && (
+        <SoundActivationBanner onActivate={handleSoundActivate} activating={activatingSound} />
+      )}
+      {soundEnabled && (
+        <div
+          role="status"
+          className="mb-4 px-4 py-2 rounded-kf-lg border border-kf-border bg-kf-surface text-sm text-kf-foreground/80"
+        >
+          🔊 Alertas sonoros ativados
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">

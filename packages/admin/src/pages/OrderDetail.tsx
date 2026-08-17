@@ -111,30 +111,43 @@ export default function OrderDetailPage() {
 
   return (
     <div>
-      <div className="flex items-center gap-4 mb-6">
-        <Link to="/orders" className="text-gray-400 hover:text-gray-600" aria-label="Voltar para pedidos">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-          </svg>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pedido {order.orderNumber}</h1>
-          <p className="text-sm text-gray-500">
-            {new Date(order.createdAt).toLocaleString()}
-          </p>
+      <div className="flex flex-col gap-3 mb-6 sm:flex-row sm:items-center sm:gap-4">
+        {/* Título + data — ocupa a linha toda no mobile, quebra o número em múltiplas linhas */}
+        <div className="flex items-start gap-3 min-w-0 flex-1">
+          <Link
+            to="/orders"
+            className="shrink-0 mt-0.5 p-2 -m-2 text-gray-400 hover:text-gray-600 rounded-lg min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Voltar para pedidos"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </Link>
+          <div className="min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">
+              Pedido {order.orderNumber}
+            </h1>
+            <p className="text-sm text-gray-500">
+              {new Date(order.createdAt).toLocaleString()}
+            </p>
+          </div>
         </div>
-        <span className={`ml-auto text-sm px-3 py-1 rounded-full font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
-          {order.status.replace(/_/g, ' ')}
-        </span>
-        <button
-          onClick={() => void printOrder(order.id, 'REPRINT')}
-          disabled={printState.status === 'sending'}
-          className="min-h-[44px] px-4 py-2 rounded-lg bg-ink text-cream text-sm font-bold hover:bg-ink/90 disabled:opacity-50 inline-flex items-center gap-2"
-          aria-label={`Imprimir pedido ${order.orderNumber}`}
-        >
-          <span aria-hidden>🖨</span>
-          {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir'}
-        </button>
+
+        {/* Status + imprimir — quebram para a linha seguinte no mobile */}
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${STATUS_COLORS[order.status] || 'bg-gray-100'}`}>
+            {order.status.replace(/_/g, ' ')}
+          </span>
+          <button
+            onClick={() => void printOrder(order.id, 'REPRINT')}
+            disabled={printState.status === 'sending'}
+            className="min-h-[44px] px-4 py-2 rounded-lg bg-ink text-cream text-sm font-bold hover:bg-ink/90 disabled:opacity-50 inline-flex items-center gap-2"
+            aria-label={`Imprimir pedido ${order.orderNumber}`}
+          >
+            <span aria-hidden>🖨</span>
+            {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir pedido'}
+          </button>
+        </div>
       </div>
 
       {printState.status !== 'idle' && (
