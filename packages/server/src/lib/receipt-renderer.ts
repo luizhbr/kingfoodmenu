@@ -69,8 +69,12 @@ export function renderReceipt(order: RenderOrder, templateInput?: Partial<Receip
   const out: string[] = [];
 
   // ── Header ──
+  // Logo placeholder only — the data URL (raster) is stored in the template
+  // config but must NEVER leak into the printed text. The agent's ESC/POS
+  // builder is text-only (no raster support), so a full data:image/... URL
+  // would print as garbage. Mirrors the admin preview's `[LOGO]` marker.
   if (template.showLogo && template.logoUrl) {
-    out.push(`[LOGO:${template.logoUrl}]`);
+    out.push('[LOGO]');
   }
   if (template.showBusinessName && template.businessName) {
     out.push(align(template.businessName, W, 'center'));
