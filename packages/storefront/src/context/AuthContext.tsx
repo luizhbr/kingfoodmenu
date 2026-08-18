@@ -45,7 +45,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!res.ok) throw new Error('Invalid token');
         return res.json();
       })
-      .then((data) => setUser(data.data))
+      .then((data) => {
+        // /api/auth/me returns { type: 'customer'|'staff', user|customer }.
+        // Normalize to the storefront User shape: only customers are "logged in"
+        // here; a staff token (shared localStorage key with /admin) must NOT
+        // hide the guest fields on checkout.
+        const d = data.data;
+        if (d?.type === 'customer' && d.customer) setUser(d.customer);
+        else if (d?.type === 'staff' && d.user) setUser(null);
+        else setUser(d); // legacy/direct shape fallback
+      })
       .catch(() => logout())
       .finally(() => setIsLoading(false));
   }, [token, logout]);
