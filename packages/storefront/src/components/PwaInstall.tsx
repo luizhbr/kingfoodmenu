@@ -98,7 +98,7 @@ export default function PwaInstall() {
 
   return (
     <div
-      className="fixed left-0 right-0 z-[90] px-4 pointer-events-none md:bottom-4"
+      className="fixed left-0 right-0 z-kf-bottom-nav px-4 pointer-events-none md:bottom-4"
       style={{
         bottom: 'calc(4.5rem + env(safe-area-inset-bottom))',
       }}

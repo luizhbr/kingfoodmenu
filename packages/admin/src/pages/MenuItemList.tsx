@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api.js';
 
@@ -35,6 +35,11 @@ export default function MenuItemList() {
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const deletingRef = useRef(false);
 
   const fetchItems = (page = 1) => {
     setLoading(true);
@@ -61,13 +66,22 @@ export default function MenuItemList() {
     fetchItems(1);
   }, [search, categoryFilter]);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Delete "${name}"?`)) return;
+  const confirmDelete = async () => {
+    if (!deleteTarget || deletingRef.current) return; // impede duplo clique
+    deletingRef.current = true;
+    setDeleting(true);
+    setDeleteError(null);
     try {
-      await api.delete(`/menu/items/${id}`);
+      const res = await api.delete<{ success: boolean; message?: string }>(`/menu/items/${deleteTarget.id}`);
+      // Feedback real da API: exclusão física OU soft-delete (item preservado em histórico)
+      setNotice(res.message || 'Item excluído');
+      setDeleteTarget(null);
       fetchItems(pagination.page);
     } catch (err: any) {
-      alert(err.message);
+      setDeleteError(err.message || 'Falha ao excluir o item');
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
     }
   };
 
@@ -105,6 +119,13 @@ export default function MenuItemList() {
           ))}
         </select>
       </div>
+
+      {notice && (
+        <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-lg mb-4 flex items-center justify-between gap-3" role="status">
+          <span className="text-sm">{notice}</span>
+          <button onClick={() => setNotice(null)} className="text-emerald-700 hover:text-emerald-900 text-sm font-medium shrink-0" aria-label="Fechar aviso">✕</button>
+        </div>
+      )}
 
       {error && <p className="text-red-600 mb-4">Error: {error}</p>}
 
@@ -178,7 +199,11 @@ export default function MenuItemList() {
                     </td>
                     <td data-label="Ações" className="px-6 py-4 whitespace-nowrap text-right text-sm space-x-3">
                       <Link to={`/menu/items/${item.id}`} className="text-primary-600 hover:text-primary-900 font-medium" aria-label={`Edit ${item.name}`}>Editar</Link>
-                      <button onClick={() => handleDelete(item.id, item.name)} className="text-red-600 hover:text-red-900 font-medium" aria-label={`Delete ${item.name}`}>Excluir</button>
+                      <button
+                        onClick={() => { setDeleteError(null); setDeleteTarget({ id: item.id, name: item.name }); }}
+                        className="text-red-600 hover:text-red-900 font-medium"
+                        aria-label={`Delete ${item.name}`}
+                      >Excluir</button>
                     </td>
                   </tr>
                 ))}
@@ -208,6 +233,57 @@ export default function MenuItemList() {
             </div>
           )}
         </>
+      )}
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
+          onClick={deleting ? undefined : () => setDeleteTarget(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Excluir item"
+        >
+          <div className="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-center mb-4">
+              <div className="w-14 h-14 rounded-full bg-red-100 flex items-center justify-center">
+                <svg className="w-7 h-7 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 text-center mb-2">Excluir item?</h2>
+            <p className="text-sm text-gray-600 text-center mb-4">
+              O item <span className="font-semibold text-gray-900">{deleteTarget.name}</span> será removido do cardápio.
+              {deleteTarget.name && ' Pedidos históricos que contenham este item são preservados.'}
+            </p>
+            {deleteError && (
+              <div className="mb-4 px-3 py-2 rounded-lg bg-red-50 text-red-700 text-sm" role="alert">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 min-h-[44px] px-4 py-2.5 rounded-lg border border-gray-300 text-sm font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition"
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmDelete()}
+                disabled={deleting}
+                className="flex-1 min-h-[44px] px-4 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-50 transition inline-flex items-center justify-center gap-2"
+              >
+                {deleting && (
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                )}
+                {deleting ? 'Excluindo...' : 'Excluir item'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

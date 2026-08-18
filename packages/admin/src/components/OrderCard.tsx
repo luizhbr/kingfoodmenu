@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
+import OrderActionModal from './OrderActionModal.js';
+import { useOrderActions, isActionable } from '../lib/useOrderActions.js';
 import DriverWhatsAppModal from './DriverWhatsAppModal.js';
 import type { DriverOrder } from '../lib/formatDriverMessage.js';
 
@@ -101,6 +103,8 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState('');
   const { printState, printOrder } = usePrintOrder();
+  const { actionState, runOrderAction, resetState } = useOrderActions();
+  const [actionModal, setActionModal] = useState<'reject' | 'cancel' | null>(null);
   const [driverOrder, setDriverOrder] = useState<DriverOrder | null>(null);
 
   const isPending = order.status === 'PENDING';
@@ -275,6 +279,18 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
             <span aria-hidden>🖨</span>
             {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir'}
           </button>
+          {isActionable(order.status) && (
+            <button
+              type="button"
+              onClick={() => setActionModal(order.status === 'PENDING' ? 'reject' : 'cancel')}
+              disabled={actionState.status === 'pending'}
+              className="flex-1 min-h-[44px] flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 text-red-700 text-sm font-semibold hover:bg-red-100 transition-colors disabled:opacity-50"
+              aria-label={`${order.status === 'PENDING' ? 'Rejeitar' : 'Cancelar'} pedido ${order.orderNumber}`}
+            >
+              <span aria-hidden>✕</span>
+              {order.status === 'PENDING' ? 'Rejeitar' : 'Cancelar'}
+            </button>
+          )}
           {order.orderType === 'DELIVERY' && (
             <button
               type="button"
@@ -365,6 +381,27 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
             </>
           )}
         </div>
+      )}
+
+      {actionModal && (
+        <OrderActionModal
+          orderNumber={order.orderNumber}
+          type={actionModal}
+          busy={actionState.status === 'pending'}
+          error={actionState.status === 'error' ? actionState.message : ''}
+          onConfirm={async () => {
+            const ok = await runOrderAction(order.id, actionModal);
+            if (ok) {
+              onStatusChange(order.id, 'CANCELLED');
+              setActionModal(null);
+              resetState();
+            }
+          }}
+          onClose={() => {
+            setActionModal(null);
+            resetState();
+          }}
+        />
       )}
     </div>
   );

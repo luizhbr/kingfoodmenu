@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
+import OrderActionModal from '../components/OrderActionModal.js';
+import { useOrderActions, isActionable, actionLabelFor } from '../lib/useOrderActions.js';
 
 interface OrderItem {
   id: string;
@@ -53,6 +55,8 @@ export default function OrderDetailPage() {
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
   const { printState, printOrder } = usePrintOrder();
+  const { actionState, runOrderAction, resetState } = useOrderActions();
+  const [actionModal, setActionModal] = useState<'reject' | 'cancel' | null>(null);
 
   const token = localStorage.getItem('token') || '';
 
@@ -147,6 +151,17 @@ export default function OrderDetailPage() {
             <span aria-hidden>🖨</span>
             {printState.status === 'sending' ? 'Imprimindo...' : 'Imprimir pedido'}
           </button>
+          {isActionable(order.status) && (
+            <button
+              onClick={() => setActionModal(order.status === 'PENDING' ? 'reject' : 'cancel')}
+              disabled={actionState.status === 'pending'}
+              className="min-h-[44px] px-4 py-2 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm font-bold hover:bg-red-100 disabled:opacity-50 inline-flex items-center gap-2 transition"
+              aria-label={`${actionLabelFor(order.status)} ${order.orderNumber}`}
+            >
+              <span aria-hidden>✕</span>
+              {actionLabelFor(order.status)}
+            </button>
+          )}
         </div>
       </div>
 
@@ -287,6 +302,28 @@ export default function OrderDetailPage() {
           </div>
         </div>
       </div>
+
+      {actionModal && (
+        <OrderActionModal
+          orderNumber={order.orderNumber}
+          type={actionModal}
+          busy={actionState.status === 'pending'}
+          error={actionState.status === 'error' ? actionState.message : ''}
+          onConfirm={async () => {
+            const ok = await runOrderAction(order.id, actionModal);
+            if (ok) {
+              // Sincroniza com o backend: o status exibido deve refletir a API
+              setOrder((prev) => (prev ? { ...prev, status: 'CANCELLED' } : prev));
+              setActionModal(null);
+              resetState();
+            }
+          }}
+          onClose={() => {
+            setActionModal(null);
+            resetState();
+          }}
+        />
+      )}
     </div>
   );
 }

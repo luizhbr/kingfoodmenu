@@ -87,6 +87,28 @@ html.dark {
   }
 }
 
+@keyframes kf-fab-pop {
+  0% {
+    transform: scale(0.6);
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.kf-fab-pop {
+  animation: kf-fab-pop 0.25s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-fab-pop {
+    animation: none;
+  }
+}
+
 @keyframes kf-bar-fill {
   from {
     transform: scaleX(0);
