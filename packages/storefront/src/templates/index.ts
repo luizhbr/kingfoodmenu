@@ -8,7 +8,11 @@ export type TemplateId =
   | 'rustic'
   | 'vibrant'
   | 'sleek'
-  | 'retro';
+  | 'retro'
+  | 'tropical'
+  | 'artdeco'
+  | 'streetfood'
+  | 'japandi';
 
 export interface TemplateMeta {
   id: TemplateId;
@@ -27,6 +31,10 @@ export const templates: TemplateMeta[] = [
   { id: 'vibrant', name: 'Vibrant', description: 'Gradient header, animated gradient hero, colorful feature cards' },
   { id: 'sleek', name: 'Sleek', description: 'Dark header, dark hero with glow effects, dark feature cards' },
   { id: 'retro', name: 'Retro', description: 'Vintage-style header, retro hero with badges, nostalgic CTA' },
+  { id: 'tropical', name: 'Tropical', description: 'Palm green + coral, sunburst hero, rounded sunny CTA' },
+  { id: 'artdeco', name: 'Art Deco', description: 'Gold-on-black geometric luxury, sunburst hero, classic serif' },
+  { id: 'streetfood', name: 'Street Food', description: 'Neon red + graphite, skewed sticker CTAs, urban energy' },
+  { id: 'japandi', name: 'Japandi', description: 'Wabi-sabi minimalism, enso circle, calm natural palette' },
 ];
 
 export function getTemplate(id: string): TemplateMeta {

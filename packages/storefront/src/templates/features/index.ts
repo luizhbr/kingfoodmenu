@@ -15,6 +15,10 @@ const RusticFeatures = lazy(() => import('./RusticFeatures.js'));
 const VibrantFeatures = lazy(() => import('./VibrantFeatures.js'));
 const SleekFeatures = lazy(() => import('./SleekFeatures.js'));
 const RetroFeatures = lazy(() => import('./RetroFeatures.js'));
+const TropicalFeatures = lazy(() => import('./TropicalFeatures.js'));
+const ArtDecoFeatures = lazy(() => import('./ArtDecoFeatures.js'));
+const StreetFoodFeatures = lazy(() => import('./StreetFoodFeatures.js'));
+const JapandiFeatures = lazy(() => import('./JapandiFeatures.js'));
 
 export const featureVariants: Partial<Record<TemplateId, React.ComponentType<FeaturesProps>>> = {
   elegant: ElegantFeatures,
@@ -26,4 +30,8 @@ export const featureVariants: Partial<Record<TemplateId, React.ComponentType<Fea
   vibrant: VibrantFeatures,
   sleek: SleekFeatures,
   retro: RetroFeatures,
+  tropical: TropicalFeatures,
+  artdeco: ArtDecoFeatures,
+  streetfood: StreetFoodFeatures,
+  japandi: JapandiFeatures,
 };

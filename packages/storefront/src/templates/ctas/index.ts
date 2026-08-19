@@ -15,6 +15,10 @@ const RusticCta = lazy(() => import('./RusticCta.js'));
 const VibrantCta = lazy(() => import('./VibrantCta.js'));
 const SleekCta = lazy(() => import('./SleekCta.js'));
 const RetroCta = lazy(() => import('./RetroCta.js'));
+const TropicalCta = lazy(() => import('./TropicalCta.js'));
+const ArtDecoCta = lazy(() => import('./ArtDecoCta.js'));
+const StreetFoodCta = lazy(() => import('./StreetFoodCta.js'));
+const JapandiCta = lazy(() => import('./JapandiCta.js'));
 
 export const ctaVariants: Partial<Record<TemplateId, React.ComponentType<CtaProps>>> = {
   elegant: ElegantCta,
@@ -26,6 +30,10 @@ export const ctaVariants: Partial<Record<TemplateId, React.ComponentType<CtaProp
   vibrant: VibrantCta,
   sleek: SleekCta,
   retro: RetroCta,
+  tropical: TropicalCta,
+  artdeco: ArtDecoCta,
+  streetfood: StreetFoodCta,
+  japandi: JapandiCta,
 };
 
 export type { CtaProps };

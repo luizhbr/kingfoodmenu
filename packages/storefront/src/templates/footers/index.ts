@@ -10,6 +10,10 @@ const RusticFooter = lazy(() => import('./RusticFooter.js'));
 const VibrantFooter = lazy(() => import('./VibrantFooter.js'));
 const SleekFooter = lazy(() => import('./SleekFooter.js'));
 const RetroFooter = lazy(() => import('./RetroFooter.js'));
+const TropicalFooter = lazy(() => import('./TropicalFooter.js'));
+const ArtDecoFooter = lazy(() => import('./ArtDecoFooter.js'));
+const StreetFoodFooter = lazy(() => import('./StreetFoodFooter.js'));
+const JapandiFooter = lazy(() => import('./JapandiFooter.js'));
 
 export const footerVariants: Partial<Record<TemplateId, React.ComponentType>> = {
   elegant: ElegantFooter,
@@ -21,4 +25,8 @@ export const footerVariants: Partial<Record<TemplateId, React.ComponentType>> = 
   vibrant: VibrantFooter,
   sleek: SleekFooter,
   retro: RetroFooter,
+  tropical: TropicalFooter,
+  artdeco: ArtDecoFooter,
+  streetfood: StreetFoodFooter,
+  japandi: JapandiFooter,
 };

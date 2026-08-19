@@ -15,6 +15,10 @@ const RusticHero = lazy(() => import('./RusticHero.js'));
 const VibrantHero = lazy(() => import('./VibrantHero.js'));
 const SleekHero = lazy(() => import('./SleekHero.js'));
 const RetroHero = lazy(() => import('./RetroHero.js'));
+const TropicalHero = lazy(() => import('./TropicalHero.js'));
+const ArtDecoHero = lazy(() => import('./ArtDecoHero.js'));
+const StreetFoodHero = lazy(() => import('./StreetFoodHero.js'));
+const JapandiHero = lazy(() => import('./JapandiHero.js'));
 
 export const heroVariants: Partial<Record<TemplateId, React.ComponentType<HeroProps>>> = {
   elegant: ElegantHero,
@@ -26,4 +30,8 @@ export const heroVariants: Partial<Record<TemplateId, React.ComponentType<HeroPr
   vibrant: VibrantHero,
   sleek: SleekHero,
   retro: RetroHero,
+  tropical: TropicalHero,
+  artdeco: ArtDecoHero,
+  streetfood: StreetFoodHero,
+  japandi: JapandiHero,
 };

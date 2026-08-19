@@ -17,6 +17,10 @@ const templates: TemplateDef[] = [
   { id: 'vibrant', name: 'Vibrant', description: 'Gradient header, animated gradient hero, colorful feature cards' },
   { id: 'sleek', name: 'Sleek', description: 'Dark header, dark hero with glow effects, dark feature cards' },
   { id: 'retro', name: 'Retro', description: 'Vintage-style header, retro hero with badges, nostalgic CTA' },
+  { id: 'tropical', name: 'Tropical', description: 'Palm green + coral, sunburst hero, rounded sunny CTA' },
+  { id: 'artdeco', name: 'Art Deco', description: 'Gold-on-black geometric luxury, sunburst hero, classic serif' },
+  { id: 'streetfood', name: 'Street Food', description: 'Neon red + graphite, skewed sticker CTAs, urban energy' },
+  { id: 'japandi', name: 'Japandi', description: 'Wabi-sabi minimalism, enso circle, calm natural palette' },
 ];
 
 /* ── Miniature CSS previews ─────────────────────────────────── */
@@ -279,6 +283,110 @@ function PreviewRetro() {
   );
 }
 
+
+function PreviewTropical() {
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#FFF8E7' }}>
+      <div className="h-1" style={{ background: 'linear-gradient(90deg, #FFD166, #FF6B6A, #FFD166)' }} />
+      <div className="h-2 flex items-center px-1.5" style={{ backgroundColor: '#0B6E4F' }}>
+        <div className="w-4 h-1 rounded-full bg-[#FFD166]" />
+        <div className="flex gap-0.5 ml-auto"><div className="w-1.5 h-0.5 rounded-full bg-white/50" /><div className="w-1.5 h-0.5 rounded-full bg-white/50" /></div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#0B6E4F' }}>
+        <div className="w-6 h-1 rounded-full bg-[#FFD166] mb-1" />
+        <div className="w-8 h-0.5 rounded-full bg-white/60 mb-1.5" />
+        <div className="flex gap-1">
+          <div className="w-4 h-1.5 rounded-full bg-[#FFD166]" />
+          <div className="w-4 h-1.5 rounded-full border border-white/50" />
+        </div>
+      </div>
+      <div className="py-1 px-1.5 flex gap-1 justify-center" style={{ backgroundColor: '#FFF8E7' }}>
+        <div className="w-4 h-3 rounded-lg bg-white border-t-2 border-[#FFD166] shadow-sm" />
+        <div className="w-4 h-3 rounded-lg bg-white border-t-2 border-[#FFD166] shadow-sm" />
+        <div className="w-4 h-3 rounded-lg bg-white border-t-2 border-[#FFD166] shadow-sm" />
+      </div>
+      <div className="h-1.5" style={{ background: 'linear-gradient(90deg, #FF6B6A, #FFD166, #0B6E4F)' }} />
+    </div>
+  );
+}
+
+function PreviewArtDeco() {
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#111111' }}>
+      <div className="h-2 flex items-center px-1.5 border-b" style={{ backgroundColor: '#111111', borderColor: '#C9A227' }}>
+        <div className="w-4 h-1 bg-[#C9A227]" style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }} />
+        <div className="flex gap-0.5 ml-auto"><div className="w-1.5 h-0.5 bg-[#C9A227]/50" /><div className="w-1.5 h-0.5 bg-[#C9A227]/50" /></div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#111111' }}>
+        <div className="flex items-center gap-1 mb-1"><span className="w-3 h-px bg-[#C9A227]" /><span className="text-[#C9A227] text-[5px]">◆</span><span className="w-3 h-px bg-[#C9A227]" /></div>
+        <div className="w-8 h-1 bg-[#C9A227] mb-0.5" />
+        <div className="w-6 h-0.5 bg-[#C9A227]/40 mb-1.5" />
+        <div className="flex gap-1">
+          <div className="w-4 h-1.5 bg-[#C9A227]" />
+          <div className="w-4 h-1.5 border border-[#C9A227]" />
+        </div>
+      </div>
+      <div className="py-1 px-1.5 flex gap-1 justify-center" style={{ backgroundColor: '#F5EFE0' }}>
+        <div className="w-4 h-3 bg-white border-y border-[#C9A227]" />
+        <div className="w-4 h-3 bg-white border-y border-[#C9A227]" />
+        <div className="w-4 h-3 bg-white border-y border-[#C9A227]" />
+      </div>
+      <div className="h-1" style={{ background: 'linear-gradient(90deg, #7A1E1E, #C9A227, #7A1E1E)' }} />
+    </div>
+  );
+}
+
+function PreviewStreetFood() {
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#1A1A1A' }}>
+      <div className="h-2 flex items-center px-1.5" style={{ backgroundColor: '#1A1A1A', borderBottom: '3px solid #FF2E2E' }}>
+        <div className="w-4 h-1.5 bg-[#FF2E2E] -skew-x-6" />
+        <div className="flex gap-0.5 ml-auto"><div className="w-1.5 h-0.5 bg-white/50" /><div className="w-1.5 h-0.5 bg-white/50" /></div>
+      </div>
+      <div className="flex-1 flex flex-col items-start justify-center px-2" style={{ backgroundColor: '#1A1A1A' }}>
+        <div className="w-5 h-1 bg-[#FF2E2E] -skew-x-6 mb-1" />
+        <div className="w-8 h-1 bg-white mb-1" />
+        <div className="w-5 h-0.5 bg-white/40 mb-1.5" />
+        <div className="flex gap-1">
+          <div className="w-4 h-1.5 bg-[#FF2E2E] -skew-x-6 shadow-[2px_2px_0_#FFD600]" />
+          <div className="w-4 h-1.5 border border-white/50" />
+        </div>
+      </div>
+      <div className="py-1 px-1.5 flex gap-1 justify-center" style={{ backgroundColor: '#F5F5F0' }}>
+        <div className="w-4 h-3 bg-white border-l-4 border-[#FF2E2E]" />
+        <div className="w-4 h-3 bg-white border-l-4 border-[#FF2E2E]" />
+        <div className="w-4 h-3 bg-white border-l-4 border-[#FF2E2E]" />
+      </div>
+      <div className="h-1 bg-[#FF2E2E]" />
+    </div>
+  );
+}
+
+function PreviewJapandi() {
+  return (
+    <div className="w-full h-full flex flex-col overflow-hidden" style={{ backgroundColor: '#F7F5EE' }}>
+      <div className="h-2 flex items-center justify-center px-1.5 border-b" style={{ backgroundColor: '#F7F5EE', borderColor: '#D8CFC0' }}>
+        <div className="w-4 h-0.5 bg-[#2E2B28]/70" />
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center" style={{ backgroundColor: '#F7F5EE' }}>
+        <div className="w-3 h-3 rounded-full border border-[#A63D2E]/40 mb-1.5" style={{ borderRightColor: 'transparent' }} />
+        <div className="w-7 h-0.5 bg-[#2E2B28]/60 mb-1" />
+        <div className="w-5 h-0.5 bg-[#2E2B28]/30 mb-1.5" />
+        <div className="flex gap-2 items-center">
+          <span className="w-2 h-px bg-[#A63D2E]" />
+          <span className="w-3 h-0.5 bg-[#A63D2E]" />
+        </div>
+      </div>
+      <div className="py-1 px-1.5 flex gap-2 justify-center" style={{ backgroundColor: '#FFFFFF' }}>
+        <div className="w-4 h-3 rounded-full border border-[#D8CFC0] flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-[#A63D2E]/50" /></div>
+        <div className="w-4 h-3 rounded-full border border-[#D8CFC0] flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-[#A63D2E]/50" /></div>
+        <div className="w-4 h-3 rounded-full border border-[#D8CFC0] flex items-center justify-center"><div className="w-1 h-1 rounded-full bg-[#A63D2E]/50" /></div>
+      </div>
+      <div className="h-1.5" style={{ backgroundColor: '#2E2B28' }} />
+    </div>
+  );
+}
+
 const previewComponents: Record<string, React.FC> = {
   classic: PreviewClassic,
   elegant: PreviewElegant,
@@ -290,6 +398,10 @@ const previewComponents: Record<string, React.FC> = {
   vibrant: PreviewVibrant,
   sleek: PreviewSleek,
   retro: PreviewRetro,
+  tropical: PreviewTropical,
+  artdeco: PreviewArtDeco,
+  streetfood: PreviewStreetFood,
+  japandi: PreviewJapandi,
 };
 
 /* ── Main page ──────────────────────────────────────────────── */
