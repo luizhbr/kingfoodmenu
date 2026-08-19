@@ -14,7 +14,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
 }) => {
   const buttonClass = size === 'sm'
     ? 'h-8 w-8 rounded-kf-md'
-    : 'h-10 w-10 rounded-kf-lg';
+    : 'h-11 w-11 rounded-kf-lg';
   return (
     <div className="flex items-center gap-1" aria-label="Seletor de quantidade">
       <button
@@ -32,7 +32,7 @@ export const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       <span
         className={cn(
           'flex items-center justify-center font-semibold text-kf-foreground tabular-nums',
-          size === 'sm' ? 'h-8 w-8 text-sm' : 'h-10 w-10 text-base'
+          size === 'sm' ? 'h-8 w-8 text-sm' : 'h-11 w-11 text-base'
         )}
         aria-live="polite"
       >
