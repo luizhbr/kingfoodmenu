@@ -157,7 +157,7 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-[1400px] mx-auto p-3 sm:p-6 overflow-x-hidden pb-28 lg:pb-10">
+      <main className="flex-1 w-full max-w-[1400px] mx-auto p-3 sm:p-6 overflow-x-hidden main-safe-bottom">
         <PendingOrdersContext.Provider value={pendingCount}>{children}</PendingOrdersContext.Provider>
       </main>
 

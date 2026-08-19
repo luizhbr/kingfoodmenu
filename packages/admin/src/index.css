@@ -230,3 +230,8 @@ input, select, textarea {
     animation: none;
   }
 }
+
+/* ── Navbar fixa: reserva espaco para a bottom nav em TODAS as larguras ── */
+.main-safe-bottom {
+  padding-bottom: calc(4.75rem + env(safe-area-inset-bottom)) !important;
+}
