@@ -17,7 +17,7 @@ export interface MainNavItem {
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
   { path: '/loja', label: 'Loja', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/manage', label: 'Gestão', icon: <GridIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/vender', label: 'Vender', icon: <CreditCardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/vender', label: 'Vendas', icon: <CreditCardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
   { path: '/pedidos', label: 'Pedidos', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
 ];
 

@@ -63,7 +63,7 @@ export default function VenderHub() {
   return (
     <div>
       <header className="mb-6">
-        <h1 className="text-2xl font-extrabold text-kf-foreground">Vender</h1>
+        <h1 className="text-2xl font-extrabold text-kf-foreground">Vendas</h1>
         <p className="text-sm text-kf-muted mt-1">Operação de vendas, pagamentos e impressão</p>
       </header>
 
