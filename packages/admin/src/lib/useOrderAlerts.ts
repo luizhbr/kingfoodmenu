@@ -179,12 +179,17 @@ export function useOrderAlerts() {
   /** Pede ativação do som (chamado ao entrar no painel de pedidos). */
   const requestSoundActivation = useCallback(() => {
     const activated = sessionStorage.getItem('kf_sound_activated') === '1';
-    // Storage NÃO é prova de áudio ativo: o AudioContext morre no reload da aba,
-    // então "ativado" salvo não garante som. Só confia se houver contexto REAL.
-    const hasLiveCtx = !!audioCtxRef.current;
+    // Storage NÃO é prova de áudio ativo: o AudioContext morre ao reload da aba,
+    // então "ativado" salvo não garante áudio. Só confia se houver contexto REAL rodando.
+    const ctx = audioCtxRef.current;
+    const hasLiveCtx = !!ctx && ctx.state === 'running';
     if (soundEnabled || (activated && hasLiveCtx)) {
       setShowActivateBanner(false);
       return;
+    }
+    // Estado antigo preso (storage '1' sem contexto): limpa para o banner voltar.
+    if (activated && !hasLiveCtx) {
+      try { sessionStorage.removeItem('kf_sound_activated'); } catch { /* ignore */ }
     }
     // Tenta (re)criar; se o navegador permitir autoplay, ativa direto.
     const ok = enableSound();
