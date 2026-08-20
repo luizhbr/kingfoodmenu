@@ -42,6 +42,7 @@ export default function MenuRing() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
   const [visible, setVisible] = useState<Set<string>>(new Set());
@@ -100,7 +101,32 @@ export default function MenuRing() {
     return () => obs.disconnect();
   }, [loading, categories, items, search]);
 
-  const toggleCategory = (id: string) => {
+    const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deletingRef = useRef(false);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await api.delete<{ success: boolean; message?: string }>(
+        `/menu/items/${deleteTarget.id}?force=true`
+      );
+      setDeleteTarget(null);
+      fetchAll();
+      setNotice(res.message || 'Item excluído');
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir o item');
+    } finally {
+      deletingRef.current = false;
+      setDeleting(false);
+    }
+  };
+
+const toggleCategory = (id: string) => {
     setExpanded((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
@@ -171,6 +197,12 @@ export default function MenuRing() {
       {/* Conteúdo com scroll (parallax) */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5 space-y-4">
+          {notice && (
+            <div className="bg-emerald-50 border border-emerald-200 text-emerald-800 px-4 py-3 rounded-kf-lg flex items-center justify-between gap-3 animate-fade-in" role="status">
+              <span className="text-sm font-medium">{notice}</span>
+              <button onClick={() => setNotice(null)} className="text-emerald-700 hover:text-emerald-900 text-sm font-bold shrink-0" aria-label="Fechar aviso">✕</button>
+            </div>
+          )}
           {loading && (
             <div className="flex justify-center py-16">
               <div className="w-8 h-8 border-4 border-kf-primary/20 border-t-kf-primary rounded-full animate-spin" role="status" aria-label="Carregando" />
@@ -236,18 +268,22 @@ export default function MenuRing() {
                         <p className="text-kf-muted text-sm py-4 text-center">Sem produtos nesta categoria.</p>
                       )}
                       {catProds.map((item, idx) => (
-                        <Link
+                        <div
                           key={item.id}
-                          to={`/menu/items/${item.id}`}
                           data-animate
                           data-id={`item-${item.id}`}
                           style={{ transitionDelay: `${Math.min(idx * 40, 200)}ms` }}
-                          className={`group flex items-stretch gap-3 bg-kf-surface border rounded-kf-lg overflow-hidden hover:shadow-kf-elevated hover:border-kf-primary/40 transition-all duration-300 ${
+                          className={`group relative flex items-stretch gap-3 bg-kf-surface border rounded-kf-lg overflow-hidden hover:shadow-kf-elevated hover:border-kf-primary/40 transition-all duration-200 ${
                             item.isActive ? 'border-kf-border' : 'border-kf-border/50 opacity-60'
                           } ${
                             visible.has(`item-${item.id}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                           }`}
                         >
+                          <Link
+                            to={`/menu/items/${item.id}`}
+                            className="flex items-stretch gap-3 flex-1 min-w-0"
+                            aria-label={`Editar ${item.name}`}
+                          >
                           {/* Thumbnail */}
                           <div className="relative w-24 sm:w-28 shrink-0 bg-kf-surface-muted overflow-hidden">
                             {item.image ? (
@@ -290,7 +326,20 @@ export default function MenuRing() {
                               </span>
                             </div>
                           </div>
-                        </Link>
+                          </Link>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDeleteTarget({ id: item.id, name: item.name });
+                            }}
+                            className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-kf-danger/90 text-white text-sm font-bold hover:bg-kf-danger active:scale-90 transition-all opacity-0 group-hover:opacity-100"
+                            title={`Excluir ${item.name}`}
+                            aria-label={`Excluir ${item.name}`}
+                          >
+                            ×
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -300,6 +349,41 @@ export default function MenuRing() {
           })}
         </div>
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-kf-ink/50 backdrop-blur-sm p-4" role="dialog" aria-modal="true" aria-label="Confirmar exclusão">
+          <div className="bg-kf-surface rounded-kf-xl shadow-kf-elevated max-w-sm w-full p-5 animate-fade-in">
+            <h3 className="font-extrabold text-kf-foreground text-lg mb-1">Excluir produto?</h3>
+            <p className="text-sm text-kf-muted mb-4">
+              <span className="font-bold text-kf-foreground">{deleteTarget.name}</span> será apagado
+              definitivamente (incluindo histórico de pedidos).
+            </p>
+            {deleteError && (
+              <p className="bg-kf-danger/10 text-kf-danger text-sm p-3 rounded-kf-md mb-3" role="alert">{deleteError}</p>
+            )}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-kf-lg border border-kf-border text-sm font-semibold text-kf-foreground hover:bg-kf-bg transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-kf-lg bg-kf-danger text-white text-sm font-bold hover:bg-kf-danger/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              >
+                {deleting ? (
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                ) : (
+                  'Excluir'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

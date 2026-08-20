@@ -227,12 +227,30 @@ export async function deleteMenuItem(req: Request<{ id: string }>, res: Response
     return;
   }
 
+  const force = req.query.force === 'true';
   const orderItemCount = await prisma.orderItem.count({ where: { menuItemId: id } });
-  if (orderItemCount > 0) {
+  if (orderItemCount > 0 && !force) {
     // Soft-delete: keep historical order data intact, remove from public menu.
     await prisma.menuItem.update({ where: { id }, data: { isActive: false } });
     auditLog(req, { action: 'update', entity: 'MenuItem', entityId: id, details: { name: existing.name, reason: 'has_orders' } });
     res.json({ success: true, message: 'Item removed from menu (preserved in historical orders)' });
+    return;
+  }
+
+  if (orderItemCount > 0) {
+    // Exclusão FORÇADA: remove o item de vez, incluindo o histórico de pedidos
+    // (relações em cascata manual: order_item_options -> order_items -> options -> item).
+    await prisma.$transaction([
+      prisma.orderItemOption.deleteMany({ where: { orderItem: { menuItemId: id } } }),
+      prisma.orderItem.deleteMany({ where: { menuItemId: id } }),
+      prisma.menuOptionValue.deleteMany({ where: { menuOption: { menuItemId: id } } }),
+      prisma.menuOption.deleteMany({ where: { menuItemId: id } }),
+      prisma.menuItemMealtime.deleteMany({ where: { menuItemId: id } }),
+      prisma.menuItemAllergen.deleteMany({ where: { menuItemId: id } }),
+      prisma.menuItem.delete({ where: { id } }),
+    ]);
+    auditLog(req, { action: 'delete', entity: 'MenuItem', entityId: id, details: { name: existing.name, reason: 'force_with_orders', orderItemsRemoved: orderItemCount } });
+    res.json({ success: true, message: 'Menu item permanently deleted (including historical orders)' });
     return;
   }
 
