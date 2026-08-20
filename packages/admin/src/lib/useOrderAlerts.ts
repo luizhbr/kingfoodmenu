@@ -80,7 +80,10 @@ export function useOrderAlerts() {
     const ctx = audioCtxRef.current;
     if (!ctx) return;
     if (ctx.state !== 'running') {
-      ctx.resume().catch(() => {});
+      // Tenta retomar; se for gesto do usuário o resume resolve e toca.
+      void ctx.resume().then(() => {
+        if (audioCtxRef.current === ctx) playChime();
+      }).catch(() => {});
       return;
     }
     const now = ctx.currentTime;
@@ -124,7 +127,7 @@ export function useOrderAlerts() {
     [detectNewOrders, playChime, soundEnabled]
   );
 
-  /** Ativa o som (chamado pelo clique no botão). Retorna true se o áudio ficou pronto. */
+  /** Ativa o áudio (chamado pelo clique no botão). Retorna true se o áudio ficou PRONTO (running). */
   const enableSound = useCallback((): boolean => {
     try {
       if (!audioCtxRef.current) {
@@ -134,6 +137,12 @@ export function useOrderAlerts() {
       }
       const ctx = audioCtxRef.current;
       if (ctx.state === 'suspended') void ctx.resume();
+      // Só considera ativo se o contexto está REALMENTE rodando — sem gesto do
+      // usuário o navegador mantém suspenso (autoplay policy) e nada tocaria.
+      if (ctx.state !== 'running') {
+        setShowActivateBanner(true);
+        return false;
+      }
       setSoundEnabled(true);
       setShowActivateBanner(false);
       // chime de confirmação extremamente curto
@@ -170,11 +179,14 @@ export function useOrderAlerts() {
   /** Pede ativação do som (chamado ao entrar no painel de pedidos). */
   const requestSoundActivation = useCallback(() => {
     const activated = sessionStorage.getItem('kf_sound_activated') === '1';
-    if (soundEnabled || activated) {
+    // Storage NÃO é prova de áudio ativo: o AudioContext morre no reload da aba,
+    // então "ativado" salvo não garante som. Só confia se houver contexto REAL.
+    const hasLiveCtx = !!audioCtxRef.current;
+    if (soundEnabled || (activated && hasLiveCtx)) {
       setShowActivateBanner(false);
       return;
     }
-    // Tenta inicializar; se o navegador permitir autoplay, ativa direto.
+    // Tenta (re)criar; se o navegador permitir autoplay, ativa direto.
     const ok = enableSound();
     if (ok) {
       try { sessionStorage.setItem('kf_sound_activated', '1'); } catch { /* ignore */ }
