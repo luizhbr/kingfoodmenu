@@ -901,3 +901,60 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
 
   res.json({ success: true, data: updated });
 }
+
+// ── Exclusão de pedidos (individual + lote) ─────────────────────────────────
+// Remove o pedido de vez, limpando em cascata todas as relações.
+// Pedidos são dados operacionais; a exclusão é intencional (staff).
+
+async function deleteOrderRelations(orderId: string) {
+  await prisma.$transaction([
+    prisma.orderItemOption.deleteMany({ where: { orderItem: { orderId } } }),
+    prisma.orderItem.deleteMany({ where: { orderId } }),
+    prisma.payment.deleteMany({ where: { orderId } }),
+    prisma.trackingEvent.deleteMany({ where: { orderId } }),
+    prisma.review.deleteMany({ where: { orderId } }),
+    prisma.loyaltyTransaction.deleteMany({ where: { orderId } }),
+    prisma.cashbackTransaction.deleteMany({ where: { orderId } }),
+    prisma.printJob.deleteMany({ where: { orderId } }),
+    prisma.orderAttribution.deleteMany({ where: { orderId } }),
+    prisma.couponUsage.deleteMany({ where: { orderId } }),
+    prisma.order.delete({ where: { id: orderId } }),
+  ]);
+}
+
+export async function deleteOrder(req: Request<{ id: string }>, res: Response): Promise<void> {
+  const { id } = req.params;
+
+  const existing = await prisma.order.findUnique({ where: { id } });
+  if (!existing) {
+    res.status(404).json({ success: false, error: 'Order not found' });
+    return;
+  }
+
+  await deleteOrderRelations(id);
+  auditLog(req, { action: 'delete', entity: 'Order', entityId: id, details: { orderNumber: existing.orderNumber } });
+  res.json({ success: true, message: 'Order deleted' });
+}
+
+export async function deleteOrdersBatch(req: Request, res: Response): Promise<void> {
+  const { ids } = req.body as { ids?: string[] };
+  if (!Array.isArray(ids) || ids.length === 0) {
+    res.status(400).json({ success: false, error: 'ids array required' });
+    return;
+  }
+  if (ids.length > 100) {
+    res.status(400).json({ success: false, error: 'Max 100 orders per batch' });
+    return;
+  }
+
+  const existing = await prisma.order.findMany({ where: { id: { in: ids } }, select: { id: true, orderNumber: true } });
+  const foundIds = existing.map((o) => o.id);
+  const missing = ids.filter((i) => !foundIds.includes(i));
+
+  for (const oid of foundIds) {
+    await deleteOrderRelations(oid);
+  }
+
+  auditLog(req, { action: 'delete', entity: 'Order', entityId: foundIds.join(','), details: { count: foundIds.length, orderNumbers: existing.map((o) => o.orderNumber) } });
+  res.json({ success: true, message: `${foundIds.length} order(s) deleted`, deleted: foundIds.length, missing });
+}

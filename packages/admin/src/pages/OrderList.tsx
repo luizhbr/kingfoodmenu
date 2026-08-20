@@ -33,6 +33,11 @@ export default function OrderList() {
   const [statusFilter, setStatusFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [activatingSound, setActivatingSound] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [batchMode, setBatchMode] = useState(false);
   const firstLoadRef = useRef(true);
 
   const token = localStorage.getItem('token') || '';
@@ -87,7 +92,54 @@ export default function OrderList() {
   // Sem Socket.IO no Vercel serverless; intervalo limpo no unmount, nunca duplicado.
   useEffect(() => {
     const timer = setInterval(() => loadOrders(true), 15000);
-    return () => clearInterval(timer);
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (prev.size === orders.length) return new Set();
+      return new Set(orders.map((o) => o.id));
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/orders/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Falha ao excluir pedido');
+      setDeleteTarget(null);
+      loadOrders(true);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir o pedido');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmBatchDelete = async () => {
+    if (selected.size === 0 || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch('/api/orders/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      if (!res.ok) throw new Error('Falha ao excluir pedidos');
+      setSelected(new Set());
+      setBatchMode(false);
+      loadOrders(true);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir os pedidos');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  return () => clearInterval(timer);
   }, [loadOrders]);
 
   // Ao entrar no painel de pedidos: inicializa o áudio o quanto antes.
@@ -114,6 +166,62 @@ export default function OrderList() {
     },
     [loadOrders]
   );
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    setSelected((prev) => {
+      if (prev.size === orders.length) return new Set();
+      return new Set(orders.map((o) => o.id));
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch(`/api/orders/${deleteTarget.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Falha ao excluir pedido');
+      setDeleteTarget(null);
+      loadOrders(true);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir o pedido');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const confirmBatchDelete = async () => {
+    if (selected.size === 0 || deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch('/api/orders/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ids: [...selected] }),
+      });
+      if (!res.ok) throw new Error('Falha ao excluir pedidos');
+      setSelected(new Set());
+      setBatchMode(false);
+      loadOrders(true);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir os pedidos');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -167,6 +275,33 @@ export default function OrderList() {
         </select>
       </div>
 
+      {/* Barra de seleção em lote */}
+      {orders.length > 0 && (
+        <div className="flex items-center gap-3 mb-4 p-3 bg-kf-surface border border-kf-border rounded-kf-lg">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={selected.size === orders.length && orders.length > 0}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+              aria-label="Marcar todos os pedidos"
+            />
+            <span className="text-sm font-medium text-kf-foreground">Marcar todos</span>
+          </label>
+          {selected.size > 0 && (
+            <>
+              <span className="text-sm text-kf-muted">{selected.size} selecionado{selected.size !== 1 ? 's' : ''}</span>
+              <button
+                onClick={() => setBatchMode(true)}
+                className="ml-auto px-3 py-1.5 bg-kf-danger text-white text-xs font-bold rounded-kf-md hover:bg-kf-danger/90 transition-colors"
+              >
+                Excluir selecionados
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       {loading && (
         <div className="flex justify-center py-12">
           <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
@@ -186,12 +321,22 @@ export default function OrderList() {
           {/* Grid de cards — mobile-first, expande no tablet/desktop */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {orders.map((order) => (
-              <OrderCard
-                key={order.id}
-                order={order}
-                token={token}
-                onStatusChange={handleStatusChange}
-              />
+              <div key={order.id} className={`relative rounded-kf-lg transition-all ${selected.has(order.id) ? 'ring-2 ring-primary-500' : ''}`}>
+                <label className="absolute top-2 left-2 z-10 flex items-center justify-center w-6 h-6 bg-white/90 rounded-md shadow-sm cursor-pointer" aria-label={`Selecionar ${order.orderNumber}`}>
+                  <input
+                    type="checkbox"
+                    checked={selected.has(order.id)}
+                    onChange={() => toggleSelect(order.id)}
+                    className="w-4 h-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                  />
+                </label>
+                <OrderCard
+                  order={order}
+                  token={token}
+                  onStatusChange={handleStatusChange}
+                  onDelete={() => setDeleteTarget({ id: order.id, name: order.orderNumber })}
+                />
+              </div>
             ))}
           </div>
 
@@ -214,6 +359,60 @@ export default function OrderList() {
             </div>
           )}
         </>
+      )}
+      {/* Modal excluir individual */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Confirmar exclusão">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Excluir pedido?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              <span className="font-bold text-gray-900">{deleteTarget.name}</span> será apagado
+              definitivamente (incluindo histórico, pagamentos e impressões).
+            </p>
+            {deleteError && <p className="bg-red-50 text-red-600 text-sm p-3 rounded-md mb-3" role="alert">{deleteError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setDeleteTarget(null); setDeleteError(null); }}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >Cancelar</button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              >
+                {deleting ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" /> : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal excluir em lote */}
+      {batchMode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Confirmar exclusão em lote">
+          <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5">
+            <h3 className="font-bold text-gray-900 text-lg mb-1">Excluir {selected.size} pedido{selected.size !== 1 ? 's' : ''}?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              Os pedidos selecionados serão apagados definitivamente (incluindo histórico, pagamentos e impressões).
+            </p>
+            {deleteError && <p className="bg-red-50 text-red-600 text-sm p-3 rounded-md mb-3" role="alert">{deleteError}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setBatchMode(false); setDeleteError(null); }}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+              >Cancelar</button>
+              <button
+                onClick={confirmBatchDelete}
+                disabled={deleting}
+                className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+              >
+                {deleting ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" /> : 'Excluir todos'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

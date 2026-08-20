@@ -86,6 +86,7 @@ interface Props {
   order: OrderSummary;
   token: string;
   onStatusChange: (orderId: string, newStatus: string) => void;
+  onDelete?: (orderId: string) => void;
 }
 
 /**
@@ -95,7 +96,7 @@ interface Props {
  * - Ação primária contextual em 1 toque (GNOME) — PATCH /orders/:id/status.
  * - PENDING ganha pulso dourado (hero moment).
  */
-export default function OrderCard({ order, token, onStatusChange }: Props) {
+export default function OrderCard({ order, token, onStatusChange, onDelete }: Props) {
   const [expanded, setExpanded] = useState(false);
   const [detail, setDetail] = useState<OrderDetail | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
@@ -220,6 +221,20 @@ export default function OrderCard({ order, token, onStatusChange }: Props) {
             </span>
           </div>
           <span className="text-xs text-gray-400 shrink-0">{timeAgo(order.createdAt)}</span>
+          {onDelete && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(order.id);
+              }}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-red-50 text-red-600 text-sm font-bold hover:bg-red-600 hover:text-white active:scale-90 transition-all"
+              title={`Excluir ${order.orderNumber}`}
+              aria-label={`Excluir ${order.orderNumber}`}
+            >
+              ×
+            </button>
+          )}
         </div>
 
         <div className="flex items-center justify-between gap-2 mt-1.5">
