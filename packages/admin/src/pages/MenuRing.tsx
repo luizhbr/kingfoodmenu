@@ -226,14 +226,14 @@ export default function MenuRing() {
                   </svg>
                 </button>
 
-                {/* Produtos da categoria */}
+                {/* Produtos da categoria — 1 por linha (estilo Olaclick) */}
                 <div className={`grid gap-3 mt-3 transition-all duration-500 ease-out ${
                   isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
                 }`}>
                   <div className="overflow-hidden">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-2.5">
                       {catProds.length === 0 && (
-                        <p className="text-kf-muted text-sm col-span-full py-4 text-center">Sem produtos nesta categoria.</p>
+                        <p className="text-kf-muted text-sm py-4 text-center">Sem produtos nesta categoria.</p>
                       )}
                       {catProds.map((item, idx) => (
                         <Link
@@ -242,13 +242,14 @@ export default function MenuRing() {
                           data-animate
                           data-id={`item-${item.id}`}
                           style={{ transitionDelay: `${Math.min(idx * 40, 200)}ms` }}
-                          className={`group bg-kf-surface border rounded-kf-lg overflow-hidden hover:shadow-kf-elevated hover:-translate-y-0.5 transition-all duration-300 ${
+                          className={`group flex items-stretch gap-3 bg-kf-surface border rounded-kf-lg overflow-hidden hover:shadow-kf-elevated hover:border-kf-primary/40 transition-all duration-300 ${
                             item.isActive ? 'border-kf-border' : 'border-kf-border/50 opacity-60'
                           } ${
                             visible.has(`item-${item.id}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                           }`}
                         >
-                          <div className="relative aspect-[4/3] bg-kf-surface-muted overflow-hidden">
+                          {/* Thumbnail */}
+                          <div className="relative w-24 sm:w-28 shrink-0 bg-kf-surface-muted overflow-hidden">
                             {item.image ? (
                               <img
                                 src={item.image}
@@ -257,31 +258,34 @@ export default function MenuRing() {
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
                             ) : (
-                              <div className="w-full h-full flex items-center justify-center text-4xl text-kf-muted/40" aria-hidden="true">
+                              <div className="w-full h-full flex items-center justify-center text-3xl text-kf-muted/40" aria-hidden="true">
                                 🍧
                               </div>
                             )}
                             {!item.isActive && (
-                              <span className="absolute top-2 left-2 bg-kf-danger text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              <span className="absolute top-1.5 left-1.5 bg-kf-danger text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                                 Inativo
                               </span>
                             )}
-                            {item._count.options > 0 && (
-                              <span className="absolute bottom-2 right-2 bg-kf-ink/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur">
-                                {item._count.options} {item._count.options === 1 ? 'variante' : 'variantes'}
-                              </span>
-                            )}
                           </div>
-                          <div className="p-3">
-                            <h3 className="font-bold text-kf-foreground text-sm leading-snug line-clamp-2">{item.name}</h3>
-                            {item.description && (
-                              <p className="text-xs text-kf-muted mt-1 line-clamp-2">{item.description}</p>
-                            )}
-                            <div className="flex items-center justify-between mt-2">
-                              <span className="font-extrabold text-kf-primary text-sm">
+                          {/* Info */}
+                          <div className="flex-1 min-w-0 py-2.5 pr-3 flex flex-col justify-center">
+                            <div className="flex items-start justify-between gap-2">
+                              <h3 className="font-bold text-kf-foreground text-sm leading-snug line-clamp-2">{item.name}</h3>
+                              <span className="font-extrabold text-kf-primary text-sm shrink-0">
                                 ${item.price.toFixed(2)}
                               </span>
-                              <span className="text-kf-muted text-xs group-hover:text-kf-primary transition-colors">
+                            </div>
+                            {item.description && (
+                              <p className="text-xs text-kf-muted mt-0.5 line-clamp-2">{item.description}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1.5">
+                              {item._count.options > 0 && (
+                                <span className="bg-kf-primary/10 text-kf-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                  {item._count.options} {item._count.options === 1 ? 'variante' : 'variantes'}
+                                </span>
+                              )}
+                              <span className="text-kf-muted text-xs group-hover:text-kf-primary transition-colors ml-auto">
                                 Editar →
                               </span>
                             </div>
