@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /* ════════════════════════════════════════════════════════════════════
    KING FOOD — VISUAL EXPERIENCE BUILDER (FASE 3)
@@ -474,267 +474,65 @@ function TextField({ label, value, onChange }: { label: string; value: string; o
 
 interface PreviewProps {
   cfg: BuilderConfig;
-  selected: ElementKey;
-  onSelect: (k: ElementKey) => void;
+  /** Opcional: preview agora é iframe real do storefront (não usa seleção inline). */
+  selected?: ElementKey;
+  onSelect?: (k: ElementKey) => void;
 }
 
-function PreviewLanding({ cfg, selected, onSelect }: PreviewProps) {
-  const c = cfg.colors;
-  const t = cfg.typography;
-  const l = cfg.landing;
-  const font = FONTS.find((f) => f.id === t.font)?.stack || FONTS[0].stack;
-  const headingSize = Math.round(t.baseSize * t.headingScale * 2.2);
-  const btnRadius = cfg.components.buttonStyle === 'pill' ? 9999 : cfg.components.buttonStyle === 'rounded' ? 12 : 4;
-
-  const outline = (key: ElementKey) => ({
-    outline: selected === key ? `2px solid ${c.primary}` : '1px dashed transparent',
-    outlineOffset: 1,
-    cursor: 'pointer',
-    transition: 'outline-color 0.15s ease',
-  });
-
-  return (
-    <div style={{ fontFamily: font, background: c.background, color: c.text, fontSize: t.baseSize * 0.8 }}>
-      {/* Header */}
-      <div
-        style={{ ...outline('header'), background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        onClick={() => onSelect('header')}
-        data-el="header"
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ width: 18, height: 18, borderRadius: 5, background: c.primary, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: contrastText(c.primary), fontSize: 9, fontWeight: 800 }}>K</span>
-          <span style={{ fontWeight: 800, fontSize: 12 }}>King Food</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          {cfg.nav.showCart && (
-            <span style={{ width: 22, height: 22, borderRadius: 6, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🛒</span>
-          )}
-          <span
-            style={{ ...outline('button'), padding: '4px 10px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 10, fontWeight: 700 }}
-            onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
-            data-el="button"
-          >
-            {l.ctaText}
-          </span>
-        </div>
-      </div>
-
-      {/* Hero */}
-      <div
-        style={{ ...outline('hero'), padding: '16px 12px', textAlign: l.ctaPosition === 'center' ? 'center' : 'left' }}
-        onClick={() => onSelect('hero')}
-        data-el="hero"
-      >
-        {l.heroImage && (
-          <div style={{ height: 70, borderRadius: 12, background: `linear-gradient(135deg, ${c.primary}33, ${c.secondary}33)`, marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28 }} aria-hidden>
-            🍧
-          </div>
-        )}
-        <div style={{ fontSize: headingSize, fontWeight: Number(t.weight), lineHeight: 1.1, letterSpacing: '-0.02em' }}>{l.heroTitle}</div>
-        <div style={{ color: c.textMuted, fontSize: 11, marginTop: 4 }}>{l.heroSubtitle}</div>
-        <div style={{ marginTop: 10, display: 'flex', gap: 6, justifyContent: l.ctaPosition === 'center' ? 'center' : 'flex-start' }}>
-          <span
-            style={{ ...outline('button'), padding: '6px 14px', borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), fontSize: 11, fontWeight: 700 }}
-            onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
-            data-el="button"
-          >
-            {l.ctaText} →
-          </span>
-          <span style={{ padding: '6px 14px', borderRadius: btnRadius, border: `1px solid ${c.border}`, color: c.text, fontSize: 11 }}>Ver cardápio</span>
-        </div>
-      </div>
-
-      {/* Features */}
-      {l.showFeatures && (
-        <div
-          style={{ ...outline('features'), padding: '0 12px 14px' }}
-          onClick={() => onSelect('features')}
-          data-el="features"
-        >
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Destaques</div>
-          <div style={{ display: 'grid', gridTemplateColumns: `repeat(${Math.min(l.featuresCount, 3)}, 1fr)`, gap: 8 }}>
-            {Array.from({ length: Math.min(l.featuresCount, 3) }).map((_, i) => (
-              <div key={i} style={{
-                background: c.surface, border: cfg.components.cardBorder ? `1px solid ${c.border}` : 'none',
-                borderRadius: cfg.components.cardRadius, padding: 10,
-                boxShadow: cfg.components.cardShadow === 'soft' ? '0 4px 12px rgba(0,0,0,0.08)' : cfg.components.cardShadow === 'subtle' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none',
-              }}>
-                <div style={{ fontSize: 16 }}>🍓</div>
-                <div style={{ fontSize: 10, fontWeight: 700, marginTop: 4 }}>Fresco</div>
-                <div style={{ fontSize: 8, color: c.textMuted }}>Ingredientes selecionados</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Footer */}
-      {l.showFooter && (
-        <div
-          style={{ ...outline('footer'), background: l.footerStyle === 'dark' ? '#221D25' : c.surface, color: l.footerStyle === 'dark' ? '#E2DDCF' : c.text, padding: '12px', textAlign: 'center', fontSize: 9 }}
-          onClick={() => onSelect('footer')}
-          data-el="footer"
-        >
-          <div style={{ fontWeight: 800, fontSize: 11 }}>King Food</div>
-          <div style={{ opacity: 0.7 }}>Açaí brasileiro · Columbus, OH</div>
-          <div style={{ marginTop: 6, display: 'flex', justifyContent: 'center', gap: 8 }}>
-            <span>Cardápio</span><span>·</span><span>Locais</span><span>·</span><span>Instagram</span>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function PreviewMenu({ cfg, selected, onSelect }: PreviewProps) {
-  const c = cfg.colors;
-  const t = cfg.typography;
-  const m = cfg.menu;
-  const font = FONTS.find((f) => f.id === t.font)?.stack || FONTS[0].stack;
-  const btnRadius = cfg.components.buttonRadius;
-  const catRadius = cfg.components.categoryRadius;
-  const catStyle = cfg.components.categoryStyle;
-  const cardRadius = cfg.components.cardRadius;
-  const imgRadius = cfg.components.imageRadius;
-  const cols = m.columnsMobile;
-  const items = [
-    { name: 'Açaí King Tradicional', price: 13.9, emoji: '🍧' },
-    { name: 'Smash Burger Duplo', price: 15.5, emoji: '🍔' },
-    { name: 'Açaí com Nutella', price: 16.9, emoji: '🍫' },
-    { name: 'Coxinha', price: 6.5, emoji: '🥟' },
-  ];
-
-  const outline = (key: ElementKey) => ({
-    outline: selected === key ? `2px solid ${c.primary}` : '1px dashed transparent',
-    outlineOffset: 1,
-    cursor: 'pointer',
-    transition: 'outline-color 0.15s ease',
-  });
-
-  return (
-    <div style={{ fontFamily: font, background: c.background, color: c.text, fontSize: t.baseSize * 0.8 }}>
-      {/* Header */}
-      <div
-        style={{ ...outline('header'), background: c.surface, borderBottom: `1px solid ${c.border}`, padding: '8px 12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        onClick={() => onSelect('header')}
-        data-el="header"
-      >
-        <span style={{ fontWeight: 800, fontSize: 12 }}>King Food</span>
-        <span style={{ width: 22, height: 22, borderRadius: 6, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10 }}>🛒</span>
-      </div>
-
-      {/* Category pills */}
-      <div
-        style={{ ...outline('category'), padding: '8px 12px 0', display: 'flex', gap: 6, overflow: 'hidden' }}
-        onClick={() => onSelect('category')}
-        data-el="category"
-      >
-        {['Todos', 'Açaí', 'Burgers', 'Bebidas'].map((cat, i) => {
-          const active = i === 1;
-          const bg = active ? cfg.components.categoryActiveColor : cfg.components.categoryInactiveColor;
-          return (
-            <span key={cat} style={{
-              padding: `${m.categorySize === 'sm' ? 3 : m.categorySize === 'md' ? 5 : 7}px 12px`,
-              borderRadius: catStyle === 'pill' ? 9999 : catStyle === 'rounded' ? catRadius : 0,
-              borderBottom: catStyle === 'underline' && active ? `2px solid ${cfg.components.categoryActiveColor}` : 'none',
-              background: catStyle === 'underline' ? 'transparent' : bg,
-              color: active ? contrastText(cfg.components.categoryActiveColor) : c.textMuted,
-              fontSize: m.categorySize === 'sm' ? 9 : m.categorySize === 'md' ? 10 : 11,
-              fontWeight: 700,
-              whiteSpace: 'nowrap',
-            }}>
-              {cat}
-            </span>
-          );
-        })}
-      </div>
-
-      {/* Grid */}
-      <div style={{ padding: 10, display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: m.gap }}>
-        {items.map((item) => (
-          <div
-            key={item.name}
-            style={{ ...outline('card'), background: c.surface, border: cfg.components.cardBorder ? `1px solid ${c.border}` : 'none', borderRadius: cardRadius, padding: cfg.components.cardPadding, boxShadow: cfg.components.cardShadow === 'soft' ? '0 4px 12px rgba(0,0,0,0.08)' : cfg.components.cardShadow === 'subtle' ? '0 1px 3px rgba(0,0,0,0.06)' : 'none' }}
-            onClick={() => onSelect('card')}
-            data-el="card"
-          >
-            <div style={{
-              aspectRatio: cfg.components.imageRatio.replace('/', ' / '),
-              borderRadius: imgRadius,
-              background: `linear-gradient(135deg, ${c.primary}22, ${c.secondary}22)`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22,
-            }} aria-hidden>
-              {item.emoji}
-            </div>
-            {m.showBadge && (
-              <span style={{ display: 'inline-block', marginTop: 6, padding: '1px 6px', borderRadius: 9999, background: c.primary, color: contrastText(c.primary), fontSize: 7, fontWeight: 700 }}>Opções</span>
-            )}
-            <div style={{ fontSize: 10, fontWeight: 700, marginTop: 4 }}>{item.name}</div>
-            {m.showDescription && <div style={{ fontSize: 8, color: c.textMuted, marginTop: 2 }}>Descrição do produto</div>}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-              {m.showPrice && <span style={{ fontSize: 10, fontWeight: 800, color: c.price }}>${item.price.toFixed(2)}</span>}
-              <span
-                style={{ ...outline('button'), width: 20, height: 20, borderRadius: btnRadius, background: c.primary, color: contrastText(c.primary), display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800 }}
-                onClick={(e) => { e.stopPropagation(); onSelect('button'); }}
-                data-el="button"
-              >
-                +
-              </span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PreviewFrame({ cfg, device, page, selected, onSelect }: PreviewProps & { device: Device; page: PreviewPage }) {
+function PreviewFrame({ cfg, device, page }: PreviewProps & { device: Device; page: PreviewPage }) {
   const widths: Record<Device, string> = { desktop: '100%', tablet: '768px', mobile: '390px' };
-  const height: Record<Device, string> = { desktop: '540px', tablet: '540px', mobile: '660px' };
-  const isMobile = device === 'mobile';
+  const height: Record<Device, string> = { desktop: '580px', tablet: '580px', mobile: '700px' };
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // URL do storefront real com ?preview=1 (ativa listener postMessage no ThemeContext)
+  const previewUrl = page === 'menu' ? '/menu?preview=1' : '/?preview=1';
+
+  // Envia o rascunho ao iframe sempre que config mudar
+  useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    // Aguarda o iframe carregar para enviar
+    const send = () => {
+      try {
+        iframe.contentWindow?.postMessage({ type: 'kf-preview', config: cfg }, '*');
+      } catch { /* */ }
+    };
+    send();
+    iframe.addEventListener('load', send);
+    return () => iframe.removeEventListener('load', send);
+  }, [cfg]);
 
   return (
     <div className="flex justify-center">
       <div
         className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden transition-all duration-300"
         style={{ width: widths[device], maxWidth: '100%', height: height[device] }}
-        role="img"
-        aria-label={`Preview ${page === 'landing' ? 'Landing' : 'Cardápio'} em ${device}`}
       >
+        {/* Barra do browser simulada */}
         <div className="flex items-center justify-between px-3 py-1.5 bg-gray-100 border-b border-gray-200">
           <div className="flex gap-1.5">
             <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
             <span className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
             <span className="w-2.5 h-2.5 rounded-full bg-green-400" />
           </div>
-          <span className="text-[10px] text-gray-400 font-mono">{isMobile ? '390px' : device === 'tablet' ? '768px' : 'Desktop'}</span>
+          <span className="text-[10px] text-gray-400 font-mono">{device === 'mobile' ? '390px' : device === 'tablet' ? '768px' : 'Desktop'}</span>
         </div>
-        <div className="overflow-y-auto" style={{ height: 'calc(100% - 28px)' }}>
-          {page === 'landing'
-            ? <PreviewLanding cfg={cfg} selected={selected} onSelect={onSelect} />
-            : <PreviewMenu cfg={cfg} selected={selected} onSelect={onSelect} />}
+        {/* iframe real do storefront */}
+        <div className="relative" style={{ height: 'calc(100% - 28px)' }}>
+          <iframe
+            ref={iframeRef}
+            src={previewUrl}
+            title="Preview do storefront"
+            className="w-full h-full border-0"
+            style={{ pointerEvents: 'none' }}
+            sandbox="allow-scripts allow-same-origin"
+          />
         </div>
-        {isMobile && cfg.mobile.bottomNavVisible && (
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            background: cfg.nav.bottomNavStyle === 'dark' ? '#221D25' : '#FFFFFF',
-            borderTop: `1px solid ${cfg.colors.border}`,
-            display: 'flex', justifyContent: 'space-around', padding: '6px 0 8px',
-          }}>
-            {['Início', 'Cardápio', 'Horários', 'Carrinho'].map((item, i) => (
-              <div key={item} style={{ textAlign: 'center', color: i === 1 ? cfg.colors.primary : cfg.colors.textMuted, fontSize: 8 }}>
-                <div style={{ fontSize: 12 }}>{['🏠', '🍧', '🕐', '🛒'][i]}</div>
-                {item}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
-/* ── Mini-previews de componentes ──────────────────────────────────── */
 
 function MiniButtonPreview({ cfg }: { cfg: BuilderConfig }) {
   const c = cfg.colors;
@@ -1366,14 +1164,14 @@ export default function DesignBuilder() {
             </div>
 
             <div className="relative">
-              <PreviewFrame cfg={config} device={device} page={page} selected={selected} onSelect={selectElement} />
+              <PreviewFrame cfg={config} device={device} page={page} />
               <span className="absolute top-2 right-2 text-[10px] font-semibold text-gray-400 bg-white/80 rounded-full px-2 py-0.5 border border-gray-200">
                 PREVIEW AO VIVO
               </span>
             </div>
 
             <p className="text-center text-[11px] text-gray-400">
-              Clique em um elemento do preview para editá-lo · Preview ≠ Salvar ≠ Publicar
+              Preview real do storefront · alterações aparecem ao vivo
             </p>
           </div>
         </div>
