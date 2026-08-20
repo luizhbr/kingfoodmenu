@@ -92,6 +92,9 @@ export default function MenuItemForm() {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -270,6 +273,19 @@ export default function MenuItemForm() {
   };
 
   if (loading) return <p className="text-gray-500">Carregando...</p>;
+
+  const handleDelete = async () => {
+    if (deleting || !id) return;
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await api.delete<{ success: boolean; message?: string }>(`/menu/items/${id}?force=true`);
+      navigate('/menu', { replace: true });
+    } catch (err: any) {
+      setDeleteError(err.message || 'Falha ao excluir o item');
+      setDeleting(false);
+    }
+  };
 
   return (
     <div>
@@ -596,12 +612,59 @@ export default function MenuItemForm() {
         </section>
 
         {/* Submit */}
-        <div className="flex justify-end gap-3">
-          <button type="button" onClick={() => navigate('/menu/items')} className="px-6 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>
+        <div className="flex justify-end gap-3 flex-wrap">
+          <button type="button" onClick={() => navigate('/menu')} className="px-6 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">Cancelar</button>
+          {isEdit && (
+            <button
+              type="button"
+              onClick={() => setConfirmDelete(true)}
+              className="px-6 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors"
+            >
+              Excluir produto
+            </button>
+          )}
           <button type="submit" disabled={saving} className="px-6 py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 disabled:opacity-50 transition-colors">
             {saving ? 'Salvando...' : isEdit ? 'Update Item' : 'Create Item'}
           </button>
         </div>
+
+        {/* Modal de confirmação de exclusão */}
+        {confirmDelete && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-modal="true" aria-label="Confirmar exclusão">
+            <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-5">
+              <h3 className="font-bold text-gray-900 text-lg mb-1">Excluir produto?</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                <span className="font-bold text-gray-900">{form.name}</span> será apagado
+                definitivamente (incluindo histórico de pedidos).
+              </p>
+              {deleteError && (
+                <p className="bg-red-50 text-red-600 text-sm p-3 rounded-md mb-3" role="alert">{deleteError}</p>
+              )}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setConfirmDelete(false); setDeleteError(null); }}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-bold hover:bg-red-700 disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                  ) : (
+                    'Excluir'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </form>
     </div>
   );
