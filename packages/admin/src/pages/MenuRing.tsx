@@ -333,7 +333,7 @@ const toggleCategory = (id: string) => {
                               e.stopPropagation();
                               setDeleteTarget({ id: item.id, name: item.name });
                             }}
-                            className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-kf-danger/90 text-white text-sm font-bold hover:bg-kf-danger active:scale-90 transition-all opacity-0 group-hover:opacity-100"
+                            className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-kf-danger/90 text-white text-sm font-bold hover:bg-kf-danger active:scale-90 transition-all shadow-kf-card"
                             title={`Excluir ${item.name}`}
                             aria-label={`Excluir ${item.name}`}
                           >
