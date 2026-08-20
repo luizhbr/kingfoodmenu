@@ -92,53 +92,6 @@ export default function OrderList() {
   // Sem Socket.IO no Vercel serverless; intervalo limpo no unmount, nunca duplicado.
   useEffect(() => {
     const timer = setInterval(() => loadOrders(true), 15000);
-  const toggleSelectAll = () => {
-    setSelected((prev) => {
-      if (prev.size === orders.length) return new Set();
-      return new Set(orders.map((o) => o.id));
-    });
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget || deleting) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      const res = await fetch(`/api/orders/${deleteTarget.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Falha ao excluir pedido');
-      setDeleteTarget(null);
-      loadOrders(true);
-    } catch (err: any) {
-      setDeleteError(err.message || 'Falha ao excluir o pedido');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  const confirmBatchDelete = async () => {
-    if (selected.size === 0 || deleting) return;
-    setDeleting(true);
-    setDeleteError(null);
-    try {
-      const res = await fetch('/api/orders/batch-delete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ ids: [...selected] }),
-      });
-      if (!res.ok) throw new Error('Falha ao excluir pedidos');
-      setSelected(new Set());
-      setBatchMode(false);
-      loadOrders(true);
-    } catch (err: any) {
-      setDeleteError(err.message || 'Falha ao excluir os pedidos');
-    } finally {
-      setDeleting(false);
-    }
-  };
-
   return () => clearInterval(timer);
   }, [loadOrders]);
 
