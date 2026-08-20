@@ -14,7 +14,6 @@ import LocationList from './pages/LocationList.js';
 import LocationForm from './pages/LocationForm.js';
 import CategoryList from './pages/CategoryList.js';
 import CategoryForm from './pages/CategoryForm.js';
-import MenuItemList from './pages/MenuItemList.js';
 import MenuRing from './pages/MenuRing.js';
 import MenuItemForm from './pages/MenuItemForm.js';
 import TableList from './pages/TableList.js';
@@ -109,7 +108,7 @@ function AppRoutes() {
         <Route path="/menu/categories" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryList /></RequireRole>} />
         <Route path="/menu/categories/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryForm /></RequireRole>} />
         <Route path="/menu/categories/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryForm /></RequireRole>} />
-        <Route path="/menu/items" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><MenuItemList /></RequireRole>} />
+        <Route path="/menu/items" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/menu" replace /></RequireRole>} />
         <Route path="/menu/items/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><MenuItemForm /></RequireRole>} />
         <Route path="/menu/items/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><MenuItemForm /></RequireRole>} />
         <Route path="/coupons" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponList /></RequireRole>} />

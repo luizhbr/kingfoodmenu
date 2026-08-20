@@ -47,7 +47,7 @@ export default function LojaHub() {
       title: 'Catálogo',
       description: 'Produtos e categorias',
       items: [
-        { path: '/menu/items', label: 'Cardápio', description: 'Itens, preços e opções', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/menu', label: 'Cardápio', description: 'Itens, preços e opções', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
         { path: '/menu/categories', label: 'Categorias', description: 'Organize os grupos', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
       ],
     },

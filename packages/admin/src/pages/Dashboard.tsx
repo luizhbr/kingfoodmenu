@@ -174,7 +174,7 @@ export default function Dashboard() {
           <QuickAction to="/orders" icon={<ClipboardIcon className="w-5 h-5" />} label="Novo pedido" badge={pendingCount > 0 ? pendingCount : undefined} />
           <QuickAction to="/kitchen" icon={<FlameIcon className="w-5 h-5" />} label="Cozinha" />
           <QuickAction to="/reports" icon={<ChartBarIcon className="w-5 h-5" />} label="Relatórios" />
-          <QuickAction to="/menu/items" icon={<BookOpenIcon className="w-5 h-5" />} label="Cardápio" />
+          <QuickAction to="/menu" icon={<BookOpenIcon className="w-5 h-5" />} label="Cardápio" />
         </div>
       </div>
 
@@ -229,7 +229,7 @@ export default function Dashboard() {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">Itens mais vendidos</h3>
-                <Link to="/menu/items" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                <Link to="/menu" className="text-primary-600 hover:text-primary-700 text-sm font-medium">
                   Ver cardápio
                 </Link>
               </div>

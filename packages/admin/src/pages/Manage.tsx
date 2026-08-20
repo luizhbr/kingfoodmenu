@@ -60,7 +60,7 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       title: 'Recursos da loja',
       description: 'Catálogo e relacionamento',
       items: [
-        { path: '/menu/items', label: 'Cardápio', description: 'Itens, categorias e preços', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/menu', label: 'Cardápio', description: 'Itens, categorias e preços', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
         { path: '/design/landing', label: 'Personalização', description: 'Site, tema e marca', icon: <PaintBrushIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
         { path: '/loyalty', label: 'Fidelidade', description: 'Pontos e recompensas', icon: <GiftIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
         { path: '/coupons', label: 'Cupons', description: 'Descontos e promoções', icon: <TicketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
