@@ -175,7 +175,8 @@ type SettingsField =
   | 'mailSettings'
   | 'paymentSettings'
   | 'reviewSettings'
-  | 'advancedSettings';
+  | 'advancedSettings'
+  | 'loyaltySettings';
 
 async function getSettingsGroup(field: SettingsField): Promise<Record<string, any>> {
   const settings = await getOrCreateSettings();
@@ -248,6 +249,34 @@ const paymentSettingsSchema = z.object({
   paypalSandbox: z.boolean().optional(),
   cashEnabled: z.boolean().optional(),
 });
+
+
+const loyaltySettingsSchema = z.object({
+  pointsPerDollar: z.number().min(0.01).max(100).optional(),
+  pointsValue: z.number().min(0.0001).max(1).optional(),
+  cashbackPercent: z.number().min(0).max(0.5).optional(),
+  minRedeemPoints: z.number().int().min(1).optional(),
+});
+
+
+// ============================================================
+// LOYALTY SETTINGS
+// ============================================================
+
+export async function getLoyaltySettings(_req: Request, res: Response): Promise<void> {
+  const data = await getSettingsGroup('loyaltySettings');
+  res.json({ success: true, data });
+}
+
+export async function updateLoyaltySettings(req: Request, res: Response): Promise<void> {
+  const parsed = loyaltySettingsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+  const data = await updateSettingsGroup('loyaltySettings', parsed.data);
+  res.json({ success: true, data });
+}
 
 const reviewSettingsSchema = z.object({
   enabled: z.boolean().optional(),

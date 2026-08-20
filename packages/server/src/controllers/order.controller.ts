@@ -9,6 +9,7 @@ import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
 import { validateCouponForOrder, recordCouponUsage, CouponError } from '../lib/coupon-service.js';
 import { debitCashback, creditCashbackForOrder, reverseCashbackForOrder, reverseDebit, linkDebitToOrder } from '../lib/cashback-service.js';
+import { getLoyaltySettingsValue } from './loyalty.controller.js';
 const crypto = require('crypto');
 
 // ── Attribution source normalization ────────────────────────────────────────
@@ -410,7 +411,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       res.status(400).json({ success: false, error: 'Insufficient loyalty points' });
       return;
     }
-    loyaltyDiscount = loyaltyPointsRedeem / 100;
+    const loyaltyConfig = await getLoyaltySettingsValue();
+    loyaltyDiscount = Math.round(loyaltyPointsRedeem * loyaltyConfig.pointsValue * 100) / 100;
   }
 
   if (orderType === 'DELIVERY' && address?.lat != null && address?.lng != null) {
@@ -565,7 +567,8 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   }
 
 if (customerId) {
-    const pointsEarned = Math.floor(subtotal);
+    const loyaltyCfg = await getLoyaltySettingsValue();
+    const pointsEarned = Math.floor(subtotal * loyaltyCfg.pointsPerDollar);
     if (pointsEarned > 0) {
       await prisma.customer.update({
         where: { id: customerId },

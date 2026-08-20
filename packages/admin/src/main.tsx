@@ -54,6 +54,7 @@ import SettingsPayments from './pages/SettingsPayments.js';
 import SettingsReviews from './pages/SettingsReviews.js';
 import SettingsAdvanced from './pages/SettingsAdvanced.js';
 import SettingsPrint from './pages/SettingsPrint.js';
+import SettingsLoyalty from './pages/SettingsLoyalty.js';
 import SettingsPrinters from './pages/SettingsPrinters.js';
 import './index.css';
 
@@ -132,7 +133,8 @@ function AppRoutes() {
         <Route path="/settings/order" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsOrder /></RequireRole>} />
         <Route path="/settings/mail" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsMail /></RequireRole>} />
         <Route path="/settings/payment" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsPayments /></RequireRole>} />
-        <Route path="/settings/review" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsReviews /></RequireRole>} />
+        <Route path="/settings/review" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsReviews />
+        <Route path="/settings/loyalty" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsLoyalty /></RequireRole>} /></RequireRole>} />
         <Route path="/settings/advanced" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsAdvanced /></RequireRole>} />
   <Route path="/settings/print" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrint /></RequireRole>} />
         <Route path="/settings/printers" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrinters /></RequireRole>} />

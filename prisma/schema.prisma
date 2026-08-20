@@ -87,10 +87,42 @@ model Customer {
   trackingEvents       TrackingEvent[]
   referrals            Referral[]
   couponUsages         CouponUsage[]
+  loyaltyRedemptions   LoyaltyRedemption[]
   cashbackWallet       CashbackWallet?
   cashbackTransactions CashbackTransaction[]
 
   @@map("customers")
+}
+
+model LoyaltyReward {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  pointsCost  Int
+  value       Float
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  redemptions LoyaltyRedemption[]
+
+  @@map("loyalty_rewards")
+}
+
+model LoyaltyRedemption {
+  id            String        @id @default(cuid())
+  rewardId      String
+  reward        LoyaltyReward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  customerId    String
+  customer      Customer      @relation(fields: [customerId], references: [id])
+  pointsCost    Int
+  couponCode    String        @unique
+  status        String        @default("ISSUED")
+  redeemedAt    DateTime?
+  createdAt     DateTime      @default(now())
+
+  @@index([customerId])
+  @@map("loyalty_redemptions")
 }
 
 model CustomerGroup {
@@ -679,6 +711,7 @@ model SiteSettings {
   paymentSettings     Json?  // { stripeEnabled, stripePublishableKey, stripeSecretKey, stripeWebhookSecret, paypalEnabled, paypalClientId, paypalClientSecret, paypalSandbox, cashEnabled }
   reviewSettings      Json?  // { enabled, requireOrder, autoApprove, minimumRating }
   advancedSettings    Json?  // { maintenanceMode, maintenanceMessage, enableRateLimiting }
+  loyaltySettings     Json?  // { pointsPerDollar, pointsValue, cashbackPercent, minRedeemPoints }
 
   // Visual Experience Builder (Fase 3)
   visualDraft         Json?  // BuilderConfig completo — rascunho (não afeta a loja)

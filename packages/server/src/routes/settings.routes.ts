@@ -26,6 +26,8 @@ import {
   updatePaymentSettings,
   getReviewSettings,
   updateReviewSettings,
+  getLoyaltySettings,
+  updateLoyaltySettings,
   getAdvancedSettings,
   updateAdvancedSettings,
 } from '../controllers/settings.controller.js';
@@ -62,6 +64,10 @@ router.put('/payment', authenticate, requireRole('SUPER_ADMIN'), updatePaymentSe
 // Review — MANAGER+
 router.get('/review', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), getReviewSettings);
 router.put('/review', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), updateReviewSettings);
+
+// Loyalty — MANAGER+
+router.get('/loyalty', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), getLoyaltySettings);
+router.put('/loyalty', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), updateLoyaltySettings);
 
 // Advanced — SUPER_ADMIN only
 router.get('/advanced', authenticate, requireRole('SUPER_ADMIN'), getAdvancedSettings);
