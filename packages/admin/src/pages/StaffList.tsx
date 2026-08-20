@@ -39,8 +39,14 @@ export default function StaffList() {
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState('');
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const token = localStorage.getItem('token') || '';
+  const currentUserId = (() => {
+    try { return JSON.parse(atob(localStorage.getItem('token')?.split('.')[1] || '')).id; } catch { return ''; }
+  })();
 
   useEffect(() => {
     setLoading(true);
@@ -62,6 +68,28 @@ export default function StaffList() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [page, roleFilter, search, token]);
+
+  async function handleDelete(target: Staff) {
+    if (deleting) return;
+    setDeleting(true);
+    setDeleteError('');
+    try {
+      const res = await fetch(`/api/staff/${target.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to delete staff member');
+      }
+      setStaff((prev) => prev.filter((s) => s.id !== target.id));
+      setDeleteTarget(null);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Failed to delete staff member');
+    } finally {
+      setDeleting(false);
+    }
+  }
 
   async function toggleActive(id: string, isActive: boolean) {
     try {
@@ -167,10 +195,19 @@ export default function StaffList() {
                       </button>
                     </td>
                     <td data-label="Ações" className="px-4 py-3">
-                      <Link
-                        to={`/staff/${member.id}`}
-                        className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                      >Editar</Link>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          to={`/staff/${member.id}`}
+                          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                        >Editar</Link>
+                        {member.id !== currentUserId && member.role !== 'SUPER_ADMIN' && (
+                          <button
+                            onClick={() => setDeleteTarget(member)}
+                            className="text-red-600 hover:text-red-700 text-xs font-medium"
+                            aria-label={`Excluir ${member.name}`}
+                          >Excluir</button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -196,6 +233,43 @@ export default function StaffList() {
             </div>
           )}
         </>
+      )}
+
+      {/* Modal de confirmação de exclusão */}
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Confirmar exclusão"
+          onClick={() => !deleting && setDeleteTarget(null)}
+        >
+          <div
+            className="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-bold text-gray-900">Excluir funcionário?</h2>
+            <p className="text-sm text-gray-600 mt-2">
+              <strong>{deleteTarget.name}</strong> ({deleteTarget.email}) perderá o acesso
+              ao painel imediatamente. O histórico de pedidos dele é mantido.
+            </p>
+            {deleteError && <div className="bg-red-50 text-red-700 text-sm p-3 rounded-lg mt-3">{deleteError}</div>}
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-medium border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+              >Cancelar</button>
+              <button
+                onClick={() => void handleDelete(deleteTarget)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? 'Excluindo...' : 'Excluir'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
