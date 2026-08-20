@@ -12,22 +12,22 @@ export default function JapandiCta({ cta, t }: CtaProps) {
   const buttonLink = cta?.buttonLink || '/register';
 
   return (
-    <section className="bg-[#D8CFC0] dark:bg-[#24211E] py-24">
+    <section className="bg-kf-surface-muted dark:bg-kf-foreground py-24">
       <div className="max-w-3xl mx-auto px-4 text-center">
-        <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-[#A63D2E]/40 flex items-center justify-center text-[#A63D2E] text-lg">
+        <div className="w-12 h-12 mx-auto mb-8 rounded-full border border-kf-primary/40 flex items-center justify-center text-kf-primary text-lg">
           茶
         </div>
-        <h2 className="text-3xl md:text-4xl font-light mb-6 text-[#2E2B28] dark:text-[#F7F5EE]" style={{ fontFamily: 'Georgia, serif' }}>
+        <h2 className="text-3xl md:text-4xl font-light mb-6 text-kf-foreground dark:text-kf-bg" style={{ fontFamily: 'Georgia, serif' }}>
           {title}
         </h2>
-        <p className="text-lg font-light text-[#2E2B28]/60 dark:text-[#F7F5EE]/60 mb-12 max-w-lg mx-auto leading-loose">
+        <p className="text-lg font-light text-kf-muted dark:text-kf-muted mb-12 max-w-lg mx-auto leading-loose">
           {description}
         </p>
         <Link
           to={buttonLink}
-          className="inline-flex items-center gap-3 text-[#A63D2E] font-medium tracking-[0.25em] uppercase text-sm hover:opacity-70 transition-opacity"
+          className="inline-flex items-center gap-3 text-kf-primary font-medium tracking-[0.25em] uppercase text-sm hover:opacity-70 transition-opacity"
         >
-          <span className="w-10 h-px bg-[#A63D2E]" />
+          <span className="w-10 h-px bg-kf-primary" />
           {buttonText}
         </Link>
       </div>
