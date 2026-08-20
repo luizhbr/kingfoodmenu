@@ -110,33 +110,33 @@ export default function StaffList() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Funcionários</h1>
         <Link
           to="/staff/invite"
-          className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors"
+          className="bg-primary-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition-colors text-center"
         >
-          + Invite Staff
+          + Convidar Funcionário
         </Link>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3 mb-4">
+      <div className="flex flex-col sm:flex-row gap-3 mb-4">
         <input
           type="text"
-          placeholder="Search by name or email..."
+          placeholder="Buscar por nome ou e-mail..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-64"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none flex-1 w-full"
           aria-label="Search staff by name or email"
         />
         <select
           value={roleFilter}
           onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none"
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full sm:w-auto"
           aria-label="Filter by role"
         >
-          <option value="">All Roles</option>
+          <option value="">Todos os cargos</option>
           <option value="SUPER_ADMIN">Super Admin</option>
           <option value="MANAGER">Manager</option>
           <option value="STAFF">Funcionários</option>
@@ -158,61 +158,109 @@ export default function StaffList() {
       {!loading && staff.length > 0 && (
         <>
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="table-responsive"><table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">E-mail</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Função</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Local</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {staff.map((member) => (
-                  <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
-                    <td data-label="Nome" className="px-4 py-3 font-medium">{member.name}</td>
-                    <td data-label="E-mail" className="px-4 py-3 text-gray-600">{member.email}</td>
-                    <td data-label="Função" className="px-4 py-3">
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-700'}`}>
-                        {ROLE_LABELS[member.role] || member.role}
-                      </span>
-                    </td>
-                    <td data-label="Local" className="px-4 py-3 text-gray-600">
-                      {member.location?.name || '—'}
-                    </td>
-                    <td data-label="Status" className="px-4 py-3">
-                      <button
-                        onClick={() => toggleActive(member.id, !member.isActive)}
-                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.isActive
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-gray-100 text-gray-500'
-                          }`}
-                        aria-label={`${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}`}
-                      >
-                        {member.isActive ? 'Ativo' : 'Inactive'}
-                      </button>
-                    </td>
-                    <td data-label="Ações" className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <Link
-                          to={`/staff/${member.id}`}
-                          className="text-primary-600 hover:text-primary-700 text-xs font-medium"
-                        >Editar</Link>
-                        {member.id !== currentUserId && member.role !== 'SUPER_ADMIN' && (
-                          <button
-                            onClick={() => setDeleteTarget(member)}
-                            className="text-red-600 hover:text-red-700 text-xs font-medium"
-                            aria-label={`Excluir ${member.name}`}
-                          >Excluir</button>
-                        )}
-                      </div>
-                    </td>
+            {/* Desktop: tabela completa */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Nome</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">E-mail</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Função</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Local</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                    <th className="text-left px-4 py-3 font-medium text-gray-600">Ações</th>
                   </tr>
-                ))}
-              </tbody>
-            </table></div>
+                </thead>
+                <tbody>
+                  {staff.map((member) => (
+                    <tr key={member.id} className="border-b border-gray-100 hover:bg-gray-50">
+                      <td data-label="Nome" className="px-4 py-3 font-medium">{member.name}</td>
+                      <td data-label="E-mail" className="px-4 py-3 text-gray-600">{member.email}</td>
+                      <td data-label="Função" className="px-4 py-3">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-700'}`}>
+                          {ROLE_LABELS[member.role] || member.role}
+                        </span>
+                      </td>
+                      <td data-label="Local" className="px-4 py-3 text-gray-600">
+                        {member.location?.name || '—'}
+                      </td>
+                      <td data-label="Status" className="px-4 py-3">
+                        <button
+                          onClick={() => toggleActive(member.id, !member.isActive)}
+                          className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.isActive
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-500'
+                            }`}
+                          aria-label={`${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}`}
+                        >
+                          {member.isActive ? 'Ativo' : 'Inativo'}
+                        </button>
+                      </td>
+                      <td data-label="Ações" className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <Link
+                            to={`/staff/${member.id}`}
+                            className="text-primary-600 hover:text-primary-700 text-xs font-medium"
+                          >Editar</Link>
+                          {member.id !== currentUserId && member.role !== 'SUPER_ADMIN' && (
+                            <button
+                              onClick={() => setDeleteTarget(member)}
+                              className="text-red-600 hover:text-red-700 text-xs font-medium"
+                              aria-label={`Excluir ${member.name}`}
+                            >Excluir</button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Celular (cards empilhados — sem rolagem lateral) */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {staff.map((member) => (
+                <div key={member.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-semibold text-gray-900 break-words">{member.name}</div>
+                      <div className="text-xs text-gray-500 break-words">{member.email}</div>
+                    </div>
+                    <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full font-medium ${ROLE_COLORS[member.role] || 'bg-gray-100 text-gray-700'}`}>
+                      {ROLE_LABELS[member.role] || member.role}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-500">
+                      <span className="font-medium text-gray-600">Local: </span>
+                      {member.location?.name || '—'}
+                    </div>
+                    <button
+                      onClick={() => toggleActive(member.id, !member.isActive)}
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${member.isActive
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-gray-100 text-gray-500'
+                        }`}
+                      aria-label={`${member.isActive ? 'Deactivate' : 'Activate'} ${member.name}`}
+                    >
+                      {member.isActive ? 'Ativo' : 'Inativo'}
+                    </button>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    <Link
+                      to={`/staff/${member.id}`}
+                      className="flex-1 text-center px-3 py-2 bg-primary-50 text-primary-700 rounded-lg text-sm font-medium"
+                    >Editar</Link>
+                    {member.id !== currentUserId && member.role !== 'SUPER_ADMIN' && (
+                      <button
+                        onClick={() => setDeleteTarget(member)}
+                        className="flex-1 text-center px-3 py-2 bg-red-50 text-red-700 rounded-lg text-sm font-medium"
+                      >Excluir</button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {pagination && pagination.totalPages > 1 && (
