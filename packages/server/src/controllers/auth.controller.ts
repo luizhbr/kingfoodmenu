@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
 import { generateToken } from '../middleware/auth.js';
+import { ROLE_DEFAULT_PERMISSIONS } from '../lib/permissions.js';
 import {
   isCaptchaEnabled,
   getCaptchaSiteKey,
@@ -78,11 +79,16 @@ export async function staffLogin(req: Request, res: Response): Promise<void> {
 
   recordAuthSuccess(email, ip);
 
+  const permissions = (user.permissions as string[] | null)?.length
+    ? (user.permissions as string[])
+    : ROLE_DEFAULT_PERMISSIONS[user.role];
+
   const token = generateToken({
     id: user.id,
     email: user.email,
     type: 'staff',
     role: user.role,
+    permissions: permissions as any,
   });
 
   res.json({
@@ -94,6 +100,7 @@ export async function staffLogin(req: Request, res: Response): Promise<void> {
         email: user.email,
         name: user.name,
         role: user.role,
+        permissions,
       },
     },
   });
@@ -252,8 +259,15 @@ export async function getMe(req: Request, res: Response): Promise<void> {
   if (req.user.type === 'staff') {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, email: true, name: true, role: true, phone: true, avatar: true },
+      select: { id: true, email: true, name: true, role: true, permissions: true, phone: true, avatar: true },
     });
+    if (user) {
+      const perms = (user.permissions as string[] | null)?.length
+        ? (user.permissions as string[])
+        : ROLE_DEFAULT_PERMISSIONS[user.role];
+      res.json({ success: true, data: { type: 'staff', user: { ...user, permissions: perms } } });
+      return;
+    }
     res.json({ success: true, data: { type: 'staff', user } });
   } else {
     const customer = await prisma.customer.findUnique({

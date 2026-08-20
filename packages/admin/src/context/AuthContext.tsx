@@ -4,7 +4,8 @@ interface User {
   id: string;
   email: string;
   name: string;
-  role: 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+  role: 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
+  permissions?: string[];
   phone?: string | null;
   avatar?: string | null;
 }

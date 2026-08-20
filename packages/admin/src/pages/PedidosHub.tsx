@@ -1,11 +1,10 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import { usePendingOrders } from '../components/PendingOrdersContext.js';
-import {
-  ClipboardIcon, CalendarIcon, ChevronRightIcon, ChartBarIcon,
-} from '../components/AdminIcons.js';
+import { ClipboardIcon, ChevronRightIcon } from '../components/AdminIcons.js';
+import { usePermissions } from '../lib/usePermissions.js';
 
-type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
 interface HubItem {
   path: string;
@@ -13,6 +12,8 @@ interface HubItem {
   description?: string;
   icon: React.ReactNode;
   roles: Role[];
+  /** Permissões que liberam o item (qualquer uma basta) */
+  perms?: string[];
   badge?: { count: number; label: string };
 }
 
@@ -29,6 +30,7 @@ interface HubGroup {
 export default function PedidosHub() {
   const { user } = useAuth();
   const role = user?.role as Role | undefined;
+  const { has } = usePermissions();
   const pendingCount = usePendingOrders();
 
   const groups: HubGroup[] = [
@@ -38,28 +40,42 @@ export default function PedidosHub() {
       items: [
         {
           path: '/orders',
-          label: 'Lista de pedidos',
-          description: 'Filtros, status e detalhes',
-          icon: <ClipboardIcon className="w-6 h-6" />,
-          roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
-          badge: pendingCount > 0 ? { count: pendingCount, label: 'pendentes' } : undefined,
-        },
-        { path: '/kitchen', label: 'Monitor da cozinha', description: 'Preparo em tempo real', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/orders?status=PENDING', label: 'Pedidos pendentes', description: 'Aguardando confirmação', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-      ],
-    },
-    {
-      title: 'Reservas',
-      description: 'Mesas e agendamentos',
-      items: [
-        { path: '/reservations', label: 'Todas as reservas', description: 'Agenda e detalhes', icon: <CalendarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/reservations/trends', label: 'Tendências', description: 'Análise de reservas', icon: <ChartBarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+            label: 'Lista de pedidos',
+            description: 'Filtros, status e detalhes',
+            icon: <ClipboardIcon className="w-6 h-6" />,
+            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
+            perms: ['orders.view'],
+            badge: pendingCount > 0 ? { count: pendingCount, label: 'pendentes' } : undefined,
+          },
+          {
+            path: '/kitchen',
+            label: 'Monitor da cozinha',
+            description: 'Preparo em tempo real',
+            icon: <ClipboardIcon className="w-6 h-6" />,
+            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
+            perms: ['kitchen.view'],
+          },
+          {
+            path: '/orders?status=PENDING',
+            label: 'Pedidos pendentes',
+            description: 'Aguardando confirmação',
+            icon: <ClipboardIcon className="w-6 h-6" />,
+            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
+            perms: ['orders.view'],
+          },
       ],
     },
   ];
 
   const visibleGroups = groups
-    .map((g) => ({ ...g, items: g.items.filter((i) => role && i.roles.includes(role)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => {
+        if (role === 'SUPER_ADMIN') return true;
+        if (!i.perms) return !!role && i.roles.includes(role);
+        return i.perms.some((p) => has(p as never));
+      }),
+    }))
     .filter((g) => g.items.length > 0);
 
   return (

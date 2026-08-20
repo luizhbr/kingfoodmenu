@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { usePendingOrders } from './PendingOrdersContext.js';
+import { useAuth } from '../context/AuthContext.js';
 import { MAIN_NAV_ITEMS, getActiveArea } from './mainNav.js';
 
 /**
@@ -11,6 +12,14 @@ export default function MobileBottomNav() {
   const location = useLocation();
   const pendingCount = usePendingOrders();
   const activeArea = getActiveArea(location.pathname);
+  const { user } = useAuth();
+
+  const visibleItems = MAIN_NAV_ITEMS.filter((item) => {
+    if (user?.role === 'SUPER_ADMIN') return true;
+    // STAFF/MANAGER: mostra se tem alguma permissão do item
+    if (!item.perms) return true;
+    return (user?.permissions || []).some((p) => item.perms!.includes(p));
+  });
 
   return (
     <nav
@@ -18,7 +27,7 @@ export default function MobileBottomNav() {
       aria-label="Navegação principal"
     >
       <div className="flex items-stretch justify-evenly max-w-lg mx-auto">
-        {MAIN_NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const active = item.path === activeArea;
           const showBadge = item.path === '/pedidos' && pendingCount > 0;
           return (

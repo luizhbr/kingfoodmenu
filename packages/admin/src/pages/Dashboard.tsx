@@ -164,7 +164,7 @@ export default function Dashboard() {
         <StatCard label="Pedidos hoje" value={String(m.ordersToday)} sub={`${m.ordersThisWeek} esta semana`} />
         <StatCard label="Vendas hoje" value={`$${m.revenueToday.toFixed(2)}`} sub={`$${m.revenueThisMonth.toFixed(2)} este mês`} highlight />
         <StatCard label="Ticket médio" value={m.ordersToday > 0 ? `$${(m.revenueToday / m.ordersToday).toFixed(2)}` : '—'} sub="por pedido hoje" />
-        <StatCard label="Reservas pendentes" value={String(m.pendingReservations)} sub={`${m.totalCustomers} clientes`} />
+        <StatCard label="Clientes" value={String(m.totalCustomers)} sub="total cadastrados" />
       </div>
 
       {/* Ações rápidas — operação diária (Nível 1) */}

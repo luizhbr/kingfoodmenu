@@ -5,18 +5,20 @@ import { PendingOrdersContext } from './PendingOrdersContext.js';
 import MobileBottomNav from './MobileBottomNav.js';
 import GlobalSearch from './GlobalSearch.js';
 
-type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
 const ROLE_COLORS: Record<Role, string> = {
   SUPER_ADMIN: 'bg-red-500/20 text-red-300',
   MANAGER: 'bg-blue-500/20 text-blue-300',
   STAFF: 'bg-gray-500/20 text-gray-300',
+  DRIVER: 'bg-green-500/20 text-green-300',
 };
 
 const ROLE_LABELS: Record<Role, string> = {
   SUPER_ADMIN: 'Administrador',
   MANAGER: 'Gerente',
   STAFF: 'Funcionário',
+  DRIVER: 'Entregador',
 };
 
 /**

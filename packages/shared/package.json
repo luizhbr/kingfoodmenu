@@ -20,6 +20,10 @@
       "types": "./dist/index.d.ts"
     },
     "./tokens.css": "./dist/tokens.css",
-    "./tailwind-preset": "./dist/tailwind-preset.js"
+    "./tailwind-preset": "./dist/tailwind-preset.js",
+    "./permissions": {
+      "import": "./dist/permissions.js",
+      "types": "./dist/permissions.d.ts"
+    }
   }
 }

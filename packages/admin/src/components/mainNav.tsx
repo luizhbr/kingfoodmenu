@@ -1,24 +1,21 @@
 import { StorefrontIcon, GridIcon, CreditCardIcon, ClipboardIcon } from './AdminIcons.js';
 
-export type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+export type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
 export interface MainNavItem {
   path: string;
   label: string;
   icon: React.ReactNode;
   roles: Role[];
+  /** Permissões que liberam esta área (qualquer uma basta) */
+  perms?: string[];
 }
 
-/**
- * FONTE ÚNICA da navegação principal do admin.
- * Todos os destinos entre áreas: Loja / Gestão / Vender / Pedidos.
- * Header, bottom nav e qualquer outro componente DEVEM usar este array.
- */
 export const MAIN_NAV_ITEMS: MainNavItem[] = [
-  { path: '/loja', label: 'Loja', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/manage', label: 'Gestão', icon: <GridIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/vender', label: 'Vendas', icon: <CreditCardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-  { path: '/pedidos', label: 'Pedidos', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+  { path: '/loja', label: 'Loja', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], perms: ['menu.view', 'settings.view', 'settings.general'] },
+  { path: '/manage', label: 'Gestão', icon: <GridIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], perms: ['reports.view', 'staff.view', 'coupons.view', 'loyalty.view', 'reviews.view', 'settings.view', 'automation.view'] },
+  { path: '/vender', label: 'Vendas', icon: <CreditCardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], perms: ['orders.view', 'finance.view', 'print.view'] },
+  { path: '/pedidos', label: 'Pedidos', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'], perms: ['orders.view', 'kitchen.view'] },
 ];
 
 /**
@@ -48,10 +45,9 @@ const AREA_BY_PREFIX: { prefix: string; area: string }[] = [
   { prefix: '/staff', area: '/manage' },
   { prefix: '/legal', area: '/manage' },
   { prefix: '/developer', area: '/manage' },
-  // PEDIDOS — pedidos, cozinha, reservas
+  // PEDIDOS — pedidos e cozinha
   { prefix: '/orders', area: '/pedidos' },
   { prefix: '/kitchen', area: '/pedidos' },
-  { prefix: '/reservations', area: '/pedidos' },
 ];
 
 /**

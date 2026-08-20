@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
+import { Permission, ROLE_DEFAULT_PERMISSIONS } from '../lib/permissions.js';
 
 // Never silently fall back to a hardcoded secret in production — a missing
 // JWT_SECRET would let anyone forge tokens. Fail fast instead. The dev
@@ -18,6 +19,7 @@ export interface JwtPayload {
   email: string;
   type: 'staff' | 'customer';
   role?: Role;
+  permissions?: Permission[];
 }
 
 declare global {
@@ -71,6 +73,23 @@ export function requireRole(...roles: Role[]) {
   };
 }
 
+
+export function requirePermission(perm: Permission) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user || req.user.type !== 'staff') {
+      res.status(403).json({ success: false, error: 'Staff access required' });
+      return;
+    }
+    const perms = req.user.permissions && req.user.permissions.length > 0
+      ? req.user.permissions
+      : ROLE_DEFAULT_PERMISSIONS[req.user.role || 'STAFF'] || [];
+    if (!perms.includes(perm)) {
+      res.status(403).json({ success: false, error: 'Insufficient permissions' });
+      return;
+    }
+    next();
+  };
+}
 
 export function requireDriver(req: Request, res: Response, next: NextFunction): void {
   if (!req.user || req.user.type !== 'staff' || req.user.role !== 'DRIVER') {

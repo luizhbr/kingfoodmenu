@@ -7,6 +7,8 @@ import {
   FlaskIcon, ChevronRightIcon,
 } from '../components/AdminIcons.js';
 
+import { usePermissions } from '../lib/usePermissions.js';
+
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
 
 interface ManageItem {
@@ -15,6 +17,8 @@ interface ManageItem {
   description?: string;
   icon: React.ReactNode;
   roles: Role[];
+  /** Permissões que liberam o item (qualquer uma basta) */
+  perms?: string[];
   badge?: { count: number; label: string };
 }
 
@@ -32,67 +36,79 @@ interface ManageGroup {
 export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) {
   const { user } = useAuth();
   const role = user?.role as Role | undefined;
+  const { has } = usePermissions();
 
   const groups: ManageGroup[] = [
     {
       title: 'Operação',
       description: 'Estrutura do negócio',
       items: [
-        { path: '/locations', label: 'Locais', description: 'Endereços e mesas', icon: <MapPinIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/locations', label: 'Locais', description: 'Endereços e mesas', icon: <MapPinIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
       ],
     },
     {
       title: 'Financeiro',
       description: 'Vendas e resultados',
       items: [
-        { path: '/reports', label: 'Relatórios', description: 'Vendas, receita e tendências', icon: <ChartBarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/mail', label: 'Notificações por e-mail', description: 'SMTP e remetente', icon: <EnvelopeIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'] },
+        { path: '/reports', label: 'Relatórios', description: 'Vendas, receita e tendências', icon: <ChartBarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['reports.view'] },
+        { path: '/settings/mail', label: 'Notificações por e-mail', description: 'SMTP e remetente', icon: <EnvelopeIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'], perms: ['settings.view'] },
       ],
     },
     {
       title: 'Recursos da loja',
       description: 'Catálogo e relacionamento',
       items: [
-        { path: '/menu', label: 'Cardápio', description: 'Itens, categorias e preços', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/design/landing', label: 'Personalização', description: 'Site, tema e marca', icon: <PaintBrushIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/loyalty', label: 'Fidelidade', description: 'Pontos e recompensas', icon: <GiftIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/coupons', label: 'Cupons', description: 'Descontos e promoções', icon: <TicketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/reviews', label: 'Avaliações', description: 'Moderação de avaliações', icon: <StarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+        { path: '/menu', label: 'Cardápio', description: 'Itens, categorias e preços', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['menu.view', 'menu.edit', 'menu.create'] },
+        { path: '/design/landing', label: 'Personalização', description: 'Site, tema e marca', icon: <PaintBrushIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.general'] },
+        { path: '/loyalty', label: 'Fidelidade', description: 'Pontos e recompensas', icon: <GiftIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['loyalty.view'] },
+        { path: '/coupons', label: 'Cupons', description: 'Descontos e promoções', icon: <TicketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['coupons.view'] },
+        { path: '/reviews', label: 'Avaliações', description: 'Moderação de avaliações', icon: <StarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], perms: ['reviews.view'] },
       ],
     },
     {
       title: 'Integrações',
       description: 'Conecte seus canais',
       items: [
-        { path: '/automation', label: 'Automação', description: 'Regras e fluxos automáticos', icon: <BoltIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/automation', label: 'Automação', description: 'Regras e fluxos automáticos', icon: <BoltIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['automation.view'] },
       ],
     },
     {
       title: 'Configurações',
       description: 'Estrutura do sistema',
       items: [
-        { path: '/settings', label: 'Configurações', description: 'Geral, pedidos e reservas', icon: <CogIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/general', label: 'Perfil da loja', description: 'Nome, fuso e contato', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/staff', label: 'Usuários', description: 'Funcionários e permissões', icon: <UsersIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'] },
-        { path: '/developer/metrics', label: 'Sistema', description: 'Métricas e auditoria', icon: <CodeBracketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/settings', label: 'Configurações', description: 'Geral, pedidos e reservas', icon: <CogIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
+        { path: '/settings/general', label: 'Perfil da loja', description: 'Nome, fuso e contato', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.general'] },
+        { path: '/staff', label: 'Usuários', description: 'Funcionários e permissões', icon: <UsersIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'], perms: ['staff.view'] },
+        { path: '/developer/metrics', label: 'Sistema', description: 'Métricas e auditoria', icon: <CodeBracketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
       ],
     },
   ];
 
   // Nível 3 (configurações avançadas) — itens que não aparecem no grid principal
   const advancedItems: ManageItem[] = [
-    { path: '/legal/pages', label: 'Páginas legais', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { path: '/legal/cookies', label: 'Cookies', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { path: '/legal/consent', label: 'Registro de consentimento', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-    { path: '/settings/advanced', label: 'Modo de manutenção', icon: <FlaskIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'] },
-    { path: '/developer/audit-log', label: 'Registro de auditoria', icon: <FlaskIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'] },
+    { path: '/legal/pages', label: 'Páginas legais', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
+    { path: '/legal/cookies', label: 'Cookies', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
+    { path: '/legal/consent', label: 'Registro de consentimento', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
+    { path: '/settings/advanced', label: 'Modo de manutenção', icon: <FlaskIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'], perms: ['settings.view'] },
+    { path: '/developer/audit-log', label: 'Registro de auditoria', icon: <FlaskIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'], perms: ['settings.view'] },
   ];
 
   const visibleGroups = groups
-    .map((g) => ({ ...g, items: g.items.filter((i) => role && i.roles.includes(role)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => {
+        if (role === 'SUPER_ADMIN') return true;
+        if (!i.perms) return !!role && i.roles.includes(role);
+        return i.perms.some((p) => has(p as never));
+      }),
+    }))
     .filter((g) => g.items.length > 0);
 
-  const visibleAdvanced = advancedItems.filter((i) => role && i.roles.includes(role));
+  const visibleAdvanced = advancedItems.filter((i) => {
+    if (role === 'SUPER_ADMIN') return true;
+    if (!i.perms) return !!role && i.roles.includes(role);
+    return i.perms.some((p) => has(p as never));
+  });
 
   return (
     <div>

@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import AdminLayout from './components/AdminLayout.js';
 import RequireRole from './components/RequireRole.js';
+import RequirePermission from './components/RequirePermission.js';
 import Login from './pages/Login.js';
 import Dashboard from './pages/Dashboard.js';
 import Manage from './pages/Manage.js';
@@ -19,9 +20,6 @@ import MenuItemForm from './pages/MenuItemForm.js';
 import TableList from './pages/TableList.js';
 import OrderList from './pages/OrderList.js';
 import OrderDetailPage from './pages/OrderDetail.js';
-import ReservationList from './pages/ReservationList.js';
-import ReservationDetail from './pages/ReservationDetail.js';
-import ReservationTrends from './pages/ReservationTrends.js';
 import CouponList from './pages/CouponList.js';
 import CouponForm from './pages/CouponForm.js';
 import ReviewList from './pages/ReviewList.js';
@@ -51,7 +49,6 @@ import Reports from './pages/Reports.js';
 import AuditLog from './pages/AuditLog.js';
 import SettingsGeneral from './pages/SettingsGeneral.js';
 import SettingsOrder from './pages/SettingsOrder.js';
-import SettingsReservation from './pages/SettingsReservation.js';
 import SettingsMail from './pages/SettingsMail.js';
 import SettingsPayments from './pages/SettingsPayments.js';
 import SettingsReviews from './pages/SettingsReviews.js';
@@ -90,13 +87,10 @@ function AppRoutes() {
         <Route path="/vender" element={<VenderHub />} />
         <Route path="/pedidos" element={<PedidosHub />} />
         <Route path="/reports" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Reports /></RequireRole>} />
-        <Route path="/orders" element={<OrderList />} />
-        <Route path="/orders/:id" element={<OrderDetailPage />} />
-        <Route path="/reservations" element={<ReservationList />} />
-        <Route path="/reservations/trends" element={<ReservationTrends />} />
-        <Route path="/reservations/:id" element={<ReservationDetail />} />
-        <Route path="/reviews" element={<ReviewList />} />
-        <Route path="/kitchen" element={<KitchenDisplay />} />
+        <Route path="/orders" element={<RequirePermission perms={['orders.view']}><OrderList /></RequirePermission>} />
+        <Route path="/orders/:id" element={<RequirePermission perms={['orders.view']}><OrderDetailPage /></RequirePermission>} />
+        <Route path="/reviews" element={<RequirePermission perms={['reviews.view']}><ReviewList /></RequirePermission>} />
+        <Route path="/kitchen" element={<RequirePermission perms={['kitchen.view']}><KitchenDisplay /></RequirePermission>} />
 
         {/* MANAGER+ */}
         <Route path="/locations" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><LocationList /></RequireRole>} />
@@ -109,15 +103,15 @@ function AppRoutes() {
         <Route path="/menu/categories/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryForm /></RequireRole>} />
         <Route path="/menu/categories/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryForm /></RequireRole>} />
         <Route path="/menu/items" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/menu" replace /></RequireRole>} />
-        <Route path="/menu/items/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><MenuItemForm /></RequireRole>} />
-        <Route path="/menu/items/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><MenuItemForm /></RequireRole>} />
-        <Route path="/coupons" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponList /></RequireRole>} />
+        <Route path="/menu/items/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.create']}><MenuItemForm /></RequirePermission></RequireRole>} />
+        <Route path="/menu/items/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.edit']}><MenuItemForm /></RequirePermission></RequireRole>} />
+        <Route path="/coupons" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['coupons.view']}><CouponList /></RequirePermission></RequireRole>} />
         <Route path="/coupons/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponForm /></RequireRole>} />
         <Route path="/coupons/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponForm /></RequireRole>} />
-        <Route path="/automation" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><AutomationRuleList /></RequireRole>} />
+        <Route path="/automation" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['automation.view']}><AutomationRuleList /></RequirePermission></RequireRole>} />
         <Route path="/automation/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><AutomationRuleForm /></RequireRole>} />
         <Route path="/automation/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><AutomationRuleForm /></RequireRole>} />
-        <Route path="/loyalty" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CustomerLoyalty /></RequireRole>} />
+        <Route path="/loyalty" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['loyalty.view']}><CustomerLoyalty /></RequirePermission></RequireRole>} />
         <Route path="/design" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/design/builder" replace /></RequireRole>} />
         <Route path="/design/builder" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignBuilder /></RequireRole>} />
         <Route path="/design/landing" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><DesignLanding /></RequireRole>} />
@@ -136,7 +130,6 @@ function AppRoutes() {
         <Route path="/settings" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Settings /></RequireRole>} />
         <Route path="/settings/general" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsGeneral /></RequireRole>} />
         <Route path="/settings/order" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsOrder /></RequireRole>} />
-        <Route path="/settings/reservation" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsReservation /></RequireRole>} />
         <Route path="/settings/mail" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsMail /></RequireRole>} />
         <Route path="/settings/payment" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsPayments /></RequireRole>} />
         <Route path="/settings/review" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsReviews /></RequireRole>} />

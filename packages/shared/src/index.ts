@@ -57,3 +57,5 @@ export interface PaginatedResponse<T> extends ApiResponse<T[]> {
 }
 
 export * from './tokens.js';
+
+export * from './permissions.js';

@@ -18,6 +18,7 @@ model User {
   password  String
   name      String
   role      Role     @default(STAFF)
+  permissions Json?   // Lista de permissões finas — ex: ["orders.view","menu.edit"]. null = padrão do papel
   phone     String?
   avatar    String?
   isActive  Boolean  @default(true)

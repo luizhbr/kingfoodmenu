@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 
-type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
 interface Props {
   roles: Role[];

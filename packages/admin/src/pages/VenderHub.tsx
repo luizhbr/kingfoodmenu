@@ -2,10 +2,11 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import {
   ClipboardIcon, CreditCardIcon, PrinterIcon, ScaleIcon,
-  ChevronRightIcon, CalendarIcon, FlameIcon,
+  ChevronRightIcon, FlameIcon,
 } from '../components/AdminIcons.js';
+import { usePermissions } from '../lib/usePermissions.js';
 
-type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
+type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
 interface HubItem {
   path: string;
@@ -13,6 +14,8 @@ interface HubItem {
   description?: string;
   icon: React.ReactNode;
   roles: Role[];
+  /** Permissões que liberam o item (qualquer uma basta) */
+  perms?: string[];
 }
 
 interface HubGroup {
@@ -28,15 +31,29 @@ interface HubGroup {
 export default function VenderHub() {
   const { user } = useAuth();
   const role = user?.role as Role | undefined;
+  const { has } = usePermissions();
 
   const groups: HubGroup[] = [
     {
       title: 'Pedidos',
       description: 'Operação de vendas',
       items: [
-        { path: '/orders', label: 'Pedidos', description: 'Todos os pedidos e status', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/kitchen', label: 'Cozinha', description: 'Monitor de preparo', icon: <FlameIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/reservations', label: 'Reservas', description: 'Mesas e agendamentos', icon: <CalendarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+      {
+        path: '/orders',
+        label: 'Pedidos',
+        description: 'Todos os pedidos e status',
+        icon: <ClipboardIcon className="w-6 h-6" />,
+        roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
+        perms: ['orders.view'],
+      },
+      {
+        path: '/kitchen',
+        label: 'Cozinha',
+        description: 'Monitor de preparo',
+        icon: <FlameIcon className="w-6 h-6" />,
+        roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
+        perms: ['kitchen.view'],
+      },
       ],
     },
     {
@@ -50,14 +67,21 @@ export default function VenderHub() {
       title: 'Impressão',
       description: 'Comandas e recibos',
       items: [
-        { path: '/settings/printers', label: 'Impressoras', description: 'Impressão térmica e agente', icon: <PrinterIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/print', label: 'Modelos de impressão', description: 'Comanda e recibo', icon: <ScaleIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+        { path: '/settings/printers', label: 'Impressoras', description: 'Impressão térmica e agente', icon: <PrinterIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['print.view', 'print.settings'] },
+        { path: '/settings/print', label: 'Modelos de impressão', description: 'Comanda e recibo', icon: <ScaleIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['print.view', 'print.settings'] },
       ],
     },
   ];
 
   const visibleGroups = groups
-    .map((g) => ({ ...g, items: g.items.filter((i) => role && i.roles.includes(role)) }))
+    .map((g) => ({
+      ...g,
+      items: g.items.filter((i) => {
+        if (role === 'SUPER_ADMIN') return true;
+        if (!i.perms) return !!role && i.roles.includes(role);
+        return i.perms.some((p) => has(p as never));
+      }),
+    }))
     .filter((g) => g.items.length > 0);
 
   return (
