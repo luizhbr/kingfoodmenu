@@ -265,13 +265,13 @@
     "errorLoading": "Falha ao carregar os detalhes do pedido."
   },
   "orderStatus": {
-    "placed": "Realizado",
-    "confirmed": "Confirmado",
-    "preparing": "Preparando",
+    "placed": "Pedido recebido",
+    "confirmed": "Pedido aceito",
+    "preparing": "Em preparo",
     "ready": "Pronto",
-    "outForDelivery": "Saiu para Entrega",
+    "outForDelivery": "Saiu para entrega",
     "delivered": "Entregue",
-    "readyForPickup": "Pronto",
+    "readyForPickup": "Pronto para retirada",
     "pickedUp": "Retirado",
     "cancelled": "Cancelado",
     "cancelledMessage": "Este pedido foi cancelado.",
