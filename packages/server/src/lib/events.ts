@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import prisma from './db.js';
 import { executeAction } from './actions.js';
+import { notifyStatusWhatsApp } from './whatsapp.js';
 import { automationLogger } from './logger.js';
 
 export const appEvents = new EventEmitter();
@@ -10,6 +11,7 @@ appEvents.on('order.created', (data) => processRules('order.created', data));
 appEvents.on('order.statusChanged', (data) => {
   processRules('order.statusChanged', data);
   void autoPrintOnConfirmed(data);
+  void notifyWhatsAppOnStatusChange(data);
 });
 appEvents.on('reservation.created', (data) => processRules('reservation.created', data));
 appEvents.on('review.submitted', (data) => processRules('review.submitted', data));
@@ -50,6 +52,45 @@ export async function autoPrintOnConfirmed(data: Record<string, unknown>): Promi
     }
   } catch (err) {
     automationLogger.error({ err }, 'auto-print handler error');
+  }
+}
+
+
+/**
+ * WhatsApp status notification: when an order's status changes, send a
+ * WhatsApp message to the customer (if enabled). Non-blocking — errors
+ * are logged but never interrupt the status update flow.
+ *
+ * Idempotency: skips PENDING (initial) and duplicate status (same as previous).
+ */
+export async function notifyWhatsAppOnStatusChange(data: Record<string, unknown>): Promise<void> {
+  try {
+    const order = data.order as {
+      id?: string;
+      orderNumber?: string;
+      status?: string;
+      orderType?: string;
+      customerId?: string | null;
+      guestName?: string | null;
+      guestPhone?: string | null;
+      customer?: { name?: string | null } | null;
+    } | undefined;
+    const previousStatus = data.previousStatus as string | undefined;
+
+    if (!order?.orderNumber || !order.status || !previousStatus) return;
+    if (order.status === 'PENDING' || order.status === previousStatus) return;
+
+    await notifyStatusWhatsApp({
+      orderNumber: order.orderNumber,
+      status: order.status,
+      previousStatus,
+      orderType: order.orderType || 'DELIVERY',
+      customerName: order.customer?.name || null,
+      guestName: order.guestName || null,
+      guestPhone: order.guestPhone || null,
+    });
+  } catch (err) {
+    automationLogger.error({ err }, 'WhatsApp status notification error');
   }
 }
 

@@ -259,6 +259,11 @@ export default function OrderStatus() {
                     {item.options.map((o) => `${o.name}: ${o.value}`).join(', ')}
                   </div>
                 )}
+                {item.comment && (
+                  <div className="text-xs text-gray-500 mt-0.5 italic">
+                    📝 {item.comment}
+                  </div>
+                )}
               </div>
               <span className="font-medium text-gray-900">${item.subtotal.toFixed(2)}</span>
             </div>
@@ -286,7 +291,13 @@ export default function OrderStatus() {
               <span>-${order.discount.toFixed(2)}</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">
+          {(order as OrderDetail).comment && (
+          <div className="flex justify-between text-gray-600">
+            <span>{t('checkout.note', 'Observação')}</span>
+            <span className="text-right max-w-[60%]">{(order as OrderDetail).comment}</span>
+          </div>
+        )}
+        <div className="flex justify-between font-bold text-base pt-2 border-t border-gray-200">
             <span>{t('checkout.total')}</span>
             <span className="text-primary-600">${(order as OrderDetail).total.toFixed(2)}</span>
           </div>

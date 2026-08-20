@@ -846,6 +846,7 @@ export async function updateOrderStatus(req: Request<{ id: string }>, res: Respo
     data: { status },
     include: {
       items: { include: { options: true } },
+      customer: { select: { email: true, name: true } },
     },
   });
 

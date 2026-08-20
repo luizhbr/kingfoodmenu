@@ -186,3 +186,74 @@ export async function notifyOrderWhatsApp(order: WhatsAppOrderPayload): Promise<
     console.warn('[whatsapp] provider error', provider); // removed err details that could leak data
   }
 }
+
+
+// ── Status change notification ──────────────────────────────────────────────
+// Notifies the customer when their order status changes (e.g. confirmed,
+// preparing, out_for_delivery). Follows the same provider pattern as
+// notifyOrderWhatsApp but with a status-specific message format.
+
+export interface WhatsAppStatusPayload {
+  orderNumber: string;
+  status: string;
+  previousStatus: string;
+  orderType: string;
+  customerName?: string | null;
+  guestName?: string | null;
+  guestPhone?: string | null;
+}
+
+const STATUS_LABELS_PT: Record<string, string> = {
+  PENDING: 'Pedido recebido',
+  CONFIRMED: 'Pedido confirmado',
+  PREPARING: 'Em preparo',
+  READY: 'Pronto para entrega',
+  OUT_FOR_DELIVERY: 'Saiu para entrega',
+  DELIVERED: 'Entregue',
+  PICKED_UP: 'Pedido retirado',
+  CANCELLED: 'Pedido cancelado',
+};
+
+export function formatStatusWhatsAppMessage(payload: WhatsAppStatusPayload): string {
+  const label = STATUS_LABELS_PT[payload.status] || payload.status;
+  const name = payload.customerName || payload.guestName;
+  const lines = [
+    `🔔 *King Food — Atualização do pedido*`,
+    `Pedido: *${payload.orderNumber}*`,
+    `Status: *${label}*`,
+    name ? `Cliente: ${name}` : null,
+  ].filter(Boolean);
+  return lines.join('\n');
+}
+
+export async function notifyStatusWhatsApp(payload: WhatsAppStatusPayload): Promise<void> {
+  if (!isEnabled()) return;
+  // Don't notify on PENDING (initial state) or duplicate status
+  if (payload.status === 'PENDING' || payload.status === payload.previousStatus) return;
+
+  const message = formatStatusWhatsAppMessage(payload);
+  const provider = resolveProvider();
+
+  // Reuse the order payload shape for provider dispatch
+  const orderPayload: WhatsAppOrderPayload = {
+    orderNumber: payload.orderNumber,
+    orderType: payload.orderType,
+    total: 0,
+    guestName: payload.guestName,
+    guestPhone: payload.guestPhone,
+    customerName: payload.customerName,
+    items: [],
+  };
+
+  try {
+    if (provider === 'twilio') {
+      await sendTwilio(message, orderPayload);
+    } else if (provider === 'webhook') {
+      await sendWebhook(message, orderPayload);
+    } else {
+      await sendStub(message, orderPayload);
+    }
+  } catch (err) {
+    console.warn('[whatsapp:status] provider error', provider);
+  }
+}
