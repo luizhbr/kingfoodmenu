@@ -50,7 +50,7 @@ function getStepIndex(steps: { key: string; label: string }[], status: string): 
 export default function OrderStatus() {
   const { t } = useTranslation();
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [order, setOrder] = useState<OrderData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -74,7 +74,10 @@ export default function OrderStatus() {
 
   useEffect(() => {
     const headers: Record<string, string> = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
+    // Only send Authorization for authenticated CUSTOMERS. A staff token
+    // (shared localStorage key with /admin) must NOT be sent — the backend
+    // would treat the trackingToken as an order ID and return 404.
+    if (token && user) headers.Authorization = `Bearer ${token}`;
 
     fetch(`${API_BASE}/api/orders/${id}`, { headers })
       .then((res) => {
@@ -92,7 +95,7 @@ export default function OrderStatus() {
 
     const interval = setInterval(() => {
       const headers: Record<string, string> = {};
-      if (token) headers.Authorization = `Bearer ${token}`;
+      if (token && user) headers.Authorization = `Bearer ${token}`;
 
       fetch(`${API_BASE}/api/orders/${id}`, { headers })
         .then((res) => {
