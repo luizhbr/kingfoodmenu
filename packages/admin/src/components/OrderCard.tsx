@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
+import { uiFeedback } from '../lib/uiSounds.js';
 import OrderActionModal from './OrderActionModal.js';
 import { useOrderActions, isActionable } from '../lib/useOrderActions.js';
 import DriverWhatsAppModal from './DriverWhatsAppModal.js';
@@ -143,8 +144,10 @@ export default function OrderCard({ order, token, onStatusChange, onDelete }: Pr
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Não foi possível atualizar o pedido.');
+      uiFeedback('success');
       onStatusChange(order.id, action.next);
     } catch (err: any) {
+      uiFeedback('error');
       setActionError(err.message || 'Não foi possível atualizar o pedido.');
     } finally {
       setUpdating(false);

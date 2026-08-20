@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext.js';
 import { PendingOrdersContext } from './PendingOrdersContext.js';
 import MobileBottomNav from './MobileBottomNav.js';
 import GlobalSearch from './GlobalSearch.js';
+import { useHapticFeedback } from '../lib/useHapticFeedback.js';
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF' | 'DRIVER';
 
@@ -30,6 +31,7 @@ export default function AdminLayout({ children, onLogout }: { children: React.Re
   const location = useLocation();
   const { user, token } = useAuth();
   const [pendingCount, setPendingCount] = useState(0);
+  useHapticFeedback();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 

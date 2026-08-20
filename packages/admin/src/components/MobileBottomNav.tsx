@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { usePendingOrders } from './PendingOrdersContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { MAIN_NAV_ITEMS, getActiveArea } from './mainNav.js';
+import { uiFeedback } from '../lib/uiSounds.js';
 
 /**
  * Bottom navigation — ÚNICA navegação principal entre as áreas.
@@ -34,6 +35,7 @@ export default function MobileBottomNav() {
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => uiFeedback('nav')}
               className={`relative flex flex-col items-center justify-center gap-0.5 min-w-[72px] py-1.5 rounded-xl transition active:scale-90 min-h-[52px] ${
                 active ? 'text-kf-primary' : 'text-kf-muted'
               }`}
