@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api.js';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
 
@@ -24,35 +24,64 @@ interface KitchenOrder {
 
 const KITCHEN_STATUSES = ['PENDING', 'CONFIRMED', 'PREPARING', 'READY'];
 
+// ── Status config ────────────────────────────────────────────────────────────
+// IMPORTANT: values MUST match the backend enum (English). Sending PT-BR
+// labels ('CONFIRMADO', 'EM PREPARO', 'PRONTO', 'CANCELADO') returns 400 and
+// leaves orders stuck forever.
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; next: string | null }> = {
-  PENDING: { label: 'Novos', color: 'text-yellow-800', bg: 'bg-yellow-50 border-yellow-300', next: 'CONFIRMADO' },
-  CONFIRMED: { label: 'Confirmado', color: 'text-blue-800', bg: 'bg-blue-50 border-blue-300', next: 'EM PREPARO' },
-  PREPARING: { label: 'Em preparo', color: 'text-purple-800', bg: 'bg-purple-50 border-purple-300', next: 'PRONTO' },
-  READY: { label: 'Pronto', color: 'text-green-800', bg: 'bg-green-50 border-green-300', next: null },
+  PENDING: { label: 'Novos', color: 'text-kf-warning', bg: 'bg-kf-warning/10 border-kf-warning/30', next: 'CONFIRMED' },
+  CONFIRMED: { label: 'Confirmado', color: 'text-kf-info', bg: 'bg-kf-info/10 border-kf-info/30', next: 'PREPARING' },
+  PREPARING: { label: 'Em preparo', color: 'text-kf-primary', bg: 'bg-kf-primary/10 border-kf-primary/30', next: 'READY' },
+  READY: { label: 'Pronto', color: 'text-kf-success', bg: 'bg-kf-success/10 border-kf-success/30', next: null },
 };
 
 const NEXT_ACTION: Record<string, string> = {
   PENDING: 'Confirmar',
-  CONFIRMED: 'Start Preparing',
+  CONFIRMED: 'Iniciar preparo',
   PREPARING: 'Marcar pronto',
 };
+
+const POLL_INTERVAL_MS = 5000; // 5s — near real-time on serverless (no WebSocket)
 
 export default function KitchenDisplay() {
   const [orders, setOrders] = useState<KitchenOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [lastRefresh, setLastRefresh] = useState(new Date());
+  const [newOrderIds, setNewOrderIds] = useState<Set<string>>(new Set());
+  const [live, setLive] = useState(true);
+  const prevOrderIds = useRef<Set<string>>(new Set());
   const { printState, printOrder } = usePrintOrder();
 
-  const fetchOrders = useCallback(() => {
+  const fetchOrders = useCallback((silent = false) => {
     // Fetch pedidos ativos (non-completed, non-cancelled)
     const statuses = KITCHEN_STATUSES.join(',');
     api.get<{ data: KitchenOrder[] }>(`/orders?limit=50&includeItems=true&status=${statuses}`)
       .then((res) => {
-        setOrders(res.data);
+        const incoming = res.data;
+        setOrders(incoming);
         setLastRefresh(new Date());
+
+        // Highlight NEW orders (ids not present in the previous fetch)
+        const incomingIds = new Set(incoming.map((o) => o.id));
+        const fresh = new Set<string>();
+        for (const o of incoming) {
+          if (!prevOrderIds.current.has(o.id)) fresh.add(o.id);
+        }
+        if (fresh.size > 0) {
+          setNewOrderIds(fresh);
+          // Clear highlight after 4s
+          setTimeout(() => {
+            setNewOrderIds((prev) => {
+              const next = new Set(prev);
+              fresh.forEach((id) => next.delete(id));
+              return next;
+            });
+          }, 4000);
+        }
+        prevOrderIds.current = incomingIds;
       })
-      .catch(() => { })
+      .catch(() => { /* silent — keep last known state */ })
       .finally(() => setLoading(false));
   }, []);
 
@@ -60,12 +89,22 @@ export default function KitchenDisplay() {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Serverless polling: Socket.IO is not available on Vercel serverless
-  // functions, so the kitchen refreshes pedidos ativos on a fixed interval.
-  // The interval is cleared on unmount and never duplicated (single effect).
+  // Near real-time: silent polling every 5s. No manual refresh button needed —
+  // the page stays in sync automatically. Interval is cleared on unmount and
+  // never duplicated (single effect).
   useEffect(() => {
-    const timer = setInterval(fetchOrders, 15000);
+    const timer = setInterval(() => fetchOrders(true), POLL_INTERVAL_MS);
     return () => clearInterval(timer);
+  }, [fetchOrders]);
+
+  // Pause polling when the tab is hidden (battery/bandwidth friendly)
+  useEffect(() => {
+    const onVisibility = () => {
+      setLive(!document.hidden);
+      if (!document.hidden) fetchOrders(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [fetchOrders]);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
@@ -77,7 +116,7 @@ export default function KitchenDisplay() {
         if (!KITCHEN_STATUSES.includes(newStatus)) {
           return prev.filter((o) => o.id !== orderId);
         }
-        return prev.map((o) => o.id === orderId ? { ...o, status: newStatus } : o);
+        return prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
       });
     } catch {
       // Refresh on error
@@ -100,11 +139,23 @@ export default function KitchenDisplay() {
     }
   };
 
+  const handleCancel = async (orderId: string) => {
+    setUpdating(orderId);
+    try {
+      await api.patch(`/orders/${orderId}/status`, { status: 'CANCELLED' });
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } catch {
+      fetchOrders();
+    } finally {
+      setUpdating(null);
+    }
+  };
+
   const getTimeSince = (dateStr: string) => {
     const mins = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    return `${Math.floor(mins / 60)}h ${mins % 60}m ago`;
+    if (mins < 1) return 'agora';
+    if (mins < 60) return `${mins}min atrás`;
+    return `${Math.floor(mins / 60)}h ${mins % 60}min atrás`;
   };
 
   // Separate scheduled vs immediate orders
@@ -122,179 +173,178 @@ export default function KitchenDisplay() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-kf-bg">
       {/* Header */}
-      <div className="bg-gray-900 text-white px-6 py-3 flex items-center justify-between">
+      <div className="bg-kf-surface border-b border-kf-border px-4 sm:px-6 py-3 flex items-center justify-between sticky top-0 z-10">
         <div className="flex items-center gap-4">
-          <h1 className="text-lg font-bold text-primary-400">Cozinha — Display</h1>
+          <h1 className="text-lg font-bold text-kf-foreground">Cozinha — Display</h1>
           <div className="flex items-center gap-2" role="status">
-            <div className="w-2 h-2 rounded-full bg-green-400" />
-            <span className="text-xs text-gray-400">Atualização automática 15s</span>
+            <span className={`w-2 h-2 rounded-full ${live ? 'bg-kf-success animate-pulse' : 'bg-kf-muted'}`} />
+            <span className="text-xs text-kf-muted">
+              {live ? 'Tempo real' : 'Pausado'}
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-xs text-gray-400">
-            {orders.length} pedidos ativos | Atualizado {lastRefresh.toLocaleTimeString()}
+          <span className="text-xs text-kf-muted">
+            {orders.length} pedidos ativos · atualizado {lastRefresh.toLocaleTimeString()}
           </span>
-          <button
-            onClick={fetchOrders}
-            className="text-xs bg-gray-700 hover:bg-gray-600 px-3 py-1.5 rounded transition-colors"
-            aria-label="Refresh orders"
-          >Atualizar</button>
         </div>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" role="status" aria-label="Carregando" />
+          <div className="w-8 h-8 border-4 border-kf-primary/20 border-t-kf-primary rounded-full animate-spin" role="status" aria-label="Carregando" />
         </div>
       ) : (
         <>
           {/* Scheduled orders banner */}
           {scheduledOrders.length > 0 && (
-            <div className="mx-4 mt-4 bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-              <h3 className="text-sm font-bold text-indigo-800 mb-2">
+            <div className="mx-4 mt-4 bg-kf-info/10 border border-kf-info/30 rounded-kf-lg p-4">
+              <h3 className="text-sm font-bold text-kf-info mb-2">
                 Pedidos agendados ({scheduledOrders.length})
               </h3>
               <div className="flex flex-wrap gap-3">
                 {scheduledOrders.map((order) => (
-                  <div key={order.id} className="bg-white rounded-lg border border-indigo-200 px-3 py-2 text-xs">
-                    <span className="font-mono font-bold text-gray-900">#{order.orderNumber}</span>
-                    <span className={`ml-2 px-1.5 py-0.5 rounded font-medium ${order.orderType === 'DELIVERY' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                  <div key={order.id} className="bg-kf-surface rounded-kf-lg border border-kf-info/30 px-3 py-2 text-xs">
+                    <span className="font-mono font-bold text-kf-foreground">#{order.orderNumber}</span>
+                    <span className={`ml-2 px-1.5 py-0.5 rounded-kf-md font-medium ${order.orderType === 'DELIVERY' ? 'bg-kf-info/10 text-kf-info' : 'bg-kf-success/10 text-kf-success'
                       }`}>
-                      {order.orderType === 'DELIVERY' ? "Entrega" : order.orderType === 'PICKUP' ? "Retirada" : order.orderType}
+                      {order.orderType === 'DELIVERY' ? 'Entrega' : order.orderType === 'PICKUP' ? 'Retirada' : order.orderType}
                     </span>
-                    <span className="ml-2 text-indigo-600 font-medium">
+                    <span className="ml-2 text-kf-info font-medium">
                       {new Date(order.scheduledAt!).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
-                    {order.customer && <span className="ml-2 text-gray-500">{order.customer.name}</span>}
-                    <span className="ml-2 text-gray-400">{order.items.length} items</span>
+                    {order.customer && <span className="ml-2 text-kf-muted">{order.customer.name}</span>}
+                    <span className="ml-2 text-kf-muted">{order.items.length} itens</span>
                   </div>
                 ))}
               </div>
             </div>
           )}
-          <div className="overflow-x-auto"><div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 h-auto md:h-[calc(100vh-52px)] overflow-x-auto">
-            {ordersByStatus.map(({ status, config, orders: statusOrders }) => (
-              <div key={status} className="flex flex-col min-h-0 min-w-[280px]">
-                {/* Column header */}
-                <div className={`rounded-t-lg px-4 py-2 border-b-2 ${config.bg}`}>
-                  <div className="flex items-center justify-between">
-                    <h2 className={`font-bold text-sm ${config.color}`}>{config.label}</h2>
-                    <span className={`text-xs font-bold ${config.color} bg-white/50 px-2 py-0.5 rounded-full`}>
-                      {statusOrders.length}
-                    </span>
+          <div className="overflow-x-auto">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 h-auto md:h-[calc(100vh-52px)] overflow-x-auto">
+              {ordersByStatus.map(({ status, config, orders: statusOrders }) => (
+                <div key={status} className="flex flex-col min-h-0 min-w-[280px]">
+                  {/* Column header */}
+                  <div className={`rounded-t-kf-lg px-4 py-2 border-b-2 ${config.bg}`}>
+                    <div className="flex items-center justify-between">
+                      <h2 className={`font-bold text-sm ${config.color}`}>{config.label}</h2>
+                      <span className={`text-xs font-bold ${config.color} bg-kf-surface/60 px-2 py-0.5 rounded-full`}>
+                        {statusOrders.length}
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Order cards */}
-                <div className="flex-1 overflow-y-auto space-y-3 py-3">
-                  {statusOrders.length === 0 && (
-                    <p className="text-center text-gray-400 text-sm py-8">Sem pedidos</p>
-                  )}
-                  {statusOrders.map((order) => (
-                    <div
-                      key={order.id}
-                      className={`bg-white rounded-lg shadow-sm border p-4 mx-1 ${updating === order.id ? 'opacity-50' : ''
-                        }`}
-                    >
-                      {/* Order header */}
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <span className="font-mono text-sm font-bold text-gray-900">
-                            #{order.orderNumber}
-                          </span>
-                          <span className={`ml-2 text-xs px-1.5 py-0.5 rounded font-medium ${order.orderType === 'DELIVERY'
-                              ? 'bg-blue-100 text-blue-700'
-                              : 'bg-green-100 text-green-700'
-                            }`}>
-                            {order.orderType === 'DELIVERY' ? "Entrega" : order.orderType === 'PICKUP' ? "Retirada" : order.orderType}
-                          </span>
+                  {/* Order cards */}
+                  <div className="flex-1 overflow-y-auto space-y-3 py-3">
+                    {statusOrders.length === 0 && (
+                      <p className="text-center text-kf-muted text-sm py-8">Sem pedidos</p>
+                    )}
+                    {statusOrders.map((order) => (
+                      <div
+                        key={order.id}
+                        className={`bg-kf-surface rounded-kf-lg shadow-sm border p-4 mx-1 transition-all duration-300 ${
+                          updating === order.id ? 'opacity-50' : ''
+                        } ${newOrderIds.has(order.id) ? 'border-kf-primary ring-2 ring-kf-primary/30 animate-pulse' : 'border-kf-border'}`}
+                      >
+                        {/* Order header */}
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <span className="font-mono text-sm font-bold text-kf-foreground">
+                              #{order.orderNumber}
+                            </span>
+                            <span className={`ml-2 text-xs px-1.5 py-0.5 rounded-kf-md font-medium ${order.orderType === 'DELIVERY'
+                                ? 'bg-kf-info/10 text-kf-info'
+                                : 'bg-kf-success/10 text-kf-success'
+                              }`}>
+                              {order.orderType === 'DELIVERY' ? 'Entrega' : order.orderType === 'PICKUP' ? 'Retirada' : order.orderType}
+                            </span>
+                          </div>
+                          <span className="text-xs text-kf-muted">{getTimeSince(order.createdAt)}</span>
                         </div>
-                        <span className="text-xs text-gray-400">{getTimeSince(order.createdAt)}</span>
-                      </div>
 
-                      {/* Customer */}
-                      {order.customer && (
-                        <p className="text-xs text-gray-500 mb-2">{order.customer.name}</p>
-                      )}
+                        {/* Customer */}
+                        {order.customer && (
+                          <p className="text-xs text-kf-muted mb-2">{order.customer.name}</p>
+                        )}
 
-                      {/* Items */}
-                      <div className="space-y-1 mb-3">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="text-sm">
-                            <div className="flex items-start gap-2">
-                              <span className="font-bold text-gray-600 text-xs min-w-[20px]">
-                                {item.quantity}x
-                              </span>
-                              <div className="flex-1">
-                                <span className="font-medium text-gray-900">{item.name}</span>
-                                {item.options.length > 0 && (
-                                  <p className="text-xs text-gray-500">
-                                    {item.options.map((o) => `${o.name}: ${o.value}`).join(', ')}
-                                  </p>
-                                )}
-                                {item.comment && (
-                                  <p className="text-xs text-amber-600 italic">{item.comment}</p>
-                                )}
+                        {/* Items */}
+                        <div className="space-y-1 mb-3">
+                          {order.items.map((item) => (
+                            <div key={item.id} className="text-sm">
+                              <div className="flex items-start gap-2">
+                                <span className="font-bold text-kf-muted text-xs min-w-[20px]">
+                                  {item.quantity}x
+                                </span>
+                                <div className="flex-1">
+                                  <span className="font-medium text-kf-foreground">{item.name}</span>
+                                  {item.options.length > 0 && (
+                                    <p className="text-xs text-kf-muted">
+                                      {item.options.map((o) => `${o.name}: ${o.value}`).join(', ')}
+                                    </p>
+                                  )}
+                                  {item.comment && (
+                                    <p className="text-xs text-kf-warning italic">{item.comment}</p>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-
-                      {/* Order comment */}
-                      {order.comment && (
-                        <div className="bg-amber-50 border border-amber-200 rounded p-2 mb-3">
-                          <p className="text-xs text-amber-700">{order.comment}</p>
+                          ))}
                         </div>
-                      )}
 
-                      {/* Action buttons */}
-                      <div className="flex gap-2">
-                        {config.next && (
-                          <button
-                            onClick={() => handleStatusUpdate(order.id, config.next!)}
-                            disabled={updating === order.id}
-                            className="flex-1 bg-primary-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
-                            aria-label={`${NEXT_ACTION[status]} order ${order.orderNumber}`}
-                          >
-                            {NEXT_ACTION[status]}
-                          </button>
+                        {/* Order comment */}
+                        {order.comment && (
+                          <div className="bg-kf-warning/10 border border-kf-warning/30 rounded-kf-md p-2 mb-3">
+                            <p className="text-xs text-kf-warning">{order.comment}</p>
+                          </div>
                         )}
-                        {status === 'READY' && (
+
+                        {/* Action buttons */}
+                        <div className="flex gap-2">
+                          {config.next && (
+                            <button
+                              onClick={() => handleStatusUpdate(order.id, config.next!)}
+                              disabled={updating === order.id}
+                              className="flex-1 bg-kf-primary text-kf-primary-fg text-xs font-medium py-2 rounded-kf-lg hover:bg-kf-primary/90 transition-colors disabled:opacity-50"
+                              aria-label={`${NEXT_ACTION[status]} order ${order.orderNumber}`}
+                            >
+                              {NEXT_ACTION[status]}
+                            </button>
+                          )}
+                          {status === 'READY' && (
+                            <button
+                              onClick={() => handleComplete(order.id, order.orderType)}
+                              disabled={updating === order.id}
+                              className="flex-1 bg-kf-success text-white text-xs font-medium py-2 rounded-kf-lg hover:bg-kf-success/90 transition-colors disabled:opacity-50"
+                              aria-label={`Mark order ${order.orderNumber} as ${order.orderType === 'DELIVERY' ? 'out for delivery' : 'picked up'}`}
+                            >
+                              {order.orderType === 'DELIVERY' ? 'Em entrega' : 'Retirado'}
+                            </button>
+                          )}
                           <button
-                            onClick={() => handleComplete(order.id, order.orderType)}
-                            disabled={updating === order.id}
-                            className="flex-1 bg-green-600 text-white text-xs font-medium py-2 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-                            aria-label={`Mark order ${order.orderNumber} as ${order.orderType === 'DELIVERY' ? 'out for delivery' : 'picked up'}`}
+                            onClick={() => void printOrder(order.id, 'REPRINT')}
+                            disabled={updating === order.id || printState.status === 'sending'}
+                            className="text-kf-muted hover:text-kf-foreground text-xs font-medium px-2 py-2 rounded-kf-lg hover:bg-kf-surface-muted transition-colors disabled:opacity-50"
+                            aria-label={`Imprimir comanda ${order.orderNumber}`}
                           >
-                            {order.orderType === 'DELIVERY' ? 'Em entrega' : 'Retirado'}
+                            🖨
                           </button>
-                        )}
-                        <button
-                          onClick={() => void printOrder(order.id, 'REPRINT')}
-                          disabled={updating === order.id || printState.status === 'sending'}
-                          className="text-gray-600 hover:text-gray-900 text-xs font-medium px-2 py-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50"
-                          aria-label={`Imprimir comanda ${order.orderNumber}`}
-                        >
-                          🖨
-                        </button>
-                        <button
-                          onClick={() => handleStatusUpdate(order.id, 'CANCELADO')}
-                          disabled={updating === order.id}
-                          className="text-red-500 hover:text-red-700 text-xs font-medium px-2 py-2 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50"
-                          aria-label={`Cancelar order ${order.orderNumber}`}
-                        >
-                          Cancelar
-                        </button>
+                          <button
+                            onClick={() => handleCancel(order.id)}
+                            disabled={updating === order.id}
+                            className="text-kf-danger hover:text-kf-danger/80 text-xs font-medium px-2 py-2 rounded-kf-lg hover:bg-kf-danger/10 transition-colors disabled:opacity-50"
+                            aria-label={`Cancelar order ${order.orderNumber}`}
+                          >
+                            Cancelar
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           </div>
         </>
       )}
