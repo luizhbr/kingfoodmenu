@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import {
   ClipboardIcon, CreditCardIcon, PrinterIcon, ScaleIcon,
-  CogIcon, ChevronRightIcon, UsersIcon, StorefrontIcon,
+  ChevronRightIcon, CalendarIcon, FlameIcon,
 } from '../components/AdminIcons.js';
 
 type Role = 'SUPER_ADMIN' | 'MANAGER' | 'STAFF';
@@ -22,8 +22,8 @@ interface HubGroup {
 }
 
 /**
- * Hub VENDER — operação de vendas: pedidos, pagamentos e impressão.
- * Apenas organização visual: todas as rotas e dados são os existentes.
+ * Hub VENDER — TUDO relacionado a vendas: pedidos, cozinha, reservas,
+ * pagamentos e impressão. Sem duplicatas com a aba Gestão.
  */
 export default function VenderHub() {
   const { user } = useAuth();
@@ -35,8 +35,8 @@ export default function VenderHub() {
       description: 'Operação de vendas',
       items: [
         { path: '/orders', label: 'Pedidos', description: 'Todos os pedidos e status', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/kitchen', label: 'Cozinha', description: 'Monitor de preparo', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/reservations', label: 'Reservas', description: 'Mesas e agendamentos', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+        { path: '/kitchen', label: 'Cozinha', description: 'Monitor de preparo', icon: <FlameIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
+        { path: '/reservations', label: 'Reservas', description: 'Mesas e agendamentos', icon: <CalendarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
       ],
     },
     {

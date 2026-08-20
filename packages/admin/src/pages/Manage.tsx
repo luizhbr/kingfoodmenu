@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.js';
 import {
-  StorefrontIcon, ClipboardIcon, ChartBarIcon, GridIcon, FlameIcon,
-  CalendarIcon, MapPinIcon, StarIcon, TicketIcon, GiftIcon, BoltIcon,
-  CreditCardIcon, EnvelopeIcon, BookOpenIcon, PaintBrushIcon, CogIcon,
-  PrinterIcon, ScaleIcon, CodeBracketIcon, ShieldCheckIcon, UsersIcon,
+  StorefrontIcon, ChartBarIcon, MapPinIcon, StarIcon, TicketIcon, GiftIcon, BoltIcon,
+  EnvelopeIcon, BookOpenIcon, PaintBrushIcon, CogIcon,
+  CodeBracketIcon, ShieldCheckIcon, UsersIcon,
   FlaskIcon, ChevronRightIcon,
 } from '../components/AdminIcons.js';
 
@@ -26,24 +25,19 @@ interface ManageGroup {
 }
 
 /**
- * Tela Gestão — funcionalidades agrupadas por contexto (Operação/Financeiro/
- * Recursos da loja/Integrações/Configurações). Apenas reorganização de
- * apresentação: todas as rotas e dados são os existentes.
+ * Tela Gestão — TUDO relacionado a administração do negócio.
+ * Sem duplicatas com a aba Vender (pedidos, cozinha, reservas,
+ * pagamentos e impressão ficam em Vender).
  */
 export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) {
   const { user } = useAuth();
   const role = user?.role as Role | undefined;
 
-  const isManagerPlus = role === 'SUPER_ADMIN' || role === 'MANAGER';
-
   const groups: ManageGroup[] = [
     {
       title: 'Operação',
-      description: 'O dia a dia do seu negócio',
+      description: 'Estrutura do negócio',
       items: [
-        { path: '/orders', label: 'Pedidos', description: 'Acompanhe e gerencie os pedidos', icon: <ClipboardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], badge: pendingCount > 0 ? { count: pendingCount, label: 'pendentes' } : undefined },
-        { path: '/kitchen', label: 'Cozinha', description: 'Monitor de preparo', icon: <FlameIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
-        { path: '/reservations', label: 'Reservas', description: 'Mesas e agendamentos', icon: <CalendarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'] },
         { path: '/locations', label: 'Locais', description: 'Endereços e mesas', icon: <MapPinIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
       ],
     },
@@ -52,7 +46,6 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       description: 'Vendas e resultados',
       items: [
         { path: '/reports', label: 'Relatórios', description: 'Vendas, receita e tendências', icon: <ChartBarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/payment', label: 'Pagamentos', description: 'Stripe, PayPal e dinheiro', icon: <CreditCardIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'] },
         { path: '/settings/mail', label: 'Notificações por e-mail', description: 'SMTP e remetente', icon: <EnvelopeIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'] },
       ],
     },
@@ -72,8 +65,6 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       description: 'Conecte seus canais',
       items: [
         { path: '/automation', label: 'Automação', description: 'Regras e fluxos automáticos', icon: <BoltIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/printers', label: 'Impressoras', description: 'Impressão térmica e agente', icon: <PrinterIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
-        { path: '/settings/print', label: 'Modelos de impressão', description: 'Comanda e recibo', icon: <ScaleIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
       ],
     },
     {
@@ -90,7 +81,7 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
 
   // Nível 3 (configurações avançadas) — itens que não aparecem no grid principal
   const advancedItems: ManageItem[] = [
-    { path: '/legal/pages', label: 'Páginas legais', icon: <ScaleIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
+    { path: '/legal/pages', label: 'Páginas legais', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { path: '/legal/cookies', label: 'Cookies', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { path: '/legal/consent', label: 'Registro de consentimento', icon: <ShieldCheckIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN', 'MANAGER'] },
     { path: '/settings/advanced', label: 'Modo de manutenção', icon: <FlaskIcon className="w-5 h-5" />, roles: ['SUPER_ADMIN'] },
