@@ -465,7 +465,11 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   // using the real orderId as idempotency guard.
   let cashbackUsed = 0;
   if (cashbackUse && cashbackUse > 0 && customerId) {
-    const eligibleBase = Math.max(0, subtotal - couponDiscount);
+    const benefitCap = await getLoyaltySettingsValue().then((v) => v.benefitCapPercent);
+    // Teto de benefício: cupom + pontos + cashback juntos não passam de X% do subtotal.
+    const alreadyUsed = loyaltyDiscount + couponDiscount;
+    const capRemaining = Math.max(0, subtotal * benefitCap - alreadyUsed);
+    const eligibleBase = Math.min(Math.max(0, subtotal - couponDiscount), capRemaining);
     cashbackUsed = Math.min(cashbackUse, eligibleBase);
     // DEBIT executes ATOMICALLY here (with FOR UPDATE row lock) against the
     // idempotencyKey. Concurrent checkouts can never both spend the same

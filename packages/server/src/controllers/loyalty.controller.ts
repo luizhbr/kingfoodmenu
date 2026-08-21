@@ -10,6 +10,7 @@ const DEFAULT_LOYALTY = {
   pointsValue: 0.01,
   cashbackPercent: 0.05,
   minRedeemPoints: 100,
+  benefitCapPercent: 0.5, // teto: soma (cupom + pontos + cashback) <= 50% do subtotal
 };
 
 export async function getLoyaltySettingsValue(): Promise<{
@@ -17,6 +18,7 @@ export async function getLoyaltySettingsValue(): Promise<{
   pointsValue: number;
   cashbackPercent: number;
   minRedeemPoints: number;
+  benefitCapPercent: number;
 }> {
   try {
     const settings = await prisma.siteSettings.findUnique({ where: { id: 'default' } });
@@ -31,6 +33,8 @@ export async function getLoyaltySettingsValue(): Promise<{
         ? Number(raw.cashbackPercent) : DEFAULT_LOYALTY.cashbackPercent,
       minRedeemPoints: Number.isInteger(Number(raw.minRedeemPoints)) && Number(raw.minRedeemPoints) > 0
         ? Number(raw.minRedeemPoints) : DEFAULT_LOYALTY.minRedeemPoints,
+      benefitCapPercent: Number.isFinite(Number(raw.benefitCapPercent)) && Number(raw.benefitCapPercent) >= 0 && Number(raw.benefitCapPercent) <= 1
+        ? Number(raw.benefitCapPercent) : DEFAULT_LOYALTY.benefitCapPercent,
     };
   } catch {
     return { ...DEFAULT_LOYALTY };

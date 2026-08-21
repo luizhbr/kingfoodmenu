@@ -22,6 +22,7 @@ export default function SettingsLoyalty() {
   const [pointsValue, setPointsValue] = useState(0.01);
   const [cashbackPercent, setCashbackPercent] = useState(5);
   const [minRedeemPoints, setMinRedeemPoints] = useState(100);
+  const [benefitCap, setBenefitCap] = useState(50);
 
   // Rewards
   const [rewards, setRewards] = useState<Reward[]>([]);
@@ -41,6 +42,7 @@ export default function SettingsLoyalty() {
           if (d.pointsValue !== undefined) setPointsValue(d.pointsValue);
           if (d.cashbackPercent !== undefined) setCashbackPercent(d.cashbackPercent * 100);
           if (d.minRedeemPoints !== undefined) setMinRedeemPoints(d.minRedeemPoints);
+          if (d.benefitCapPercent !== undefined) setBenefitCap(d.benefitCapPercent * 100);
         }
       })
       .catch(() => {})
@@ -66,6 +68,7 @@ export default function SettingsLoyalty() {
           pointsValue,
           cashbackPercent: cashbackPercent / 100,
           minRedeemPoints,
+          benefitCapPercent: benefitCap / 100,
         }),
       });
       const data = await res.json();
@@ -192,6 +195,11 @@ export default function SettingsLoyalty() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Mínimo de pontos p/ resgatar</label>
             <input type="number" min={1} step={1} value={minRedeemPoints} onChange={(e) => setMinRedeemPoints(parseInt(e.target.value) || 100)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500" />
             <p className="text-xs text-gray-400 mt-1">Quantidade mínima que o cliente precisa ter para usar pontos</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Teto de benefício (%)</label>
+            <input type="number" min={0} max={100} step={1} value={benefitCap} onChange={(e) => setBenefitCap(parseFloat(e.target.value) || 0)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500" />
+            <p className="text-xs text-gray-400 mt-1">Máximo do subtotal que o cliente pode descontar somando cupom + pontos + cashback</p>
           </div>
         </div>
       </div>

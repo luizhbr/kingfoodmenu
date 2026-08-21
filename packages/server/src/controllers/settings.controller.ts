@@ -256,6 +256,7 @@ const loyaltySettingsSchema = z.object({
   pointsValue: z.number().min(0.0001).max(1).optional(),
   cashbackPercent: z.number().min(0).max(0.5).optional(),
   minRedeemPoints: z.number().int().min(1).optional(),
+  benefitCapPercent: z.number().min(0).max(1).optional(),
 });
 
 
