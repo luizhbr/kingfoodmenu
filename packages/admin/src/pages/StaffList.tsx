@@ -38,6 +38,7 @@ export default function StaffList() {
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active'); // active | inactive | all
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Staff | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -53,6 +54,7 @@ export default function StaffList() {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (roleFilter) params.set('role', roleFilter);
     if (search) params.set('search', search);
+    if (statusFilter !== 'all') params.set('isActive', String(statusFilter === 'active'));
 
     fetch(`/api/staff?${params}`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -67,7 +69,7 @@ export default function StaffList() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [page, roleFilter, search, token]);
+  }, [page, roleFilter, search, statusFilter, token]);
 
   async function handleDelete(target: Staff) {
     if (deleting) return;
@@ -141,6 +143,16 @@ export default function StaffList() {
           <option value="MANAGER">Manager</option>
           <option value="STAFF">Funcionários</option>
         </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+          className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 outline-none w-full sm:w-auto"
+          aria-label="Filter by status"
+        >
+          <option value="active">Ativos</option>
+          <option value="inactive">Inativos</option>
+          <option value="all">Todos</option>
+        </select>
       </div>
 
       {loading && (
@@ -152,7 +164,7 @@ export default function StaffList() {
       {error && <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">{error}</div>}
 
       {!loading && !error && staff.length === 0 && (
-        <p className="text-gray-500 text-center py-12">No staff members found.</p>
+        <p className="text-gray-500 text-center py-12">Nenhum funcionário encontrado.</p>
       )}
 
       {!loading && staff.length > 0 && (
