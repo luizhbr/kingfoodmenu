@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import path from 'path';
-import { promises as fs } from 'fs';
 import prisma from '../lib/db.js';
 
-const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
-
+/**
+ * Upload media — stores image as base64 data URL in the database.
+ * Required for Vercel serverless (filesystem is read-only).
+ */
 export async function uploadMedia(req: Request, res: Response): Promise<void> {
   if (!req.file) {
     res.status(400).json({ success: false, error: 'No file provided' });
@@ -12,12 +12,13 @@ export async function uploadMedia(req: Request, res: Response): Promise<void> {
   }
 
   const userId = (req as any).user?.id ?? null;
+  const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
 
   const asset = await prisma.mediaAsset.create({
     data: {
-      filename: req.file.filename,
+      filename: req.file.originalname,
       originalName: req.file.originalname,
-      url: `/uploads/${req.file.filename}`,
+      url: dataUrl,
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedById: userId,
@@ -54,13 +55,6 @@ export async function deleteMedia(req: Request<{ id: string }>, res: Response): 
   if (!asset) {
     res.status(404).json({ success: false, error: 'Media not found' });
     return;
-  }
-
-  const filePath = path.join(UPLOADS_DIR, asset.filename);
-  try {
-    await fs.unlink(filePath);
-  } catch {
-    // file may already be gone — keep going to remove the DB row
   }
 
   await prisma.mediaAsset.delete({ where: { id: req.params.id } });

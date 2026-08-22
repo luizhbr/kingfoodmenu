@@ -298,7 +298,8 @@ export async function uploadMenuItemImage(req: Request<{ id: string }>, res: Res
     return;
   }
 
-  const imagePath = `/uploads/${req.file.filename}`;
+  // Store as base64 data URL — Vercel serverless has read-only filesystem
+  const imagePath = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
   const gallery = parseGallery(existing.images);
 
   // Primeira foto do produto: vira a principal e atualiza image (compatibilidade)

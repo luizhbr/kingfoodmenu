@@ -1,24 +1,15 @@
 import multer from 'multer';
-import path from 'path';
-import { randomUUID } from 'crypto';
-
-const UPLOADS_DIR = path.resolve(process.cwd(), 'uploads');
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, UPLOADS_DIR);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, `${randomUUID()}${ext}`);
-  },
-});
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
+/**
+ * Memory storage — required for Vercel serverless (filesystem is read-only).
+ * Files are kept in req.file.buffer as a Buffer and persisted as base64
+ * data URLs in the database by the controllers.
+ */
 export const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: MAX_FILE_SIZE },
   fileFilter: (_req, file, cb) => {
     if (ALLOWED_TYPES.includes(file.mimetype)) {

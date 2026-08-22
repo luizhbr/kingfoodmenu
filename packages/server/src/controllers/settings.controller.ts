@@ -120,7 +120,8 @@ export async function uploadLogo(req: Request, res: Response): Promise<void> {
 
   await getOrCreateSettings();
 
-  const logoPath = `/uploads/${req.file.filename}`;
+  // Store as base64 data URL — Vercel serverless has read-only filesystem
+  const logoPath = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
   const settings = await prisma.siteSettings.update({
     where: { id: 'default' },
     data: { logo: logoPath },
@@ -137,7 +138,8 @@ export async function uploadFavicon(req: Request, res: Response): Promise<void> 
 
   await getOrCreateSettings();
 
-  const faviconPath = `/uploads/${req.file.filename}`;
+  // Store as base64 data URL — Vercel serverless has read-only filesystem
+  const faviconPath = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
   const settings = await prisma.siteSettings.update({
     where: { id: 'default' },
     data: { favicon: faviconPath },

@@ -4,7 +4,6 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
-import path from 'path';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
 import printRoutes from './routes/print.routes.js';
@@ -186,7 +185,8 @@ export function createApp() {
   }
 
   // ── Static files ──────────────────────────────────────────────────────
-  app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+  // /uploads static serving removed — images are now stored as base64 data URLs in the DB
+  // (Vercel serverless has a read-only filesystem)
 
   // ── API Documentation ─────────────────────────────────────────────────
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(openApiSpec, {
