@@ -53,6 +53,7 @@ export default function LojaHub() {
       items: [
         { path: '/menu', label: 'Cardápio', description: 'Itens, preços e opções', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['menu.view', 'menu.edit', 'menu.create'] },
         { path: '/menu/categories', label: 'Categorias', description: 'Organize os grupos', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['menu.categories'] },
+        { path: '/menu/option-groups', label: 'Adicionais', description: 'Grupos reutilizáveis de adicionais', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['menu.view', 'menu.edit', 'menu.create'] },
       ],
     },
     {

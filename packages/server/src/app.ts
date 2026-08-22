@@ -26,6 +26,7 @@ import staffRoutes from './routes/staff.routes.js';
 import developerRoutes from './routes/developer.routes.js';
 import galleryRoutes from './routes/gallery.routes.js';
 import mediaRoutes from './routes/media.routes.js';
+import optionGroupRoutes from './routes/option-group.routes.js';
 import trackingRoutes from './routes/tracking.routes.js';
 import customerRoutes from './routes/customer.routes.js';
 import cashbackRoutes from './routes/cashback.routes.js';
@@ -218,6 +219,7 @@ export function createApp() {
   app.use('/api/developer', developerRoutes);
   app.use('/api/gallery', galleryRoutes);
   app.use('/api/media', mediaRoutes);
+  app.use('/api/option-groups', optionGroupRoutes);
   app.use('/api/tracking', trackingRoutes);
 app.use('/api/customer', customerRoutes);
 app.use('/api/cashback', cashbackRoutes);

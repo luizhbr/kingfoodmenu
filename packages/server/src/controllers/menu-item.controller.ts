@@ -92,6 +92,16 @@ export async function getMenuItem(req: Request<{ id: string }>, res: Response): 
           values: { orderBy: { sortOrder: 'asc' } },
         },
       },
+      optionGroups: {
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          optionGroup: {
+            include: {
+              values: { orderBy: { sortOrder: 'asc' } },
+            },
+          },
+        },
+      },
       allergens: { include: { allergen: true } },
       mealtimes: { include: { mealtime: true } },
     },

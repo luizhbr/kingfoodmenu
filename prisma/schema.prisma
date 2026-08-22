@@ -299,10 +299,11 @@ model MenuItem {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  options    MenuOption[]
-  mealtimes  MenuItemMealtime[]
-  allergens  MenuItemAllergen[]
-  orderItems OrderItem[]
+  options       MenuOption[]
+  mealtimes     MenuItemMealtime[]
+  allergens     MenuItemAllergen[]
+  orderItems    OrderItem[]
+  optionGroups  MenuItemOptionGroup[]
 
   @@map("menu_items")
 }
@@ -1452,3 +1453,50 @@ model ReceiptTemplate {
   @@map("receipt_templates")
 }
 
+
+// ── Reusable Option Groups (biblioteca de adicionais) ──────────────────────
+model OptionGroup {
+  id          String   @id @default(cuid())
+  name        String
+  displayType MenuOptionDisplayType @default(SELECT)
+  isRequired  Boolean  @default(false)
+  minSelect   Int      @default(0)
+  maxSelect   Int      @default(1)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  values      OptionGroupValue[]
+  menuItems   MenuItemOptionGroup[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("option_groups")
+}
+
+model OptionGroupValue {
+  id            String   @id @default(cuid())
+  optionGroupId String
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  name          String
+  priceModifier Float    @default(0)
+  isDefault     Boolean  @default(false)
+  sortOrder     Int      @default(0)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("option_group_values")
+}
+
+model MenuItemOptionGroup {
+  id            String   @id @default(cuid())
+  menuItemId    String
+  menuItem      MenuItem   @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  optionGroupId String
+  optionGroup   OptionGroup @relation(fields: [optionGroupId], references: [id], onDelete: Cascade)
+  sortOrder     Int      @default(0)
+
+  @@unique([menuItemId, optionGroupId])
+  @@map("menu_item_option_groups")
+}
