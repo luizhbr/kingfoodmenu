@@ -75,32 +75,55 @@ export default function ProductMediaManager({ itemId, images, token, onChange, a
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Área visível do container (aspecto 4:3) — calcula o crop equivalente na imagem original
+      // Container visível (aspecto 4:3)
       const container = containerRef.current;
       const boxW = container ? container.clientWidth : 300;
       const boxH = boxW / RATIO;
 
-      // Tamanho renderizado da imagem dentro do box com zoom
-      const imgAspect = img.naturalWidth / img.naturalHeight;
-      let drawW = boxW * zoom;
-      let drawH = boxH * zoom;
-      if (imgAspect > boxW / boxH) {
-        drawW = boxH * zoom * imgAspect;
-        drawH = boxH * zoom;
-      } else {
-        drawH = boxW / imgAspect * zoom;
-        drawW = boxW * zoom;
-      }
-      const drawX = (boxW - drawW) / 2 + offset.x;
-      const drawY = (boxH - drawH) / 2 + offset.y;
+      // object-contain: encaixa a imagem no container preservando aspecto
+      const imgW = img.naturalWidth;
+      const imgH = img.naturalHeight;
+      const containScale = Math.min(boxW / imgW, boxH / imgH);
+      const containW = imgW * containScale;
+      const containH = imgH * containScale;
 
-      // Crop visível (em coordenadas da imagem original)
-      const scaleX = img.naturalWidth / (boxW * zoom);
-      const scaleY = img.naturalHeight / (boxH * zoom);
-      const sx = Math.max(0, -drawX * scaleX);
-      const sy = Math.max(0, -drawY * scaleY);
-      const sw = Math.min(img.naturalWidth - sx, boxW * scaleX);
-      const sh = Math.min(img.naturalHeight - sy, boxH * scaleY);
+      // Posição do conteúdo da imagem dentro do elemento (object-contain centraliza)
+      const contentOffsetX = (boxW - containW) / 2;
+      const contentOffsetY = (boxH - containH) / 2;
+
+      // CSS transform: scale(zoom) translate(offset.x, offset.y) com transformOrigin: center
+      // Fórmula: screen = zoom * P + center * (1 - zoom) + zoom * offset
+      // Top-left do conteúdo da imagem em coordenadas de tela:
+      const screenX = zoom * contentOffsetX + (boxW / 2) * (1 - zoom) + zoom * offset.x;
+      const screenY = zoom * contentOffsetY + (boxH / 2) * (1 - zoom) + zoom * offset.y;
+
+      // Tamanho renderizado do conteúdo após zoom
+      const renderedW = zoom * containW;
+      const renderedH = zoom * containH;
+
+      // Região visível do container (0,0)→(boxW,boxH) mapeada para coordenadas do conteúdo
+      const visStartX = Math.max(0, -screenX);
+      const visStartY = Math.max(0, -screenY);
+      const visEndX = Math.min(renderedW, boxW - screenX);
+      const visEndY = Math.min(renderedH, boxH - screenY);
+
+      // Converter para coordenadas da imagem original
+      const scaleX = imgW / renderedW;
+      const scaleY = imgH / renderedH;
+      const sx = visStartX * scaleX;
+      const sy = visStartY * scaleY;
+      const sw = (visEndX - visStartX) * scaleX;
+      const sh = (visEndY - visStartY) * scaleY;
+
+      // Garantir dimensões válidas
+      if (sw <= 0 || sh <= 0) {
+        setError('Não foi possível recortar a imagem. Tente novamente.');
+        return;
+      }
+
+      // Pintar fundo branco (para imagens com transparência → JPEG)
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, TARGET_W, TARGET_H);
 
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, TARGET_W, TARGET_H);
 
