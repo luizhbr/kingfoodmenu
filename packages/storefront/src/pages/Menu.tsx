@@ -247,11 +247,21 @@ export default function Menu() {
 
   return (
     <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+2.5rem)]">
+      {/* Promo bar — sorteio Instagram */}
+      <a
+        href="https://www.instagram.com/p/DbjecIfC6kS/?igsh=MWF2dnZzZ3RudmF6Yw=="
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0 z-40 block bg-kf-ink text-kf-bg text-center text-[11px] sm:text-xs font-extrabold tracking-wide uppercase px-3 py-2.5 hover:bg-kf-ink/90 active:scale-[0.99] transition"
+      >
+        Sorteio no Instagram · comenta AÇAÍ e participa →
+      </a>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        {/* Header compacto */}
-        <header className="mb-4">
-          <h1 className="text-xl sm:text-2xl font-extrabold text-kf-foreground">{t('menu.title', 'Nosso Cardápio')}</h1>
-          <p className="text-sm text-kf-muted">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
+        {/* Header estilizado */}
+        <header className="mb-6 text-center pt-4 pb-2">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-kf-foreground tracking-tight">{t('menu.title', 'Nosso Cardápio')}</h1>
+          <p className="text-sm text-kf-muted mt-1">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
         </header>
 
         {/* Categorias (barra sticky com scroll horizontal) — somente na listagem.
