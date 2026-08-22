@@ -35,28 +35,6 @@ export default function VenderHub() {
 
   const groups: HubGroup[] = [
     {
-      title: 'Pedidos',
-      description: 'Operação de vendas',
-      items: [
-      {
-        path: '/orders',
-        label: 'Pedidos',
-        description: 'Todos os pedidos e status',
-        icon: <ClipboardIcon className="w-6 h-6" />,
-        roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
-        perms: ['orders.view'],
-      },
-      {
-        path: '/kitchen',
-        label: 'Cozinha',
-        description: 'Monitor de preparo',
-        icon: <FlameIcon className="w-6 h-6" />,
-        roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
-        perms: ['kitchen.view'],
-      },
-      ],
-    },
-    {
       title: 'Pagamentos',
       description: 'Recebimento',
       items: [

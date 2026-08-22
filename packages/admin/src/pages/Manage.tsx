@@ -43,7 +43,6 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       title: 'Operação',
       description: 'Estrutura do negócio',
       items: [
-        { path: '/locations', label: 'Locais', description: 'Endereços e mesas', icon: <MapPinIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
       ],
     },
     {
@@ -58,8 +57,6 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       title: 'Recursos da loja',
       description: 'Catálogo e relacionamento',
       items: [
-        { path: '/menu', label: 'Cardápio', description: 'Itens, categorias e preços', icon: <BookOpenIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['menu.view', 'menu.edit', 'menu.create'] },
-        { path: '/design/landing', label: 'Personalização', description: 'Site, tema e marca', icon: <PaintBrushIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.general'] },
         { path: '/loyalty', label: 'Fidelidade', description: 'Pontos e recompensas', icon: <GiftIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['loyalty.view'] },
         { path: '/coupons', label: 'Cupons', description: 'Descontos e promoções', icon: <TicketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['coupons.view'] },
         { path: '/reviews', label: 'Avaliações', description: 'Moderação de avaliações', icon: <StarIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'], perms: ['reviews.view'] },
@@ -76,8 +73,6 @@ export default function Manage({ pendingCount = 0 }: { pendingCount?: number }) 
       title: 'Configurações',
       description: 'Estrutura do sistema',
       items: [
-        { path: '/settings', label: 'Configurações', description: 'Geral, pedidos e reservas', icon: <CogIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
-        { path: '/settings/general', label: 'Perfil da loja', description: 'Nome, fuso e contato', icon: <StorefrontIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.general'] },
         { path: '/staff', label: 'Usuários', description: 'Funcionários e permissões', icon: <UsersIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN'], perms: ['staff.view'] },
         { path: '/developer/metrics', label: 'Sistema', description: 'Métricas e auditoria', icon: <CodeBracketIcon className="w-6 h-6" />, roles: ['SUPER_ADMIN', 'MANAGER'], perms: ['settings.view'] },
       ],
