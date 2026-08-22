@@ -121,8 +121,8 @@ function AppRoutes() {
           <Route path="/menu/categories/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CategoryForm /></RequireRole>} />
           <Route path="/menu/items" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/menu" replace /></RequireRole>} />
           <Route path="/menu/items/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.create']}><MenuItemForm /></RequirePermission></RequireRole>} />
-          <Route path="/menu/items/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.edit']}><MenuItemForm />
-          <Route path="/menu/option-groups" element={<OptionGroupLibrary />} /></RequirePermission></RequireRole>} />
+          <Route path="/menu/items/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.edit']}><MenuItemForm /></RequirePermission></RequireRole>} />
+          <Route path="/menu/option-groups" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['menu.edit']}><OptionGroupLibrary /></RequirePermission></RequireRole>} />
           <Route path="/coupons" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['coupons.view']}><CouponList /></RequirePermission></RequireRole>} />
           <Route path="/coupons/new" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponForm /></RequireRole>} />
           <Route path="/coupons/:id" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><CouponForm /></RequireRole>} />
