@@ -12,7 +12,6 @@ interface HubItem {
   description?: string;
   icon: React.ReactNode;
   roles: Role[];
-  /** Permissões que liberam o item (qualquer uma basta) */
   perms?: string[];
   badge?: { count: number; label: string };
 }
@@ -24,8 +23,7 @@ interface HubGroup {
 }
 
 /**
- * Hub PEDIDOS — lista, monitor e reservas.
- * Apenas organização visual: todas as rotas e dados são os existentes.
+ * Hub PEDIDOS — lista e monitor da cozinha.
  */
 export default function PedidosHub() {
   const { user } = useAuth();
@@ -40,29 +38,21 @@ export default function PedidosHub() {
       items: [
         {
           path: '/orders',
-            label: 'Lista de pedidos',
-            description: 'Filtros, status e detalhes',
-            icon: <ClipboardIcon className="w-6 h-6" />,
-            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
-            perms: ['orders.view'],
-            badge: pendingCount > 0 ? { count: pendingCount, label: 'pendentes' } : undefined,
-          },
-          {
-            path: '/kitchen',
-            label: 'Monitor da cozinha',
-            description: 'Preparo em tempo real',
-            icon: <ClipboardIcon className="w-6 h-6" />,
-            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
-            perms: ['kitchen.view'],
-          },
-          {
-            path: '/orders?status=PENDING',
-            label: 'Pedidos pendentes',
-            description: 'Aguardando confirmação',
-            icon: <ClipboardIcon className="w-6 h-6" />,
-            roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
-            perms: ['orders.view'],
-          },
+          label: 'Lista de pedidos',
+          description: 'Filtros, status e detalhes',
+          icon: <ClipboardIcon className="w-6 h-6" />,
+          roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF', 'DRIVER'],
+          perms: ['orders.view'],
+          badge: pendingCount > 0 ? { count: pendingCount, label: 'pendentes' } : undefined,
+        },
+        {
+          path: '/kitchen',
+          label: 'Monitor da cozinha',
+          description: 'Preparo em tempo real',
+          icon: <ClipboardIcon className="w-6 h-6" />,
+          roles: ['SUPER_ADMIN', 'MANAGER', 'STAFF'],
+          perms: ['kitchen.view'],
+        },
       ],
     },
   ];
@@ -82,7 +72,7 @@ export default function PedidosHub() {
     <div>
       <header className="mb-6">
         <h1 className="text-2xl font-extrabold text-kf-foreground">Pedidos</h1>
-        <p className="text-sm text-kf-muted mt-1">Acompanhe pedidos, cozinha e reservas</p>
+        <p className="text-sm text-kf-muted mt-1">Acompanhe pedidos e cozinha</p>
       </header>
 
       <div className="space-y-8">
