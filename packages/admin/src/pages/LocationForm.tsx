@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../lib/api.js';
 
 interface OperatingHour {
@@ -7,14 +7,6 @@ interface OperatingHour {
   openTime: string;
   closeTime: string;
   isClosed: boolean;
-}
-
-interface DeliveryZone {
-  id?: string;
-  name: string;
-  charge: number;
-  minOrder: number;
-  isActive: boolean;
 }
 
 interface LocationData {
@@ -73,7 +65,6 @@ export default function LocationForm() {
 
   const [form, setForm] = useState<LocationData>(emptyLocation);
   const [hours, setHours] = useState<OperatingHour[]>(defaultHours);
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -109,9 +100,6 @@ export default function LocationForm() {
             closeTime: h.closeTime,
             isClosed: h.isClosed,
           })));
-        }
-        if (loc.deliveryZones?.length) {
-          setZones(loc.deliveryZones);
         }
         setLoading(false);
       })
@@ -154,14 +142,6 @@ export default function LocationForm() {
       setError(err.message);
       setSaving(false);
     }
-  };
-
-  const addZone = () => {
-    setZones((prev) => [...prev, { name: '', charge: 0, minOrder: 0, isActive: true }]);
-  };
-
-  const removeZone = (index: number) => {
-    setZones((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (loading) return <p className="text-gray-500">Carregando...</p>;
@@ -414,72 +394,18 @@ export default function LocationForm() {
         <section className="bg-white rounded-lg shadow p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-900">Delivery Zones</h3>
-            <button
-              type="button"
-              onClick={addZone}
-              className="text-primary-600 hover:text-primary-700 text-sm font-medium"
+            <Link
+              to={`/locations/${id}/delivery-zones`}
+              className="inline-flex items-center gap-1 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium px-3 py-1.5 rounded-lg"
             >
-              + Add Zone
-            </button>
+              Configurar no mapa
+            </Link>
           </div>
-          {zones.length === 0 && (
-            <p className="text-sm text-gray-400">No delivery zones configured.</p>
-          )}
-          <div className="space-y-3">
-            {zones.map((zone, index) => (
-              <div key={index} className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg">
-                <input
-                  type="text"
-                  placeholder="Zone name"
-                  value={zone.name}
-                  onChange={(e) => {
-                    const updated = [...zones];
-                    updated[index] = { ...zone, name: e.target.value };
-                    setZones(updated);
-                  }}
-                  className="flex-1 border border-gray-300 rounded px-2 py-1 text-sm"
-                />
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500">$</span>
-                  <input
-                    type="number"
-                    placeholder="Charge"
-                    value={zone.charge}
-                    onChange={(e) => {
-                      const updated = [...zones];
-                      updated[index] = { ...zone, charge: parseFloat(e.target.value) || 0 };
-                      setZones(updated);
-                    }}
-                    min={0}
-                    step={0.01}
-                    className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
-                  />
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs text-gray-500">Min $</span>
-                  <input
-                    type="number"
-                    placeholder="Min order"
-                    value={zone.minOrder}
-                    onChange={(e) => {
-                      const updated = [...zones];
-                      updated[index] = { ...zone, minOrder: parseFloat(e.target.value) || 0 };
-                      setZones(updated);
-                    }}
-                    min={0}
-                    step={0.01}
-                    className="w-20 border border-gray-300 rounded px-2 py-1 text-sm"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeZone(index)}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                >Remover</button>
-              </div>
-            ))}
-          </div>
+          <p className="text-sm text-gray-500">
+            Desenhe as áreas de entrega clicando no mapa do Google, defina a taxa e o pedido mínimo por zona.
+          </p>
         </section>
+
 
         {/* Submit */}
         <div className="flex justify-end gap-3">
