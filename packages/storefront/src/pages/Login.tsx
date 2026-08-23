@@ -90,6 +90,11 @@ export default function Login() {
             />
           </div>
 
+            <div className="text-right text-sm">
+                <Link to="/reset-password" className="text-primary-600 hover:text-primary-700">
+                    Esqueceu a senha?
+                </Link>
+            </div>
           <button
             type="submit"
             disabled={loading}
@@ -107,20 +112,14 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="flex gap-3">
-            <a
-              href="/api/auth/google"
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Google
-            </a>
-            <a
-              href="/api/auth/facebook"
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Facebook
-            </a>
-          </div>
+            <div className="flex gap-3">
+                <a
+                    href="/api/auth/google"
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                    Google
+                </a>
+            </div>
 
           <p className="text-center text-sm text-gray-600 mt-4">
             {t('auth.noAccount')}{' '}
