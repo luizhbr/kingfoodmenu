@@ -88,7 +88,7 @@ export default function DeliveryZoneList() {
   const polygonRef = useRef<google.maps.Polygon | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const zonePolysRef = useRef<google.maps.Polygon[]>([]);
-  const storeMarkerRef = useRef<google.maps.Marker | null>(null);
+  const storeMarkerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
   const isDrawingRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -117,8 +117,8 @@ export default function DeliveryZoneList() {
   useEffect(() => {
     if (!googleMapsKey) return;
     let active = true;
-    setOptions({ key: googleMapsKey });
-    importLibrary('maps')
+    setOptions({ key: googleMapsKey, libraries: ['marker'] });
+    Promise.all([importLibrary('maps'), importLibrary('marker')])
       .then(() => { if (active) setMapLoaded(true); })
       .catch((err: unknown) => {
         if (active) setMapError(err instanceof Error ? err.message : String(err));
@@ -141,14 +141,28 @@ export default function DeliveryZoneList() {
     mapRef.current = map;
 
     // Marcador da loja (referência visual para desenhar as zonas)
-    if (storeMarkerRef.current) storeMarkerRef.current.setMap(null);
+    if (storeMarkerRef.current) storeMarkerRef.current.map = null;
     if (location?.lat != null && location?.lng != null) {
-      storeMarkerRef.current = new google.maps.Marker({
+      const pin = document.createElement('div');
+      pin.className = 'store-pin';
+      pin.style.cssText = [
+        'width:44px;height:44px;border-radius:50% 50% 50% 0;',
+        'background:#dc2626;border:3px solid #ffffff;',
+        'transform:rotate(-45deg);',
+        'display:flex;align-items:center;justify-content:center;',
+        'box-shadow:0 2px 8px rgba(0,0,0,0.45);',
+        'position:relative;',
+      ].join('');
+      const inner = document.createElement('span');
+      inner.style.cssText = 'transform:rotate(45deg);font-size:20px;line-height:1;';
+      inner.textContent = '🏪';
+      pin.appendChild(inner);
+      storeMarkerRef.current = new google.maps.marker.AdvancedMarkerElement({
         position: { lat: location.lat, lng: location.lng },
         map,
         title: location.name || 'Loja',
-        label: { text: '🏪', fontSize: '18px' },
         zIndex: 1000,
+        content: pin,
       });
     }
 
@@ -180,7 +194,7 @@ export default function DeliveryZoneList() {
       zonePolysRef.current = [];
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
-      if (storeMarkerRef.current) { storeMarkerRef.current.setMap(null); storeMarkerRef.current = null; }
+      if (storeMarkerRef.current) { storeMarkerRef.current.map = null; storeMarkerRef.current = null; }
       if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
       mapRef.current = null;
       setMapReady(false);
