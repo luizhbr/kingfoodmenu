@@ -137,6 +137,7 @@ export default function DeliveryZoneList() {
       zoom: location?.lat != null ? 13 : 11,
       mapTypeControl: true,
       streetViewControl: false,
+      mapId: 'kf-store-map', // AdvancedMarkerElement exige mapId para renderizar
     });
     mapRef.current = map;
 
