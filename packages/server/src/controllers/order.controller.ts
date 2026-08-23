@@ -524,6 +524,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       include: {
         items: { include: { options: true } },
         customer: { select: { id: true, name: true, email: true } },
+        location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
       },
     });
   } catch (err) {
@@ -704,7 +705,7 @@ export async function listOrders(req: Request, res: Response): Promise<void> {
       orderBy: { createdAt: 'desc' },
       include: {
         customer: { select: { id: true, name: true, email: true } },
-        location: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
         _count: { select: { items: true } },
         ...(includeItems ? { items: { include: { options: true } } } : {}),
       },
@@ -730,7 +731,7 @@ export async function getOrder(req: Request<{ id: string }>, res: Response): Pro
       where: { id },
       include: {
         customer: { select: { id: true, name: true, email: true, phone: true } },
-        location: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
         items: {
           include: {
             menuItem: { select: { id: true, name: true, slug: true } },
@@ -804,7 +805,7 @@ export async function listCustomerOrders(req: Request, res: Response): Promise<v
       take: limit,
       orderBy: { createdAt: 'desc' },
       include: {
-        location: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
         _count: { select: { items: true } },
       },
     }),

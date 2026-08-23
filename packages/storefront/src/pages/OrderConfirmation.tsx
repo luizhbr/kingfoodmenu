@@ -44,6 +44,14 @@ type Order = {
   createdAt?: string;
   customerId?: string | null;
   trackingToken?: string | null;
+  location?: {
+    id: string;
+    name: string;
+    address?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+  } | null;
 };
 
 function formatCurrency(v: number | undefined) {
@@ -205,6 +213,11 @@ export default function OrderConfirmation() {
           <Card className="mb-4 p-5">
             <h2 className="mb-1 text-sm font-bold text-kf-foreground">{t('orderConfirmation.pickup', 'Retirada')}</h2>
             <p className="text-sm text-kf-muted">{t('orderConfirmation.pickupMessage', 'Pegue seu pedido no King Food quando estiver pronto.')}</p>
+            {order?.location?.address && (
+              <p className="mt-2 text-sm text-kf-foreground">
+                {order.location.name} — {order.location.address}, {order.location.city}, {order.location.state} {order.location.postalCode}
+              </p>
+            )}
           </Card>
         )}
 

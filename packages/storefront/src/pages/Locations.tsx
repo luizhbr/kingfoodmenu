@@ -58,9 +58,8 @@ export default function Locations() {
               </div>
               <div className="p-5">
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{loc.name}</h3>
-                <p className="text-sm text-gray-600 mb-1">{loc.address}</p>
-                <p className="text-sm text-gray-600 mb-3">
-                  {loc.city}, {loc.state} {loc.zip}
+                <p className="text-sm text-gray-500 mb-3">
+                  {t('locations.addressHidden', 'Endereço disponível após a confirmação do pedido')}
                 </p>
                 {loc.phone && (
                   <p className="text-sm text-gray-500 mb-4">{loc.phone}</p>

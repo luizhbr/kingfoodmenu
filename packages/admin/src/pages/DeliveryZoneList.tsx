@@ -88,6 +88,7 @@ export default function DeliveryZoneList() {
   const polygonRef = useRef<google.maps.Polygon | null>(null);
   const markersRef = useRef<google.maps.Marker[]>([]);
   const zonePolysRef = useRef<google.maps.Polygon[]>([]);
+  const storeMarkerRef = useRef<google.maps.Marker | null>(null);
   const isDrawingRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [mapReady, setMapReady] = useState(false);
@@ -139,6 +140,18 @@ export default function DeliveryZoneList() {
     });
     mapRef.current = map;
 
+    // Marcador da loja (referência visual para desenhar as zonas)
+    if (storeMarkerRef.current) storeMarkerRef.current.setMap(null);
+    if (location?.lat != null && location?.lng != null) {
+      storeMarkerRef.current = new google.maps.Marker({
+        position: { lat: location.lat, lng: location.lng },
+        map,
+        title: location.name || 'Loja',
+        label: { text: '🏪', fontSize: '18px' },
+        zIndex: 1000,
+      });
+    }
+
     // Zonas existentes (preview azul)
     zonePolysRef.current.forEach((p) => p.setMap(null));
     zonePolysRef.current = [];
@@ -167,6 +180,7 @@ export default function DeliveryZoneList() {
       zonePolysRef.current = [];
       markersRef.current.forEach((m) => m.setMap(null));
       markersRef.current = [];
+      if (storeMarkerRef.current) { storeMarkerRef.current.setMap(null); storeMarkerRef.current = null; }
       if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
       mapRef.current = null;
       setMapReady(false);
