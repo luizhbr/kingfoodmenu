@@ -32,6 +32,7 @@ export type WhatsAppIntent =
   | 'STORE_HOURS'
   | 'STORE_LOCATION'
   | 'HUMAN_SUPPORT'
+  | 'N8N'
   | 'UNKNOWN';
 
 export interface CartItem {

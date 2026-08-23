@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   getStatus,
   listConversations,
+  processN8nEvent,
   receiveWebhook,
   sendTestMessage,
   setBotEnabled,
@@ -16,6 +17,10 @@ const router = Router();
 // ── Webhook Meta Cloud API (público, valida assinatura internamente) ──
 router.get('/webhook', verifyWebhook);
 router.post('/webhook', receiveWebhook);
+
+// ── Processamento interno (chamado pelo n8n — workflow Incoming) ──
+// O n8n retorna a resposta processada; o backend valida e envia pela Meta.
+router.post('/process', processN8nEvent);
 
 // ── Central WhatsApp (Admin) — autenticado ──
 router.get('/status', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.view'), getStatus);

@@ -1,5 +1,5 @@
 {
-  "name": "KF - WhatsApp Incoming",
+  "name": "KF - WhatsApp Incoming (processamento interno)",
   "nodes": [
     {
       "parameters": {
@@ -8,7 +8,7 @@
         "options": {}
       },
       "id": "webhook-in",
-      "name": "Webhook Meta (incoming)",
+      "name": "Webhook interno (chamado pelo backend)",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
@@ -18,10 +18,10 @@
     },
     {
       "parameters": {
-        "jsCode": "// Normaliza payload da Meta Cloud API\n// Extrai mensagens de texto, ignora status/eventos\nconst entries = $input.first().json.body?.entry || [];\nconst messages = [];\nfor (const entry of entries) {\n  for (const change of entry.changes || []) {\n    const value = change.value || {};\n    const contacts = value.contacts || [];\n    for (const msg of value.messages || []) {\n      if (msg.type !== 'text') continue;\n      const contact = contacts.find(c => c.wa_id === msg.from) || contacts[0];\n      messages.push({\n        messageId: msg.id,\n        phone: msg.from,\n        name: contact?.profile?.name || 'Cliente',\n        text: msg.text?.body || '',\n        phoneNumberId: value.metadata?.phone_number_id || '',\n        timestamp: msg.timestamp\n      });\n    }\n  }\n}\nreturn messages.map(m => ({ json: m }));"
+        "jsCode": "// Evento já validado pelo backend (HMAC, messageId, botEnabled, handoff).\n// O n8n NÃO valida Meta — o backend é o gateway de segurança.\n// Payload: { event, messageId, phone, name, text, timestamp, conversationId, integrationId, customerId, state, mode, currentIntent, currentStep }\nconst item = $input.first().json;\nif (!item.text || !item.phone) {\n  throw new Error('text e phone são obrigatórios');\n}\nreturn [{ json: item }];"
       },
-      "id": "normalize",
-      "name": "Normalizar payload",
+      "id": "validate",
+      "name": "Validar evento (backend já validou)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -31,10 +31,10 @@
     },
     {
       "parameters": {
-        "jsCode": "// Idempotência: dedupe por messageId (cache em memória do n8n)\n// O backend também deduplica via unique messageId no banco.\nconst seen = new Set();\nreturn $input.all().filter(item => {\n  const id = item.json.messageId;\n  if (seen.has(id)) return false;\n  seen.add(id);\n  return true;\n});"
+        "jsCode": "// Normalização: extrai intenção de forma determinística.\n// Nenhuma regra de negócio aqui — apenas classificação de intenção.\nconst item = $input.first().json;\nconst text = String(item.text || '').toLowerCase();\nlet intent = 'UNKNOWN';\nif (/menu|cardapio|cardápio|o que vocês tem|o que tem|opções|opcoes/i.test(text)) intent = 'MENU';\nelse if (/quero|pedir|adiciona|adicionar|gostaria de/i.test(text)) intent = 'ORDER';\nelse if (/carrinho|meu pedido/i.test(text)) intent = 'CART';\nelse if (/atendente|humano|pessoa|falar com alguém/i.test(text)) intent = 'HUMAN';\nelse if (/oi|ola|olá|bom dia|boa tarde|boa noite|começar/i.test(text)) intent = 'START';\nreturn [{ json: { ...item, intent } }];"
       },
-      "id": "dedupe",
-      "name": "Idempotência (dedupe)",
+      "id": "normalize",
+      "name": "Normalizar (intenção)",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
@@ -44,19 +44,12 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "={{ $env.KINGFOOD_API_URL }}/api/whatsapp/webhook",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
-        "options": {
-          "timeout": 25000
-        }
+        "jsCode": "// Encaminha para o backend King Food processar (fonte da verdade).\n// O backend decide: preço, delivery, cupom, total, disponibilidade, status.\n// O n8n NUNCA calcula regra de negócio.\nreturn $input.all();"
       },
-      "id": "kf-api",
-      "name": "King Food API (processa)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "id": "forward",
+      "name": "Encaminhar ao backend",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         600,
         0
@@ -64,42 +57,82 @@
     },
     {
       "parameters": {
-        "jsCode": "// Resposta do backend já inclui a resposta pronta para o cliente.\n// Nenhuma regra de negócio aqui — o backend é a fonte da verdade.\nreturn $input.all();"
+        "method": "POST",
+        "url": "={{ $env.KINGFOOD_API_URL }}/api/whatsapp/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "timeout": 25000
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-n8n-token",
+              "value": "={{ $env.N8N_WEBHOOK_SECRET }}"
+            }
+          ]
+        }
+      },
+      "id": "kf-process",
+      "name": "King Food API (processa)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        800,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retorna a resposta pronta para o backend enviar pela Meta.\n// Formato: { reply: string }\nconst item = $input.first().json;\nconst reply = item.reply || item.text || item.output || '';\nif (!reply) throw new Error('backend não retornou resposta');\nreturn [{ json: { reply } }];"
       },
       "id": "out",
-      "name": "Encaminhar resposta",
+      "name": "Retornar resposta ao backend",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        800,
+        1000,
         0
       ]
     }
   ],
   "connections": {
-    "Webhook Meta (incoming)": {
+    "Webhook interno (chamado pelo backend)": {
       "main": [
         [
           {
-            "node": "Normalizar payload",
+            "node": "Validar evento (backend já validou)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Normalizar payload": {
+    "Validar evento (backend já validou)": {
       "main": [
         [
           {
-            "node": "Idempotência (dedupe)",
+            "node": "Normalizar (intenção)",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Idempotência (dedupe)": {
+    "Normalizar (intenção)": {
+      "main": [
+        [
+          {
+            "node": "Encaminhar ao backend",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Encaminhar ao backend": {
       "main": [
         [
           {
@@ -114,7 +147,7 @@
       "main": [
         [
           {
-            "node": "Encaminhar resposta",
+            "node": "Retornar resposta ao backend",
             "type": "main",
             "index": 0
           }

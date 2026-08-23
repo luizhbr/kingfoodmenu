@@ -32,13 +32,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://graph.facebook.com/v21.0/{{ $json.phoneNumberId || $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "url": "https://graph.facebook.com/v21.0/{{ $json.phoneNumberId || $env.META_PHONE_NUMBER_ID }}/messages",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "Authorization",
-              "value": "Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
+              "value": "Bearer {{ $env.META_ACCESS_TOKEN }}"
             }
           ]
         },

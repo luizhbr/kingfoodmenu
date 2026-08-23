@@ -249,3 +249,141 @@ describe('cart (carrinho determinístico)', () => {
     expect(c.couponDiscount).toBe(0);
   });
 });
+
+describe('callN8n (backend → n8n → backend)', () => {
+  const OLD = { ...process.env };
+
+  afterEach(() => {
+    process.env = { ...OLD };
+  });
+
+  it('retorna erro quando N8N_BASE_URL ausente', async () => {
+    delete process.env.N8N_BASE_URL;
+    const { callN8n } = await import('../../controllers/whatsapp.controller.js');
+    const r = await callN8n({ text: 'oi' });
+    expect(r.ok).toBe(false);
+    expect(r.error).toContain('N8N_BASE_URL');
+  });
+
+  it('retorna erro quando n8n responde HTTP 500', async () => {
+    process.env.N8N_BASE_URL = 'http://n8n.local:5678';
+    const { callN8n } = await import('../../controllers/whatsapp.controller.js');
+    // mock global fetch
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: false, status: 500 }) as Response;
+    try {
+      const r = await callN8n({ text: 'oi' });
+      expect(r.ok).toBe(false);
+      expect(r.error).toContain('500');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  it('retorna reply quando n8n responde 200 com texto', async () => {
+    process.env.N8N_BASE_URL = 'http://n8n.local:5678';
+    const { callN8n } = await import('../../controllers/whatsapp.controller.js');
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({ reply: 'Olá! 👋' }) }) as Response;
+    try {
+      const r = await callN8n({ text: 'oi' });
+      expect(r.ok).toBe(true);
+      expect(r.reply).toBe('Olá! 👋');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  it('retorna erro quando n8n responde sem texto', async () => {
+    process.env.N8N_BASE_URL = 'http://n8n.local:5678';
+    const { callN8n } = await import('../../controllers/whatsapp.controller.js');
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => ({ ok: true, json: async () => ({}) }) as Response;
+    try {
+      const r = await callN8n({ text: 'oi' });
+      expect(r.ok).toBe(false);
+      expect(r.error).toContain('sem texto');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+
+  it('retorna erro quando n8n lança exceção (timeout/offline)', async () => {
+    process.env.N8N_BASE_URL = 'http://n8n.local:5678';
+    const { callN8n } = await import('../../controllers/whatsapp.controller.js');
+    const origFetch = globalThis.fetch;
+    globalThis.fetch = async () => { throw new Error('fetch failed'); };
+    try {
+      const r = await callN8n({ text: 'oi' });
+      expect(r.ok).toBe(false);
+      expect(r.error).toContain('fetch failed');
+    } finally {
+      globalThis.fetch = origFetch;
+    }
+  });
+});
+
+describe('convenção META_* (F1)', () => {
+  it('código usa META_* para credenciais da Meta (não WHATSAPP_*)', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const root = path.resolve(process.cwd(), 'src');
+    const files = [
+      'controllers/whatsapp.controller.ts',
+      'lib/whatsapp-bot/meta.ts',
+      'lib/whatsapp-bot/ai.ts',
+      'lib/whatsapp-bot/router.ts',
+    ];
+    for (const f of files) {
+      const content = fs.readFileSync(path.join(root, f), 'utf-8');
+      // credenciais Meta devem usar META_* — WHATSAPP_* só para NOTIFY_NUMBER
+      const bad = content.match(/WHATSAPP_(?!NOTIFY_NUMBER)[A-Z_]+/g);
+      expect(bad, `${f} usa WHATSAPP_* inválido: ${bad}`).toBeNull();
+    }
+  });
+
+  it('workflows n8n não usam WHATSAPP_* antigo', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const n8nDir = path.resolve(process.cwd(), '../../n8n-workflows');
+    const files = fs.readdirSync(n8nDir).filter((f: string) => f.endsWith('.json'));
+    for (const f of files) {
+      const content = fs.readFileSync(path.join(n8nDir, f), 'utf-8');
+      const bad = content.match(/WHATSAPP_[A-Z_]+/g);
+      expect(bad, `${f} usa WHATSAPP_*: ${bad}`).toBeNull();
+    }
+  });
+});
+
+describe('proteção x-n8n-token (processN8nEvent)', () => {
+  it('processN8nEvent valida x-n8n-token antes de aceitar resposta do n8n', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const ctrl = fs.readFileSync(
+      path.resolve(process.cwd(), 'src/controllers/whatsapp.controller.ts'),
+      'utf-8'
+    );
+    const idx = ctrl.indexOf('export async function processN8nEvent');
+    expect(idx).toBeGreaterThan(-1);
+    const block = ctrl.slice(idx, idx + 1200);
+    // valida o header x-n8n-token contra N8N_WEBHOOK_SECRET
+    expect(block).toContain('x-n8n-token');
+    expect(block).toContain('N8N_WEBHOOK_SECRET');
+    // rejeita com 401 se ausente/errado
+    expect(block).toContain('res.status(401)');
+    expect(block).toContain('Unauthorized');
+  });
+
+  it('workflow 01 envia x-n8n-token via $env (sem token literal)', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const wf = fs.readFileSync(
+      path.resolve(process.cwd(), '../../n8n-workflows/01-whatsapp-incoming.json'),
+      'utf-8'
+    );
+    expect(wf).toContain('x-n8n-token');
+    expect(wf).toContain('$env.N8N_WEBHOOK_SECRET');
+    // nenhum token literal
+    expect(wf).not.toMatch(/Bearer\s+[A-Za-z0-9]{20,}/);
+  });
+});

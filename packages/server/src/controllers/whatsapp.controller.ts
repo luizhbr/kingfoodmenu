@@ -19,12 +19,37 @@ import {
 import { processMessage } from '../lib/whatsapp-bot/router.js';
 import { emptyCart } from '../lib/whatsapp-bot/cart.js';
 import { SESSION_TTL_MS } from '../lib/whatsapp-bot/types.js';
-import type { BotContext, InboundMessage } from '../lib/whatsapp-bot/types.js';
+import type { BotContext, BotReply, InboundMessage } from '../lib/whatsapp-bot/types.js';
 
 const VERIFY_TOKEN = process.env.META_VERIFY_TOKEN || '';
 const APP_SECRET = process.env.META_APP_SECRET || '';
 const N8N_BASE_URL = process.env.N8N_BASE_URL || '';
 const KINGFOOD_API_URL = process.env.KINGFOOD_API_URL || '';
+
+// ── n8n (orquestração externa) ─────────────────────────────────────
+// Arquitetura oficial: Meta → Backend (valida/persiste) → n8n → Backend → Meta.
+// O backend é o gateway de segurança; o n8n processa intenção/IA e retorna.
+// Se o n8n estiver indisponível ou não configurado, o backend usa o
+// processamento local (router.ts) como fallback — nunca falha silencioso.
+export async function callN8n(event: Record<string, unknown>, timeoutMs = 8000): Promise<{ ok: boolean; reply?: string; error?: string }> {
+  const baseUrl = process.env.N8N_BASE_URL || '';
+  if (!baseUrl) return { ok: false, error: 'N8N_BASE_URL ausente' };
+  try {
+    const res = await fetch(`${baseUrl.replace(/\/$/, '')}/webhook/whatsapp/incoming`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return { ok: false, error: `n8n HTTP ${res.status}` };
+    const data = (await res.json()) as Record<string, unknown>;
+    const reply = data?.reply || data?.text || data?.output;
+    if (!reply) return { ok: false, error: 'n8n respondeu sem texto' };
+    return { ok: true, reply: String(reply) };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
 
 // ── Helpers ─────────────────────────────────────────────────────
 
@@ -153,6 +178,66 @@ export async function verifyWebhook(req: Request, res: Response): Promise<void> 
   res.status(403).send('Verification failed');
 }
 
+
+/** POST /api/whatsapp/process — chamado pelo n8n (workflow Incoming).
+ *  O n8n processa intenção/IA e retorna { reply }. O backend valida,
+ *  persiste e envia pela Meta Cloud API. Sem credenciais Meta, retorna
+ *  a resposta sem enviar (não falha silencioso).
+ */
+export async function processN8nEvent(req: Request, res: Response): Promise<void> {
+  // Proteção: token interno compartilhado com o n8n (N8N_WEBHOOK_SECRET).
+  // Sem ele, qualquer um poderia forçar envio de mensagens pela Meta.
+  const N8N_WEBHOOK_SECRET = process.env.N8N_WEBHOOK_SECRET || '';
+  if (N8N_WEBHOOK_SECRET) {
+    const token = req.headers['x-n8n-token'] as string | undefined;
+    if (!token || token !== N8N_WEBHOOK_SECRET) {
+      res.status(401).json({ success: false, error: 'Unauthorized' });
+      return;
+    }
+  }
+  const { reply, messageId, phone, conversationId } = req.body as {
+    reply?: string;
+    messageId?: string;
+    phone?: string;
+    conversationId?: string;
+  };
+  if (!reply || !phone) {
+    res.status(400).json({ success: false, error: 'reply e phone são obrigatórios' });
+    return;
+  }
+  const integration = await getOrCreateIntegration();
+  const conv = conversationId
+    ? await prisma.whatsAppConversation.findUnique({ where: { id: String(conversationId) } })
+    : null;
+  const targetConv = conv || (await findOrCreateConversation(integration.id, phone));
+
+  // Persiste a resposta do n8n
+  const stored = await prisma.whatsAppMessage.create({
+    data: {
+      conversationId: targetConv.id,
+      messageId: `n8n_${crypto.randomUUID()}`,
+      direction: 'OUTBOUND',
+      type: 'text',
+      text: reply,
+      status: 'PROCESSED',
+      intent: 'N8N',
+    },
+  });
+
+  // Envia pela Meta Cloud API
+  const send = await sendMetaText(phone, reply, { phoneNumberId: process.env.META_PHONE_NUMBER_ID || undefined });
+  await prisma.whatsAppMessage.update({
+    where: { id: stored.id },
+    data: { status: send.ok ? 'SENT' : 'FAILED', error: send.ok ? null : send.reason || null },
+  });
+  await prisma.whatsAppIntegration.update({
+    where: { id: integration.id },
+    data: { n8nStatus: 'ONLINE', n8nLastExecutionAt: new Date(), n8nLastError: send.ok ? null : send.reason || null },
+  });
+
+  res.json({ success: true, data: { sent: send.ok, status: send.status } });
+}
+
 /**
  * POST /api/whatsapp/webhook — mensagens recebidas da Meta Cloud API.
  * Valida assinatura, deduplica por messageId, processa e responde.
@@ -240,7 +325,44 @@ export async function receiveWebhook(req: Request, res: Response): Promise<void>
               type: msg.type,
             };
 
-            const reply = await processMessage(ctx, inbound);
+            // Arquitetura oficial: Backend → n8n → Backend.
+            // O n8n processa intenção/IA e retorna a resposta; se estiver
+            // indisponível, o backend usa o processamento local (router.ts)
+            // como fallback — nunca falha silencioso.
+            let reply: BotReply;
+            const n8nResult = await callN8n({
+              event: 'message',
+              messageId: msg.messageId,
+              phone: msg.phone,
+              name: msg.name,
+              text: msg.text,
+              timestamp: msg.timestamp,
+              conversationId: conversation.id,
+              integrationId: integration.id,
+              customerId: conversation.customerId,
+              state: ctx.state,
+              mode: ctx.mode,
+              currentIntent: ctx.currentIntent,
+              currentStep: ctx.currentStep,
+            });
+
+            if (n8nResult.ok && n8nResult.reply) {
+              reply = {
+                text: n8nResult.reply,
+                deterministic: false,
+                intent: 'N8N',
+                context: ctx,
+              };
+            } else {
+              // Fallback local (n8n ausente/indisponível)
+              if (n8nResult.error) {
+                await prisma.whatsAppIntegration.update({
+                  where: { id: integration.id },
+                  data: { n8nStatus: 'OFFLINE', n8nLastError: n8nResult.error.slice(0, 500), n8nLastExecutionAt: new Date() },
+                });
+              }
+              reply = await processMessage(ctx, inbound);
+            }
 
             // Persiste estado atualizado
             await prisma.whatsAppConversation.update({
@@ -286,7 +408,7 @@ export async function receiveWebhook(req: Request, res: Response): Promise<void>
             });
           }
         } else {
-          // Bot desligado: registra mas não responde
+          // Bot desligado ou handoff humano: registra mas não responde
           await prisma.whatsAppMessage.update({
             where: { id: stored.id },
             data: { status: 'RECEIVED' },
