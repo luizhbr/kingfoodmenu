@@ -3,11 +3,44 @@ import { z } from 'zod';
 import prisma from '../lib/db.js';
 import { isPointInPolygon } from '../lib/geo.js';
 
+/**
+ * Contrato do sistema: boundaries é um polígono como array de pares [lat, lng]
+ * (ver lib/geo.ts e isPointInPolygon). Validamos estrutura e faixas para
+ * rejeitar payloads inválidos antes de chegar ao Prisma.
+ */
+const boundaryPair = z.tuple([
+  z.number().finite().min(-90).max(90),
+  z.number().finite().min(-180).max(180),
+]);
+
+/**
+ * Polígono: >= 3 pares [lat, lng] DISTINTOS e fechado (1o vertice == ultimo,
+ * como GeoJSON). Rejeita anéis abertos e duplicatas que quebrariam o ray-casting.
+ */
+const boundariesSchema = z
+  .array(boundaryPair)
+  .min(3)
+  .refine(
+    (pts) => {
+      const seen = new Set(pts.map((p) => `${p[0]},${p[1]}`));
+      return seen.size >= 3;
+    },
+    { message: 'boundaries deve ter pelo menos 3 vertices distintos' }
+  )
+  .refine(
+    (pts) => {
+      const first = pts[0];
+      const last = pts[pts.length - 1];
+      return first[0] === last[0] && first[1] === last[1];
+    },
+    { message: 'boundaries deve ser um poligono fechado (1o vertice == ultimo)' }
+  );
+
 const createZoneSchema = z.object({
   name: z.string().min(1),
   charge: z.number().min(0).default(0),
   minOrder: z.number().min(0).default(0),
-  boundaries: z.any().optional(),
+  boundaries: boundariesSchema.optional(),
   isActive: z.boolean().default(true),
 });
 

@@ -11,8 +11,9 @@ export function isPointInPolygon(
 ): boolean {
   let inside = false;
   for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const [yi, xi] = polygon[i];
-    const [yj, xj] = polygon[j];
+    // Contrato do sistema: cada par é [lat, lng] (ver JSDoc acima e consumidores).
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
 
     const intersect =
       yi > lng !== yj > lng &&
