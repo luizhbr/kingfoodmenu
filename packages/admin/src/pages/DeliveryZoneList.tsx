@@ -90,6 +90,7 @@ export default function DeliveryZoneList() {
   const zonePolysRef = useRef<google.maps.Polygon[]>([]);
   const isDrawingRef = useRef(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [vertices, setVertices] = useState<[number, number][]>([]);
 
@@ -126,7 +127,7 @@ export default function DeliveryZoneList() {
 
   // Inicializa o mapa e desenha as zonas existentes
   useEffect(() => {
-    if (!hasGoogleMaps || !mapDivRef.current) return;
+    if (!hasGoogleMaps || !showForm || !mapDivRef.current) return;
     const center = location?.lat != null && location?.lng != null
       ? { lat: location.lat, lng: location.lng }
       : { lat: 39.9612, lng: -82.9988 }; // Columbus, OH padrão
@@ -160,13 +161,18 @@ export default function DeliveryZoneList() {
       setVertices((prev) => [...prev, [roundCoord(e.latLng!.lat()), roundCoord(e.latLng!.lng())]]);
     });
 
+    setMapReady(true);
     return () => {
       zonePolysRef.current.forEach((poly) => poly.setMap(null));
       zonePolysRef.current = [];
+      markersRef.current.forEach((m) => m.setMap(null));
+      markersRef.current = [];
+      if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
       mapRef.current = null;
+      setMapReady(false);
     };
-    // zones/location mudam após fetch ou save; redesenha o mapa mantendo o editor
-  }, [hasGoogleMaps, zones, location]);
+    // zones/location mudam após fetch ou save; showForm monta o div do mapa
+  }, [hasGoogleMaps, zones, location, showForm]);
 
   useEffect(() => {
     isDrawingRef.current = showForm;
@@ -174,7 +180,7 @@ export default function DeliveryZoneList() {
 
   // Renderiza o polígono de edição + pinos arrastáveis
   useEffect(() => {
-    if (!hasGoogleMaps || !mapRef.current) return;
+    if (!hasGoogleMaps || !mapReady || !mapRef.current) return;
     markersRef.current.forEach((m) => m.setMap(null));
     markersRef.current = [];
     if (polygonRef.current) { polygonRef.current.setMap(null); polygonRef.current = null; }
@@ -209,7 +215,7 @@ export default function DeliveryZoneList() {
       });
       markersRef.current.push(marker);
     });
-  }, [vertices, hasGoogleMaps]);
+  }, [vertices, hasGoogleMaps, mapReady]);
 
   const resetForm = () => {
     setEditingIdSafe(null);
@@ -241,13 +247,15 @@ export default function DeliveryZoneList() {
     setVertices(b);
     setShowForm(true);
     setError('');
-    // Ajusta o zoom para o polígono da zona
-    if (mapRef.current && b.length >= 1) {
-      const bounds = new google.maps.LatLngBounds();
-      b.forEach(([la, ln]) => bounds.extend({ lat: la, lng: ln }));
-      mapRef.current.fitBounds(bounds);
-    }
   };
+
+  // Quando o mapa fica pronto com uma zona em edição, ajusta o zoom ao polígono
+  useEffect(() => {
+    if (!mapReady || !mapRef.current || !editingId || vertices.length < 1) return;
+    const bounds = new google.maps.LatLngBounds();
+    vertices.forEach(([la, ln]) => bounds.extend({ lat: la, lng: ln }));
+    mapRef.current.fitBounds(bounds);
+  }, [mapReady, editingId, vertices]);
 
   const clearVertices = () => setVertices([]);
 
