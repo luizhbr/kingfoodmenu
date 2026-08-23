@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, FormEvent } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { useState, useEffect, useRef, FormEvent } from 'react';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -41,8 +41,8 @@ export default function Checkout() {
   const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [address, setAddress] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
-const [predictions, setPredictions] = useState<any[]>([]);
-const [selectedPlace, setSelectedPlace] = useState<any>(null);
+const [predictions, setPredictions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
+const [selectedPlace, setSelectedPlace] = useState<google.maps.places.Place | null>(null);
 const [loadingPredictions, setLoadingPredictions] = useState(false);
 const line1Ref = useRef<HTMLInputElement>(null);
 // Google Places Autocomplete — estados no topo (Rules of Hooks).
@@ -51,21 +51,19 @@ const line1Ref = useRef<HTMLInputElement>(null);
 const [isLoaded, setIsLoaded] = useState(false);
 const [loadError, setLoadError] = useState<string | null>(null);
 const googleMapsKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined;
-const loader = useMemo(() => {
-  if (!googleMapsKey) return null;
-  return new Loader({ apiKey: googleMapsKey, libraries: ['places'] });
-}, [googleMapsKey]);
-const hasGoogleMaps = !!loader && !loadError && isLoaded;
+// @googlemaps/js-api-loader v2: a classe Loader foi removida (lanca erro no
+// construtor). A API funcional setOptions + importLibrary e a oficial.
+const hasGoogleMaps = !!googleMapsKey && !loadError && isLoaded;
 
 useEffect(() => {
-  if (!loader) return;
+  if (!googleMapsKey) return;
   let active = true;
-  loader
-    .load()
+  setOptions({ key: googleMapsKey, libraries: ['places'] });
+  importLibrary('places')
     .then(() => { if (active) setIsLoaded(true); })
-    .catch((error) => { if (active) setLoadError(error instanceof Error ? error.message : String(error)); });
+    .catch((error: unknown) => { if (active) setLoadError(error instanceof Error ? error.message : String(error)); });
   return () => { active = false; };
-}, [loader]);
+}, [googleMapsKey]);
   const [addressErrors, setAddressErrors] = useState({ line1: '', city: '', state: '', zip: '' });
   function updateAddress(field: keyof typeof address, value: string) {
     setAddress((p) => ({ ...p, [field]: value }));
@@ -395,57 +393,76 @@ useEffect(() => {
     }
   }
 
-  // Google Places Autocomplete
-const handleLine1Change = (event: React.ChangeEvent<HTMLInputElement>) => {
-  const value = event.target.value;
-  updateAddress('line1', value);
-  if (!hasGoogleMaps || !value.trim() || typeof window === 'undefined' || !window.google?.maps?.places) {
-    setPredictions([]);
-    return;
+  // Google Places Autocomplete (New API) — debounce 300ms + session token
+  const line1TimerRef = useRef<number | null>(null);
+  const sessionTokenRef = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
+  if (typeof window !== 'undefined' && window.google?.maps?.places?.AutocompleteSessionToken && !sessionTokenRef.current) {
+    sessionTokenRef.current = new window.google.maps.places.AutocompleteSessionToken();
   }
-  setLoadingPredictions(true);
-  const autocompleteService = new window.google.maps.places.AutocompleteService();
-  autocompleteService.getPlacePredictions({ input: value }, (predictions, status) => {
-    setLoadingPredictions(false);
-    if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-      setPredictions(predictions);
-    } else {
-      setPredictions([]);
-    }
-  });
-};
 
-const handlePlaceSelect = (place: any) => {
-  if (typeof window === 'undefined' || !window.google?.maps?.places) return;
-  setLoadingPredictions(true);
-  const geocoder = new window.google.maps.places.PlacesService(new window.google.maps.Map(document.createElement('div')));
-  geocoder.getDetails({ placeId: place.place_id }, (result, status) => {
-    setLoadingPredictions(false);
-    if (status === window.google.maps.places.PlacesServiceStatus.OK && result) {
-      setSelectedPlace(result);
-      // Update address fields
-      const line1 = result.formatted_address || '';
-      let city = '', state = '', zip = '';
-      for (const component of result.address_components) {
-        if (component.types.includes('locality') || component.types.includes('postal_town')) {
-          city = component.long_name;
-        }
-        if (component.types.includes('administrative_area_level_1')) {
-          state = component.short_name;
-        }
-        if (component.types.includes('postal_code')) {
-          zip = component.long_name;
+  const handleLine1Change = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    updateAddress('line1', value);
+    if (!hasGoogleMaps || !value.trim() || typeof window === 'undefined' || !window.google?.maps?.places?.AutocompleteSuggestion) {
+      setPredictions([]);
+      return;
+    }
+    if (line1TimerRef.current !== null) {
+      window.clearTimeout(line1TimerRef.current);
+    }
+    setLoadingPredictions(true);
+    line1TimerRef.current = window.setTimeout(async () => {
+      try {
+        const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: value.trim(),
+          includedRegionCodes: ['US'],
+          sessionToken: sessionTokenRef.current ?? undefined,
+        });
+        setPredictions(suggestions ?? []);
+      } catch {
+        setPredictions([]);
+      } finally {
+        setLoadingPredictions(false);
+      }
+    }, 300);
+  };
+
+  const handlePlaceSelect = async (suggestion: google.maps.places.AutocompleteSuggestion) => {
+    if (typeof window === 'undefined' || !window.google?.maps?.places?.Place) return;
+    setLoadingPredictions(true);
+    try {
+      const place = suggestion.placePrediction?.toPlace();
+      if (!place) return;
+      const { place: detailed } = await place.fetchFields({
+        fields: ['addressComponents', 'formattedAddress'],
+      });
+      setSelectedPlace(detailed);
+      // Build address from components — never invent a street number
+      const components = detailed.addressComponents ?? [];
+      const byType = new Map<string, google.maps.places.AddressComponent>();
+      for (const c of components) {
+        for (const tp of c.types) {
+          if (!byType.has(tp)) byType.set(tp, c);
         }
       }
+      const streetNumber = byType.get('street_number')?.shortText?.trim();
+      const route = byType.get('route')?.shortText?.trim();
+      const city = byType.get('locality')?.longText ?? byType.get('postal_town')?.longText ?? '';
+      const state = byType.get('administrative_area_level_1')?.shortText ?? '';
+      const zip = byType.get('postal_code')?.shortText ?? '';
+      const line1 = [route, streetNumber].filter(Boolean).join(', ') || detailed.formattedAddress || '';
       updateAddress('line1', line1);
       updateAddress('city', city);
       updateAddress('state', state);
       updateAddress('zip', zip);
       setPredictions([]);
       line1Ref.current?.blur();
+    } catch {
+      // Keep what the user typed; never break checkout
+    } finally {
+      setLoadingPredictions(false);
     }
-  });
-};
+  };
 
 function getDefaultScheduleTime(): string {
     const d = new Date();
@@ -604,13 +621,16 @@ function getDefaultScheduleTime(): string {
                     </div>
                   ) : predictions.length > 0 ? (
                     <div className="absolute left-0 right-0 top-full mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg z-10">
-                      {predictions.map((prediction, index) => (
+                      {predictions.map((suggestion, index) => (
                         <div
-                          key={index}
-                          onClick={() => handlePlaceSelect(prediction)}
+                          key={suggestion.placePrediction?.placeId ?? index}
+                          onClick={() => handlePlaceSelect(suggestion)}
                           className="px-4 py-2 text-sm cursor-pointer hover:bg-kf-primary/10"
                         >
-                          {prediction.description}
+                          {[
+                            suggestion.placePrediction?.mainText?.text,
+                            suggestion.placePrediction?.secondaryText?.text,
+                          ].filter(Boolean).join(', ')}
                         </div>
                       ))}
                     </div>
