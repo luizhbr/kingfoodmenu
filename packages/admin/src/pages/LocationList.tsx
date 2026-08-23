@@ -151,6 +151,11 @@ export default function LocationList() {
                       aria-label={`View tables for ${loc.name}`}
                     >Mesas</Link>
                     <Link
+                      to={`/locations/${loc.id}/delivery-zones`}
+                      className="text-primary-600 hover:text-primary-900 font-medium"
+                      aria-label={`Configurar zonas de entrega de ${loc.name}`}
+                    >Zonas</Link>
+                    <Link
                       to={`/locations/${loc.id}`}
                       className="text-primary-600 hover:text-primary-900 font-medium"
                       aria-label={`Edit ${loc.name}`}
