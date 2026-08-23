@@ -15,7 +15,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const data = await res.json();
 
   if (!res.ok) {
-    throw new Error(data.error || `Request failed: ${res.status}`);
+    const raw = data.error ?? data.message ?? `Request failed: ${res.status}`;
+    const msg = Array.isArray(raw)
+      ? raw.map((e: any) => (typeof e === 'string' ? e : e?.message || JSON.stringify(e))).join('; ')
+      : typeof raw === 'object' && raw !== null
+        ? JSON.stringify(raw)
+        : String(raw);
+    throw new Error(msg);
   }
 
   return data;
