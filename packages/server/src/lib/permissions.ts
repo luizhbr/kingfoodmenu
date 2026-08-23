@@ -15,7 +15,8 @@ export type PermissionGroupId =
   | 'loyalty'
   | 'coupons'
   | 'reviews'
-  | 'automation';
+  | 'automation'
+  | 'whatsapp';
 
 export type Permission =
   // Pedidos
@@ -58,7 +59,10 @@ export type Permission =
   | 'reviews.manage'
   // Automação
   | 'automation.view'
-  | 'automation.manage';
+  | 'automation.manage'
+  // WhatsApp
+  | 'whatsapp.view'
+  | 'whatsapp.manage';
 
 export interface PermissionEntry {
   key: Permission;
@@ -176,6 +180,15 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: 'reviews.view', label: 'Ver avaliações' },
       { key: 'reviews.manage', label: 'Moderar avaliações' },
+    ],
+  },
+  {
+    id: 'whatsapp',
+    label: 'WhatsApp',
+    icon: '💬',
+    permissions: [
+      { key: 'whatsapp.view', label: 'Ver central WhatsApp' },
+      { key: 'whatsapp.manage', label: 'Configurar WhatsApp' },
     ],
   },
   {

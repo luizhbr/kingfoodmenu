@@ -61,6 +61,7 @@ const SettingsAdvanced = lazy(() => import('./pages/SettingsAdvanced.js'));
 const SettingsPrint = lazy(() => import('./pages/SettingsPrint.js'));
 const SettingsLoyalty = lazy(() => import('./pages/SettingsLoyalty.js'));
 const SettingsPrinters = lazy(() => import('./pages/SettingsPrinters.js'));
+const SettingsWhatsApp = lazy(() => import('./pages/SettingsWhatsApp.js'));
 const OptionGroupLibrary = lazy(() => import('./pages/OptionGroupLibrary.js'));
 
 function PageFallback() {
@@ -155,6 +156,7 @@ function AppRoutes() {
           <Route path="/settings/advanced" element={<RequireRole roles={['SUPER_ADMIN']}><SettingsAdvanced /></RequireRole>} />
           <Route path="/settings/print" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrint /></RequireRole>} />
           <Route path="/settings/printers" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><SettingsPrinters /></RequireRole>} />
+          <Route path="/settings/whatsapp" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><RequirePermission perms={['whatsapp.view']}><SettingsWhatsApp /></RequirePermission></RequireRole>} />
 
           {/* Developer — MANAGER+ for metrics, SUPER_ADMIN for audit */}
           <Route path="/developer" element={<RequireRole roles={['SUPER_ADMIN', 'MANAGER']}><Navigate to="/developer/metrics" replace /></RequireRole>} />

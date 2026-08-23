@@ -1,0 +1,106 @@
+{
+  "name": "KF - Error Handler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "rules": [
+            {
+              "type": "string",
+              "leftValue": "={{ $json.error }}",
+              "rightValue": "",
+              "operator": "notEmpty"
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "err-filter",
+      "name": "Filtro de erro",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Registra erro com contexto (sem secrets)\nconst item = $input.first().json;\nreturn [{ json: { error: item.error, source: item.source || 'unknown', at: new Date().toISOString(), retryCount: item.retryCount || 0 } }];"
+      },
+      "id": "err-log",
+      "name": "Registrar erro",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Retry controlado: máx 3 tentativas com backoff\nconst item = $input.first().json;\nconst retryCount = (item.retryCount || 0) + 1;\nif (retryCount > 3) {\n  return [{ json: { ...item, retryCount, giveUp: true } }];\n}\nreturn [{ json: { ...item, retryCount } }];"
+      },
+      "id": "err-retry",
+      "name": "Retry controlado (máx 3)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fallback: notifica operação (sem dados sensíveis)\nreturn [{ json: { message: 'Erro no fluxo WhatsApp — verificar logs', error: $input.first().json.error } }];"
+      },
+      "id": "err-fallback",
+      "name": "Fallback (notificar operação)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        600,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Filtro de erro": {
+      "main": [
+        [
+          {
+            "node": "Registrar erro",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Registrar erro": {
+      "main": [
+        [
+          {
+            "node": "Retry controlado (máx 3)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry controlado (máx 3)": {
+      "main": [
+        [
+          {
+            "node": "Fallback (notificar operação)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

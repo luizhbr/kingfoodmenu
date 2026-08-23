@@ -90,6 +90,7 @@ model Customer {
   loyaltyRedemptions   LoyaltyRedemption[]
   cashbackWallet       CashbackWallet?
   cashbackTransactions CashbackTransaction[]
+  whatsAppConversations WhatsAppConversation[]
 
   @@map("customers")
 }
@@ -1499,4 +1500,84 @@ model MenuItemOptionGroup {
 
   @@unique([menuItemId, optionGroupId])
   @@map("menu_item_option_groups")
+}
+
+// ============================================================
+// WHATSAPP BOT (canal de vendas — orquestrado por n8n + IA)
+// ============================================================
+// O backend King Food continua sendo a fonte da verdade.
+// Estas tabelas guardam apenas o estado da conversa do canal
+// WhatsApp e a configuração da integração (sem secrets).
+
+model WhatsAppIntegration {
+  id             String   @id @default(cuid())
+  provider       String   @default("meta") // "meta" (Cloud API oficial)
+  status         String   @default("DISCONNECTED") // CONNECTED | CONFIGURATION_PENDING | DISCONNECTED | ERROR
+  botEnabled     Boolean  @default(false)
+  phoneNumber    String?
+  displayName    String?
+  phoneNumberId  String?
+  businessAccountId String?
+  // Secrets NUNCA são armazenados aqui — apenas flags de configuração.
+  webhookConfigured Boolean @default(false)
+  webhookVerified   Boolean @default(false)
+  lastWebhookAt  DateTime?
+  lastMessageAt  DateTime?
+  lastError      String?
+  lastErrorAt    DateTime?
+  lastTestAt     DateTime?
+  lastTestStatus String?
+  n8nStatus      String   @default("UNKNOWN") // ONLINE | OFFLINE | UNKNOWN
+  n8nLastExecutionAt DateTime?
+  n8nLastError   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  conversations WhatsAppConversation[]
+
+  @@map("whatsapp_integrations")
+}
+
+model WhatsAppConversation {
+  id             String   @id @default(cuid())
+  integrationId  String
+  integration    WhatsAppIntegration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  whatsappNumber String
+  customerId     String?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  // Estado do bot (JSON serializado — carrinho, step, intent)
+  state          Json?
+  currentIntent  String?
+  currentStep    String?
+  mode           String   @default("BOT") // BOT | HUMAN | WAITING | CLOSED
+  lastMessageAt  DateTime @default(now())
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  messages WhatsAppMessage[]
+
+  @@unique([integrationId, whatsappNumber])
+  @@index([customerId])
+  @@index([expiresAt])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsAppMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  conversation   WhatsAppConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  messageId      String   @unique // idempotência: processar uma única vez
+  direction      String   // INBOUND | OUTBOUND
+  type           String   @default("text")
+  text           String?
+  intent         String?
+  status         String   @default("RECEIVED") // RECEIVED | PROCESSED | FAILED | SENT
+  error          String?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+
+  @@index([conversationId, createdAt])
+  @@index([status])
+  @@map("whatsapp_messages")
 }

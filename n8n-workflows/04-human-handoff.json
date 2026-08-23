@@ -1,0 +1,81 @@
+{
+  "name": "KF - Human Handoff",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp/handoff",
+        "options": {}
+      },
+      "id": "webhook-handoff",
+      "name": "Webhook (handoff)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Payload: { conversationId, mode: 'HUMAN' | 'BOT' | 'CLOSED' }\n// Encaminha para o backend — o backend decide e persiste.\nconst item = $input.first().json;\nif (!item.conversationId || !['HUMAN','BOT','CLOSED'].includes(item.mode)) {\n  throw new Error('conversationId e mode (HUMAN|BOT|CLOSED) são obrigatórios');\n}\nreturn [{ json: item }];"
+      },
+      "id": "handoff-validate",
+      "name": "Validar handoff",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.KINGFOOD_API_URL }}/api/whatsapp/conversations/{{ $json.conversationId }}/handoff",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ mode: $json.mode }) }}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "handoff-api",
+      "name": "King Food API (persistir)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (handoff)": {
+      "main": [
+        [
+          {
+            "node": "Validar handoff",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar handoff": {
+      "main": [
+        [
+          {
+            "node": "King Food API (persistir)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

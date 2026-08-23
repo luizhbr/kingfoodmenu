@@ -1,0 +1,28 @@
+import { Router } from 'express';
+import {
+  getStatus,
+  listConversations,
+  receiveWebhook,
+  sendTestMessage,
+  setBotEnabled,
+  setHandoff,
+  testConnection,
+  verifyWebhook,
+} from '../controllers/whatsapp.controller.js';
+import { authenticate, requireRole, requirePermission } from '../middleware/auth.js';
+
+const router = Router();
+
+// ── Webhook Meta Cloud API (público, valida assinatura internamente) ──
+router.get('/webhook', verifyWebhook);
+router.post('/webhook', receiveWebhook);
+
+// ── Central WhatsApp (Admin) — autenticado ──
+router.get('/status', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.view'), getStatus);
+router.post('/test', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), testConnection);
+router.post('/test-message', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), sendTestMessage);
+router.post('/bot', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), setBotEnabled);
+router.get('/conversations', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.view'), listConversations);
+router.post('/conversations/:id/handoff', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), setHandoff);
+
+export default router;

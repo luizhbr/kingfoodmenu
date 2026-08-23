@@ -1,0 +1,90 @@
+{
+  "name": "KF - WhatsApp Outgoing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp/outgoing",
+        "options": {}
+      },
+      "id": "webhook-out",
+      "name": "Webhook (evento do backend)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Payload esperado: { phone, text, phoneNumberId? }\n// Validação mínima — sem regra de negócio.\nconst item = $input.first().json;\nif (!item.phone || !item.text) throw new Error('phone e text são obrigatórios');\nreturn [{ json: item }];"
+      },
+      "id": "validate",
+      "name": "Validar payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        200,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v21.0/{{ $json.phoneNumberId || $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $json.phone.replace(/\\D/g,''), type: 'text', text: { preview_url: false, body: $json.text } }) }}",
+        "options": {
+          "timeout": 25000
+        }
+      },
+      "id": "meta-send",
+      "name": "Meta Cloud API (enviar)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook (evento do backend)": {
+      "main": [
+        [
+          {
+            "node": "Validar payload",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validar payload": {
+      "main": [
+        [
+          {
+            "node": "Meta Cloud API (enviar)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "active": false
+}

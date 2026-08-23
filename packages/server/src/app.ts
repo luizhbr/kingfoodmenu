@@ -34,6 +34,7 @@ import driverRoutes from './routes/driver.routes.js';
 import reportsRoutes from './routes/reports.routes.js';
 import campaignRoutes from './routes/campaign.routes.js';
 import qrcodeRoutes from './routes/qrcode.routes.js';
+import whatsappRoutes from './routes/whatsapp.routes.js';
 import { openApiSpec } from './lib/openapi.js';
 import { initPassport } from './lib/passport.js';
 import passport from 'passport';
@@ -163,6 +164,9 @@ export function createApp() {
   // WhatsApp webhook signature verification
   app.use('/api/automation-rules/webhook', verifyWebhookSignature);
 
+  // WhatsApp Cloud API webhook — raw body REQUIRED for HMAC signature verification
+  app.use('/api/whatsapp/webhook', express.raw({ type: 'application/json' }));
+
   // ── Body parsing ──────────────────────────────────────────────────────
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -228,6 +232,7 @@ app.use('/api/reports', reportsRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/qrcodes', qrcodeRoutes);
   app.use('/api/print', printRoutes);
+  app.use('/api/whatsapp', whatsappRoutes);
 app.use('/api/admin/print/templates', printTemplateRoutes);
 
   // ── 404 handler ───────────────────────────────────────────────────────
