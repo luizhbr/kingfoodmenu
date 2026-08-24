@@ -35,7 +35,10 @@ describe('whatsapp-adapter: sessão criptografada', () => {
 
     // simula uma sessão Baileys
     anyA.session = {
-      creds: { me: { id: '5511999999999:22@s.whatsapp.net', name: 'King Food Teste' } },
+      creds: {
+        me: { id: '5511999999999:22@s.whatsapp.net', name: 'King Food Teste' },
+        noiseKey: { public: Buffer.from('nk-pub'), private: Buffer.from('nk-priv') },
+      },
       keys: { 'pre-key': { 'p1': { id: 'chave-1' } }, session: { 's1': { x: 1 } } },
     };
     anyA.persistSession();
@@ -44,8 +47,34 @@ describe('whatsapp-adapter: sessão criptografada', () => {
     const adapter2 = new WhatsAppWebAdapter();
     const any2 = adapter2 as any;
     expect(any2.session.creds.me.id).toBe('5511999999999:22@s.whatsapp.net');
+    expect(Buffer.isBuffer(any2.session.creds.noiseKey.public)).toBe(true);
     expect(any2.session.keys['pre-key']['p1'].id).toBe('chave-1');
     expect(any2.session.keys['session']['s1'].x).toBe(1);
+  });
+
+  it('persistência preserva Buffers (noiseKey etc.) — round-trip real', async () => {
+    const adapter = new WhatsAppWebAdapter();
+    const anyA = adapter as any;
+    anyA.session = {
+      creds: {
+        me: { id: '5511999999999:22@s.whatsapp.net' },
+        noiseKey: { public: Buffer.from('pub-bytes-01'), private: Buffer.from('priv-bytes-02') },
+        signedIdentityKey: { public: Buffer.from('sig-pub-03'), private: Buffer.from('sig-priv-04') },
+        registrationId: 42,
+        registered: true,
+      },
+      keys: { 'pre-key': { 'p1': Buffer.from('chave-binaria') } },
+    };
+    anyA.persistSession();
+
+    const adapter2 = new WhatsAppWebAdapter();
+    const any2 = adapter2 as any;
+    expect(Buffer.isBuffer(any2.session.creds.noiseKey.public)).toBe(true);
+    expect(any2.session.creds.noiseKey.public.toString()).toBe('pub-bytes-01');
+    expect(Buffer.isBuffer(any2.session.creds.signedIdentityKey.private)).toBe(true);
+    expect(Buffer.isBuffer(any2.session.keys['pre-key']['p1'])).toBe(true);
+    expect(any2.session.creds.registrationId).toBe(42);
+    expect(any2.session.creds.registered).toBe(true);
   });
 
   it('sessão corrompida não quebra: cai para creds vazias (novo QR)', async () => {

@@ -69,15 +69,40 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 
   // ── sessão em memória (creds + keys), espelhada no disco criptografado ──
   private session: SessionSnapshot = {
-    creds: { me: {}, signalIdentities: [], platform: 'smba', version: 2, registered: false },
+    creds: null as any, // preenchido no constructor com initAuthCreds()
     keys: {},
   };
 
   constructor() {
     this.loadSessionFromDisk();
+    if (!this.session.creds?.noiseKey) {
+      // Sem creds válidas (primeira vez ou sessão perdida) — o initAuthCreds()
+      // gera noiseKey, signedIdentityKey, registrationId etc. do Baileys.
+      // Carregado async no connect(); até lá, placeholder seguro.
+      this.session.creds = this.emptyCreds();
+    }
     if (!getEncryptionKey()) {
       console.warn('[whatsapp-adapter] WHATSAPP_SESSION_ENCRYPTION_KEY ausente — usando chave DEV insegura. Defina em produção.');
     }
+  }
+
+  private emptyCreds(): any {
+    return {
+      me: {},
+      signalIdentities: [],
+      platform: 'smba',
+      version: 2,
+      registered: false,
+      noiseKey: undefined,
+      signedIdentityKey: undefined,
+      signedPreKey: undefined,
+      registrationId: 0,
+      advSecretKey: undefined,
+      nextPreKeyId: 1,
+      firstUnuploadedPreKeyId: 1,
+      serverHasPreKeys: false,
+      account: undefined,
+    };
   }
 
   // ── ciclo de vida ──────────────────────────────────────────
@@ -89,6 +114,11 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     try {
       const mod = await import('@whiskeysockets/baileys');
       this.baileys = mod;
+      if (!this.session.creds?.noiseKey || !this.session.creds?.signedIdentityKey) {
+        // Sessão nova/vazia — gera creds oficiais do Baileys (noiseKey etc.)
+        this.session.creds = mod.initAuthCreds();
+        this.persistSession();
+      }
       mkdirSync(getSessionDir(), { recursive: true });
 
       const { state, saveCreds } = this.buildAuthState();
@@ -232,7 +262,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
         Buffer.from(cipher.tag, 'base64'),
         deriveKey(getEncryptionKey()),
       );
-      const snap = JSON.parse(buf.toString('utf-8')) as SessionSnapshot;
+      const snap = JSON.parse(buf.toString('utf-8'), bufferReviver) as SessionSnapshot;
       if (snap?.creds) this.session.creds = snap.creds;
       if (snap?.keys) this.session.keys = snap.keys;
       this.syncSessionFromCreds();
@@ -245,7 +275,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     try {
       mkdirSync(getSessionDir(), { recursive: true });
       const { iv, tag, data } = encryptAes(
-        Buffer.from(JSON.stringify(this.session), 'utf-8'),
+        Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
         deriveKey(getEncryptionKey()),
       );
       writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
@@ -403,6 +433,26 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 }
 
 // ── helpers ──────────────────────────────────────────────────────
+
+/** JSON.stringify com Buffer -> {__buf: base64} (round-trip seguro da sessão). */
+function bufferReplacer(_key: string, value: unknown): unknown {
+  if (Buffer.isBuffer(value)) {
+    return { __buf: value.toString('base64') };
+  }
+  const obj = value as Record<string, unknown> | null;
+  if (obj && typeof obj === 'object' && obj.type === 'Buffer' && Array.isArray(obj.data)) {
+    return { __buf: Buffer.from(obj.data as number[]).toString('base64') };
+  }
+  return value;
+}
+
+/** JSON.parse com reviver que restaura {__buf: base64} -> Buffer. */
+function bufferReviver(_key: string, value: unknown): unknown {
+  if (value && typeof value === 'object' && typeof (value as any).__buf === 'string') {
+    return Buffer.from((value as any).__buf, 'base64');
+  }
+  return value;
+}
 
 function normalizeJid(phone: string): string {
   const digits = phone.replace(/\D/g, '');
