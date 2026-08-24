@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createChannelAdapter, WhatsAppWebAdapter } from '../../lib/whatsapp-adapter/index.js';
 import { clearSession, sessionStatus } from '../../lib/whatsapp-adapter/session.js';
+import { normalizeJid } from '../../lib/whatsapp-adapter/web.js';
 
 describe('whatsapp-adapter: factory', () => {
   it('mock é o padrão (nunca envia real sem escolha explícita)', () => {
@@ -123,4 +124,77 @@ describe('whatsapp-adapter: normalização de mensagens Baileys', () => {
     expect(adapter.normalizeIncoming({ key: { remoteJid: 'x@s.whatsapp.net' }, message: { imageMessage: {} } })).toBeNull();
     expect(adapter.normalizeIncoming({ key: {} })).toBeNull();
   });
+
+describe('whatsapp-adapter: reconexão e statusCode (DisconnectReason numérico)', () => {
+  it('408 (timedOut) → reconecta com backoff (transitório)', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    adapter.sock = { end: () => {} };
+    adapter.connecting = false;
+    adapter.onConnectionUpdate({ connection: 'close', lastDisconnect: { error: { output: { statusCode: 408 } } } }, () => {});
+    expect(adapter.info.status).toBe('DISCONNECTED');
+    expect(adapter.reconnectTimer).not.toBeNull();
+    adapter.clearReconnect();
+  });
+
+  it('515 (restartRequired) → reconecta (transitório)', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    adapter.sock = { end: () => {} };
+    adapter.connecting = false;
+    adapter.onConnectionUpdate({ connection: 'close', lastDisconnect: { error: { output: { statusCode: 515 } } } }, () => {});
+    expect(adapter.info.status).toBe('DISCONNECTED');
+    expect(adapter.reconnectTimer).not.toBeNull();
+    adapter.clearReconnect();
+  });
+
+  it('401 (loggedOut) → limpa sessão e aguarda novo QR (sem reconectar)', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    adapter.sock = { end: () => {} };
+    adapter.connecting = false;
+    adapter.session.creds = { noiseKey: Buffer.from('x'), me: { id: '5511:22@s.whatsapp.net' } };
+    adapter.onConnectionUpdate({ connection: 'close', lastDisconnect: { error: { output: { statusCode: 401 } } } }, () => {});
+    expect(adapter.info.status).toBe('WAITING_QR');
+    expect(adapter.reconnectTimer).toBeNull();
+    expect(adapter.session.creds.noiseKey).toBeUndefined();
+  });
+
+  it('500 (badSession) → limpa sessão e aguarda novo QR', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    adapter.sock = { end: () => {} };
+    adapter.connecting = false;
+    adapter.onConnectionUpdate({ connection: 'close', lastDisconnect: { error: { output: { statusCode: 500 } } } }, () => {});
+    expect(adapter.info.status).toBe('WAITING_QR');
+    expect(adapter.reconnectTimer).toBeNull();
+  });
+
+  it('403 (forbidden) → ERROR sem reconectar', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    adapter.sock = { end: () => {} };
+    adapter.connecting = false;
+    adapter.onConnectionUpdate({ connection: 'close', lastDisconnect: { error: { output: { statusCode: 403 } } } }, () => {});
+    expect(adapter.info.status).toBe('ERROR');
+    expect(adapter.reconnectTimer).toBeNull();
+  });
+
+  it('reconexão esgota após 5 tentativas (sem loop infinito)', () => {
+    const adapter = new WhatsAppWebAdapter() as any;
+    for (let i = 0; i < 6; i++) adapter.scheduleReconnect();
+    expect(adapter.info.status).toBe('ERROR');
+    expect(adapter.reconnectTimer).toBeNull();
+  });
+});
+
+describe('whatsapp-adapter: validação de JID no envio', () => {
+  it('rejeita jid sem número', () => {
+    expect(() => normalizeJid('abc')).toThrow();
+  });
+
+  it('rejeita número curto demais', () => {
+    expect(() => normalizeJid('12345')).toThrow();
+  });
+
+  it('normaliza número válido', () => {
+    expect(normalizeJid('5511999999999')).toBe('5511999999999@s.whatsapp.net');
+  });
+});
+
 });

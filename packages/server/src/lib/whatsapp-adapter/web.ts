@@ -375,24 +375,28 @@ export class WhatsAppWebAdapter implements MessagingChannel {
       this.sock = null;
       this.connecting = false;
       this.qrBuffer = null;
+      // DisconnectReason do Baileys é NUMÉRICO (nunca comparar com string):
+      //   408 timedOut/connectionLost · 428 connectionClosed · 515 restartRequired → transitórios: reconectar
+      //   401 loggedOut · 500 badSession → sessão inválida: limpar + novo QR
+      //   403 forbidden → conta bloqueada: ERROR sem reconectar
+      //   503 unavailableService → tentar depois (backoff)
       const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
-      if (statusCode === 408 || statusCode === 515) {
-        // logged out — limpar creds + disco para forçar novo QR limpo
+      if (statusCode === 401 || statusCode === 500) {
+        // logged out / bad session — limpar creds + disco para forçar novo QR limpo
         this.session.creds = this.emptyCreds();
         this.session.keys = {};
+        this.selfJids.clear();
         try { rmSync(getSessionDir(), { recursive: true, force: true }); } catch { /* noop */ }
         this.info = { status: 'WAITING_QR' };
-        this.emit('connection_lost', 'sessão expirada — novo QR necessário');
-      } else if (statusCode === 401) {
-        this.info = { status: 'ERROR', lastError: 'credenciais rejeitadas — remova a sessão e repareie', lastErrorAt: new Date().toISOString() };
-        this.emit('error', 'auth falhou (401)');
-      } else if (statusCode === 'restartRequired' || statusCode === 'disconnected') {
+        this.emit('connection_lost', 'sessão inválida — novo QR necessário');
+      } else if (statusCode === 403) {
+        this.info = { status: 'ERROR', lastError: 'conta bloqueada (403 forbidden) — verifique o WhatsApp', lastErrorAt: new Date().toISOString() };
+        this.emit('error', 'conta bloqueada (403)');
+      } else {
+        // 408/428/503/515 e demais → transitório: reconectar com backoff
         this.info = { status: 'DISCONNECTED' };
         this.emit('connection_lost', `reconectando (${String(statusCode)})`);
         this.scheduleReconnect();
-      } else {
-        this.info = { status: 'ERROR', lastError: String(lastDisconnect?.error ?? statusCode ?? 'erro desconhecido'), lastErrorAt: new Date().toISOString() };
-        this.emit('error', `connection closed: ${String(statusCode)}`);
       }
       return;
     }
@@ -500,7 +504,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   }
 
   private emit(type: ChannelEvent['type'], detail?: string, messageId?: string): void {
-    const event: ChannelEvent = { type, at: new Date().toISOString(), detail, messageId };
+    const event: ChannelEvent = { type, at: new Date().toISOString(), detail: detail ? detail.slice(0, 500) : undefined, messageId };
     this.logs.push(event);
     if (this.logs.length > 500) this.logs.splice(0, this.logs.length - 500); // cap: 500 eventos
     this.eventHandler?.(event);
@@ -529,9 +533,12 @@ function bufferReviver(_key: string, value: unknown): unknown {
   return value;
 }
 
-function normalizeJid(phone: string): string {
+export function normalizeJid(phone: string): string {
   const digits = phone.replace(/\D/g, '');
-  return digits.endsWith('@s.whatsapp.net') ? phone : `${digits}@s.whatsapp.net`;
+  if (!digits || digits.length < 10 || digits.length > 15) {
+    throw new Error(`jid inválido: ${maskPhone(phone)}`);
+  }
+  return `${digits}@s.whatsapp.net`;
 }
 
 function maskPhone(jid: string): string {
