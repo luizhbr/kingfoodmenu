@@ -23,6 +23,7 @@ export class PrintAgent {
   private stopped = false;
   private pollTimer: NodeJS.Timeout | null = null;
   private heartbeatTimer: NodeJS.Timeout | null = null;
+  private polling = false; // lock: impede polls concorrentes (poll 500ms)
   private driverConnected = false;
   private lastError: { jobId?: string; message?: string; at?: string } | null = null;
   readonly queue = new PrintQueue();
@@ -104,6 +105,11 @@ export class PrintAgent {
   async pollOnce(): Promise<PollStats> {
     const stats: PollStats = { fetched: 0, printed: 0, failed: 0, skipped: 0 };
     if (this.stopped) return stats;
+    // Lock: com poll de 500ms, um ciclo pode demorar mais que o intervalo.
+    // Sem lock, dois ciclos concorrentes tentam PRINTING no mesmo job →
+    // "Invalid transition PRINTING → PRINTING" no servidor.
+    if (this.polling) return stats;
+    this.polling = true;
     try {
       const { jobs } = await this.api.fetchJobs();
       stats.fetched = jobs.length;
@@ -129,6 +135,8 @@ export class PrintAgent {
     } catch (e: any) {
       this.lastError = { message: `poll: ${String(e?.message || e)}`, at: new Date().toISOString() };
       logger.error('agent', 'poll failed', { error: String(e?.message || e) });
+    } finally {
+      this.polling = false;
     }
     return stats;
   }
@@ -168,7 +176,13 @@ export class PrintAgent {
 
     try {
       // Mark PRINTING on server
-      await this.api.reportStatus(jobId, 'PRINTING');
+      try {
+        await this.api.reportStatus(jobId, 'PRINTING');
+      } catch (e2: any) {
+        const m2 = String(e2?.message || e2);
+        // Já está PRINTING (outro ciclo/agente marcou) → benigno, continuar.
+        if (!/Invalid transition.*PRINTING/.test(m2)) throw e2;
+      }
       // Local transition: QUEUED → PRINTING, or FAILED → PRINTING (server re-queued = retry)
       if (local.status === 'QUEUED' || local.status === 'FAILED') {
         this.queue.transition(jobId, 'PRINTING');
