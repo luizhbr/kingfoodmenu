@@ -24,3 +24,8 @@ tmp/
 
 # Claude local settings (may contain local credentials)
 .claude/settings.local.json
+
+# WhatsApp session (credenciais criptografadas — NUNCA versionar)
+.whatsapp-session/
+*.enc.json
+auth.enc.json

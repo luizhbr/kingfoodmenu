@@ -336,8 +336,16 @@ describe('convenção META_* (F1)', () => {
     ];
     for (const f of files) {
       const content = fs.readFileSync(path.join(root, f), 'utf-8');
-      // credenciais Meta devem usar META_* — WHATSAPP_* só para NOTIFY_NUMBER
-      const bad = content.match(/WHATSAPP_(?!NOTIFY_NUMBER)[A-Z_]+/g);
+      // Credenciais Meta devem usar META_* (token, secret, phone id, verify).
+      // WHATSAPP_* é aceito APENAS para flags de controle do adapter web:
+      //   WHATSAPP_NOTIFY_NUMBER (número de notificação — legado),
+      //   WHATSAPP_ADAPTER (mock|meta|web),
+      //   WHATSAPP_AUTOMATION_ENABLED (kill switch do prompt),
+      //   WHATSAPP_AI_ENABLED (kill switch IA),
+      //   WHATSAPP_SESSION_ENCRYPTION_KEY / WHATSAPP_SESSION_DIR (sessão QR),
+      //   WHATSAPP_MESSAGE_RETENTION_DAYS (retenção).
+      const WHATSAPP_CONTROL = '(?:ADAPTER|AUTOMATION_ENABLED|AI_ENABLED|SESSION_ENCRYPTION_KEY|SESSION_DIR|MESSAGE_RETENTION_DAYS|NOTIFY_NUMBER)';
+      const bad = content.match(new RegExp('WHATSAPP_(?!' + WHATSAPP_CONTROL + ')[A-Z_]+', 'g'));
       expect(bad, `${f} usa WHATSAPP_* inválido: ${bad}`).toBeNull();
     }
   });

@@ -9,6 +9,10 @@ import {
   setHandoff,
   testConnection,
   verifyWebhook,
+  getWebStatus,
+  connectWeb,
+  disconnectWeb,
+  logoutWeb,
 } from '../controllers/whatsapp.controller.js';
 import { authenticate, requireRole, requirePermission } from '../middleware/auth.js';
 
@@ -27,6 +31,10 @@ router.get('/status', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requi
 router.post('/test', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), testConnection);
 router.post('/test-message', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), sendTestMessage);
 router.post('/bot', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), setBotEnabled);
+router.get('/web/status', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.view'), getWebStatus);
+router.post('/web/connect', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), connectWeb);
+router.post('/web/disconnect', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), disconnectWeb);
+router.post('/web/logout', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), logoutWeb);
 router.get('/conversations', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.view'), listConversations);
 router.post('/conversations/:id/handoff', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requirePermission('whatsapp.manage'), setHandoff);
 

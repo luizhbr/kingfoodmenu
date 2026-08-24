@@ -33,6 +33,42 @@ interface WhatsAppIntegration {
   };
 }
 
+interface WebStatus {
+  status: string;
+  qr?: string;
+  qrExpiresAt?: string;
+  phoneNumber?: string;
+  displayName?: string;
+  connectedAt?: string;
+  lastActivityAt?: string;
+  lastError?: string;
+  lastErrorAt?: string;
+}
+
+const WEB_STATUS_LABEL: Record<string, string> = {
+  DISCONNECTED: 'Desconectado',
+  WAITING_QR: 'Aguardando QR',
+  CONNECTING: 'Conectando',
+  CONNECTED: 'Conectado',
+  ERROR: 'Erro',
+};
+
+const WEB_STATUS_COLOR: Record<string, string> = {
+  DISCONNECTED: 'bg-gray-100 text-gray-600',
+  WAITING_QR: 'bg-yellow-100 text-yellow-700',
+  CONNECTING: 'bg-blue-100 text-blue-700',
+  CONNECTED: 'bg-emerald-100 text-emerald-700',
+  ERROR: 'bg-red-100 text-red-700',
+};
+
+const WEB_STATUS_DOT: Record<string, string> = {
+  DISCONNECTED: 'bg-gray-400',
+  WAITING_QR: 'bg-yellow-400',
+  CONNECTING: 'bg-blue-500',
+  CONNECTED: 'bg-emerald-500',
+  ERROR: 'bg-red-500',
+};
+
 interface Conversation {
   id: string;
   whatsappNumber: string;
@@ -78,6 +114,8 @@ export default function SettingsWhatsApp() {
   const [testPhone, setTestPhone] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [webStatus, setWebStatus] = useState<WebStatus | null>(null);
+  const [connectingWeb, setConnectingWeb] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -87,6 +125,7 @@ export default function SettingsWhatsApp() {
       ]);
       setStatus(s.data);
       setConversations(c.data);
+      loadWebStatus();
     } catch (e: any) {
       setMessage({ ok: false, text: e.message });
     } finally {
@@ -127,6 +166,48 @@ export default function SettingsWhatsApp() {
       setMessage({ ok: false, text: e.message });
     } finally {
       setSendingTest(false);
+    }
+  };
+
+  const loadWebStatus = useCallback(async () => {
+    try {
+      const r = await api.get<{ success: boolean; data: WebStatus }>('/whatsapp/web/status');
+      setWebStatus(r.data);
+    } catch { /* seção web não disponível — ignora */ }
+  }, []);
+
+  const connectWeb = async () => {
+    setConnectingWeb(true);
+    setMessage(null);
+    try {
+      const r = await api.post<{ success: boolean; data: WebStatus }>('/whatsapp/web/connect', {});
+      setWebStatus(r.data);
+    } catch (e: any) {
+      setMessage({ ok: false, text: e.message });
+    } finally {
+      setConnectingWeb(false);
+      setTimeout(loadWebStatus, 2500); // QR pode chegar logo após o connect
+    }
+  };
+
+  const disconnectWeb = async () => {
+    setMessage(null);
+    try {
+      const r = await api.post<{ success: boolean; data: WebStatus }>('/whatsapp/web/disconnect', {});
+      setWebStatus(r.data);
+    } catch (e: any) {
+      setMessage({ ok: false, text: e.message });
+    }
+  };
+
+  const logoutWeb = async () => {
+    if (!window.confirm('Encerrar a sessão? O aparelho será desconectado e será necessário um novo QR.')) return;
+    setMessage(null);
+    try {
+      const r = await api.post<{ success: boolean; data: WebStatus }>('/whatsapp/web/logout', {});
+      setWebStatus(r.data);
+    } catch (e: any) {
+      setMessage({ ok: false, text: e.message });
     }
   };
 
@@ -179,6 +260,101 @@ export default function SettingsWhatsApp() {
           {message.text}
         </div>
       )}
+
+      {/* ── WhatsApp Web (QR) — sessão vinculada ──────────────── */}
+      <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-semibold text-gray-800">WhatsApp Web (QR)</h2>
+            <p className="text-xs text-gray-500 mt-1">
+              Sessão vinculada ao WhatsApp — <b>não é a API oficial da Meta</b>.
+            </p>
+          </div>
+          <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${WEB_STATUS_COLOR[webStatus?.status || 'DISCONNECTED'] || WEB_STATUS_COLOR.DISCONNECTED}`}>
+            <span className={`w-2 h-2 rounded-full ${WEB_STATUS_DOT[webStatus?.status || 'DISCONNECTED'] || WEB_STATUS_DOT.DISCONNECTED}`} />
+            {WEB_STATUS_LABEL[webStatus?.status || 'DISCONNECTED'] ?? webStatus?.status}
+          </span>
+        </div>
+
+        {webStatus?.status === 'WAITING_QR' && webStatus.qr && (
+          <div className="mt-4 flex flex-col items-center gap-2 bg-gray-50 rounded-xl p-4">
+            <img src={webStatus.qr} alt="QR Code WhatsApp" className="w-48 h-48 rounded-lg border border-gray-200 bg-white" />
+            <p className="text-xs text-gray-600 text-center mt-1">
+              Abra o WhatsApp no celular → <b>Dispositivos conectados</b> → <b>Conectar dispositivo</b> e escaneie o QR.
+            </p>
+            {webStatus.qrExpiresAt && (
+              <p className="text-[11px] text-gray-400">Expira em {new Date(webStatus.qrExpiresAt).toLocaleTimeString('pt-BR')}</p>
+            )}
+          </div>
+        )}
+
+        {webStatus?.status === 'CONNECTED' && (
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-lg bg-emerald-50 px-3 py-2">
+              <p className="text-[11px] text-emerald-600 uppercase font-medium">Número</p>
+              <p className="text-sm font-semibold text-emerald-900">{webStatus.phoneNumber || '—'}</p>
+            </div>
+            <div className="rounded-lg bg-emerald-50 px-3 py-2">
+              <p className="text-[11px] text-emerald-600 uppercase font-medium">Nome</p>
+              <p className="text-sm font-semibold text-emerald-900 truncate">{webStatus.displayName || '—'}</p>
+            </div>
+            <div className="rounded-lg bg-emerald-50 px-3 py-2">
+              <p className="text-[11px] text-emerald-600 uppercase font-medium">Conectado desde</p>
+              <p className="text-sm font-semibold text-emerald-900">
+                {webStatus.connectedAt ? new Date(webStatus.connectedAt).toLocaleString('pt-BR') : '—'}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {webStatus?.lastError && (
+          <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg p-2">
+            Erro: {webStatus.lastError}
+          </p>
+        )}
+
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {webStatus?.status === 'DISCONNECTED' && (
+            <button
+              onClick={connectWeb}
+              disabled={connectingWeb}
+              className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50"
+            >
+              {connectingWeb ? 'Conectando…' : 'Conectar WhatsApp'}
+            </button>
+          )}
+          {webStatus?.status === 'WAITING_QR' && (
+            <button
+              onClick={connectWeb}
+              disabled={connectingWeb}
+              className="px-4 py-2 rounded-lg bg-yellow-500 text-white text-sm font-medium hover:bg-yellow-600 disabled:opacity-50"
+            >
+              {connectingWeb ? 'Gerando…' : 'Gerar novo QR'}
+            </button>
+          )}
+          {(webStatus?.status === 'CONNECTED' || webStatus?.status === 'CONNECTING') && (
+            <>
+              <button
+                onClick={disconnectWeb}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50"
+              >
+                Desconectar
+              </button>
+              <button
+                onClick={logoutWeb}
+                className="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm font-medium hover:bg-red-50"
+              >
+                Encerrar sessão
+              </button>
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800">
+          <b>⚠️ Aviso:</b> esta conexão utiliza uma sessão vinculada ao WhatsApp Web e <b>não</b> a API oficial da Meta.
+          Use somente para atendimento legítimo e conversas iniciadas pelos clientes. Nunca para disparo em massa.
+        </div>
+      </div>
 
       {/* ── Configuração (flags, sem secrets) ─────────────────── */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">

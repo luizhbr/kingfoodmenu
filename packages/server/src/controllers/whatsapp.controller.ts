@@ -17,6 +17,7 @@ import {
   verifyMetaSignature,
 } from '../lib/whatsapp-bot/meta.js';
 import { processMessage } from '../lib/whatsapp-bot/router.js';
+import { whatsappSessionManager } from '../lib/whatsapp-adapter/session-manager.js';
 import { emptyCart } from '../lib/whatsapp-bot/cart.js';
 import { SESSION_TTL_MS } from '../lib/whatsapp-bot/types.js';
 import type { BotContext, BotReply, InboundMessage } from '../lib/whatsapp-bot/types.js';
@@ -554,4 +555,50 @@ export async function setHandoff(req: Request, res: Response): Promise<void> {
   await prisma.whatsAppConversation.update({ where: { id }, data: { mode: mode as string } });
   auditLog(req, { action: 'update', entity: 'WhatsAppHandoff', entityId: id, details: { mode } });
   res.json({ success: true, data: { id, mode } });
+}
+
+// ── Sessão WhatsApp Web (QR) — adapter não-oficial ──────────────────
+// Sessão vinculada ao WhatsApp (não é a API oficial da Meta).
+// Uso exclusivo para atendimento legítimo iniciado pelos clientes.
+// O QR é entregue como data URL PNG com validade curta (2 min).
+// A automação só responde se WHATSAPP_AUTOMATION_ENABLED=true.
+
+/** GET /api/whatsapp/web/status — status + QR (quando disponível). */
+export async function getWebStatus(_req: Request, res: Response): Promise<void> {
+  try {
+    const info = await whatsappSessionManager.status();
+    res.json({ success: true, data: info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+}
+
+/** POST /api/whatsapp/web/connect — inicia conexão QR (idempotente). */
+export async function connectWeb(_req: Request, res: Response): Promise<void> {
+  try {
+    const info = await whatsappSessionManager.connect();
+    res.json({ success: true, data: info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+}
+
+/** POST /api/whatsapp/web/disconnect — desconecta SEM apagar a sessão. */
+export async function disconnectWeb(_req: Request, res: Response): Promise<void> {
+  try {
+    const info = await whatsappSessionManager.disconnect();
+    res.json({ success: true, data: info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
+}
+
+/** POST /api/whatsapp/web/logout — desconecta E apaga a sessão local. */
+export async function logoutWeb(_req: Request, res: Response): Promise<void> {
+  try {
+    const info = await whatsappSessionManager.logout();
+    res.json({ success: true, data: info });
+  } catch (err) {
+    res.status(500).json({ success: false, error: String(err) });
+  }
 }
