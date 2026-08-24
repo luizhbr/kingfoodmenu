@@ -17,7 +17,7 @@
 //  - Baileys é ESM puro; este server é CommonJS -> import() dinâmico.
 
 import { randomUUID } from 'crypto';
-import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, renameSync } from 'fs';
 import { join } from 'path';
 import crypto from 'crypto';
 import type {
@@ -284,24 +284,37 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   }
 
   private persistTimer: NodeJS.Timeout | null = null;
+  private persistChain: Promise<void> = Promise.resolve(); // serializa writes
 
   /** Persistência com debounce (150ms) — o Baileys chama set() centenas de vezes
-   *  no login; gravar síncrono a cada set() bloquearia o event loop. */
+   *  no login; gravar síncrono a cada set() bloquearia o event loop.
+   *  Write atômico (temp → rename) + fila serializada: nunca deixa snapshot
+   *  corrompido em crash (recomendação de revisão externa). */
   private persistSession(): void {
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = setTimeout(() => {
       this.persistTimer = null;
+      this.persistChain = this.persistChain.then(() => this.writeSnapshot());
+    }, 150);
+  }
+
+  private writeSnapshot(): Promise<void> {
+    return new Promise((resolve) => {
       try {
         mkdirSync(getSessionDir(), { recursive: true });
         const { iv, tag, data } = encryptAes(
           Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
           deriveKey(getEncryptionKey()),
         );
-        writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
+        const payload = JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') });
+        const tmp = getAuthFile() + '.tmp';
+        writeFileSync(tmp, payload, { mode: 0o600 });
+        renameSync(tmp, getAuthFile()); // atômico no mesmo filesystem
       } catch (err) {
         console.error('[whatsapp-adapter] erro ao salvar sessão criptografada:', String(err));
       }
-    }, 150);
+      resolve();
+    });
   }
 
   private syncFromCreds(): void {
@@ -475,17 +488,10 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     if (this.persistTimer) {
       clearTimeout(this.persistTimer);
       this.persistTimer = null;
-      try {
-        mkdirSync(getSessionDir(), { recursive: true });
-        const { iv, tag, data } = encryptAes(
-          Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
-          deriveKey(getEncryptionKey()),
-        );
-        writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
-      } catch (err) {
-        console.error('[whatsapp-adapter] erro ao salvar sessão criptografada:', String(err));
-      }
     }
+    // Escrita síncrona imediata (chamado só no disconnect/logout — raro).
+    // Atomic write garante que uma escrita pendente da chain não corrompe.
+    this.writeSnapshot();
   }
 
   private fail(detail: string): void {
