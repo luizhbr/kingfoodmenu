@@ -167,8 +167,9 @@ export class PrintAgent {
         this.queue.transition(jobId, 'PRINTING');
       }
 
-      // Download ticket
-      const { text } = await this.api.fetchTicket(jobId);
+      // FAST-PRINT: ticket já vem no fetch (ticketText) — sem request extra.
+      // Fallback: fetchTicket para jobs antigos sem ticket embutido.
+      const text = job.ticketText ?? (await this.api.fetchTicket(jobId)).text;
       local.text = text;
 
       // Print

@@ -74,7 +74,7 @@ export class ApiClient {
     return this.request('POST', '/api/print/agent/heartbeat');
   }
 
-  /** GET /api/print/agent/jobs — fetch QUEUED/FAILED jobs for this printer. */
+  /** GET /api/print/agent/jobs — fetch QUEUED/FAILED jobs (com ticket embutido). */
   async fetchJobs(): Promise<{ printer: any; jobs: any[] }> {
     return this.request('GET', '/api/print/agent/jobs');
   }

@@ -181,7 +181,25 @@ export async function agentFetchJobs(req: Request, res: Response): Promise<void>
     orderBy: { createdAt: 'asc' },
     take: 10,
   });
-  res.json({ success: true, data: { printer, jobs } });
+  // FAST-PRINT: renderiza o ticket junto com o job — o agente não precisa
+  // de uma segunda request (fetchTicket) para imprimir. Corta ~1s por job.
+  const enriched = await Promise.all(jobs.map(async (job) => {
+    try {
+      let text = '';
+      if (!job.orderId) {
+        const preview = buildPreviewOrder();
+        const result = renderReceipt(preview, effectiveTemplate(undefined));
+        text = result.text;
+      } else {
+        const ticket = await buildKitchenTicket(job.orderId);
+        text = renderTicketText(ticket, printer.paperWidth || 80);
+      }
+      return { ...job, ticketText: text };
+    } catch {
+      return { ...job, ticketText: null };
+    }
+  }));
+  res.json({ success: true, data: { printer, jobs: enriched } });
 }
 
 export async function agentReportStatus(req: Request, res: Response): Promise<void> {
