@@ -1,6 +1,6 @@
 // ── King Print Agent — local print queue ─────────────────────────────────────
 // Mirrors the server state machine (QUEUED → PRINTING → PRINTED | FAILED).
-// PRINTED is terminal — a job is never printed twice by this agent.
+// PRINTED → QUEUED is allowed when the SERVER re-queues a job (reprint).
 // The server remains the source of truth; this queue is a local mirror
 // used to serialize printing and enforce idempotency at the agent level.
 
@@ -25,7 +25,7 @@ export interface LocalJob {
 const VALID: Record<LocalJobStatus, LocalJobStatus[]> = {
   QUEUED: ['PRINTING', 'FAILED'],
   PRINTING: ['PRINTED', 'FAILED'],
-  PRINTED: [],
+  PRINTED: ['QUEUED'], // reprint: servidor re-enfileirou → imprimir de novo
   // FAILED → PRINTING is allowed when the SERVER re-queued the job (retry).
   // The server is the source of truth; it only re-queues FAILED jobs.
   FAILED: ['QUEUED', 'PRINTING'],

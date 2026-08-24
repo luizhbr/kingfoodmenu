@@ -21,7 +21,7 @@ export interface CreatePrintJobInput {
 const VALID_TRANSITIONS: Record<PrintJobStatus, PrintJobStatus[]> = {
   QUEUED: ['PRINTING', 'CANCELLED', 'FAILED'],
   PRINTING: ['PRINTED', 'FAILED'],
-  PRINTED: [],
+  PRINTED: ['QUEUED'], // reprint: job já impresso pode voltar para a fila
   FAILED: ['QUEUED', 'CANCELLED'], // retry allowed from FAILED
   CANCELLED: [],
 };
@@ -63,6 +63,13 @@ export async function createPrintJob(input: CreatePrintJobInput) {
     // Unique constraint violation → job already exists → return it (idempotent)
     if (err?.code === 'P2002') {
       const existing = await prisma.printJob.findUnique({ where: { idempotencyKey } });
+      if (!existing) throw err;
+      // REPRINT de job já impresso: volta para a fila para imprimir de novo.
+      // (PRINTED → QUEUED agora é transição válida.)
+      if (existing.status === 'PRINTED' && type === 'REPRINT') {
+        const requeued = await transitionPrintJob(existing.id, 'QUEUED');
+        return { job: requeued, created: false, reprinted: true };
+      }
       return { job: existing, created: false };
     }
     throw err;

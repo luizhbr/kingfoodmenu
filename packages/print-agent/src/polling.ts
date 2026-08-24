@@ -109,8 +109,13 @@ export class PrintAgent {
       stats.fetched = jobs.length;
       for (const job of jobs) {
         const local = this.queue.get(job.id);
+        // REPRINT: servidor re-enfileirou (QUEUED) um job que já imprimimos.
+        // Volta o local para QUEUED e imprime de novo.
+        if (local && local.status === 'PRINTED' && job.status === 'QUEUED') {
+          try { this.queue.transition(job.id, 'QUEUED'); } catch { /* ignore */ }
+        }
         if (local && local.status === 'PRINTED') {
-          stats.skipped += 1; // idempotency: never reprint
+          stats.skipped += 1; // idempotency: never reprint (a menos que re-enfileirado)
           continue;
         }
         if (local && local.status === 'PRINTING') {
@@ -144,7 +149,9 @@ export class PrintAgent {
       text: '',
       createdAt: Date.now(),
     });
-    if (!created && local.status === 'PRINTED') return true; // already done
+    // REPRINT: se o servidor re-enfileirou (QUEUED), imprimir de novo mesmo
+    // que o local esteja PRINTED (a transição já foi feita no pollOnce).
+    if (!created && local.status === 'PRINTED' && job.status !== 'QUEUED') return true; // already done
 
     // Honor server state: skip jobs the server already sees as PRINTING/PRINTED/FAILED.
     // This prevents spurious 'Invalid transition ...' loops when stale jobs reappear.
