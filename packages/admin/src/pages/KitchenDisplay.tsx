@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { api } from '../lib/api.js';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
+import { useOrderAlerts } from '../lib/useOrderAlerts.js';
+import SoundActivationBanner from '../components/SoundActivationBanner.js';
 
 interface OrderItem {
   id: string;
@@ -52,6 +54,16 @@ export default function KitchenDisplay() {
   const [live, setLive] = useState(true);
   const prevOrderIds = useRef<Set<string>>(new Set());
   const { printState, printOrder } = usePrintOrder();
+  const {
+    soundEnabled,
+    showActivateBanner,
+    volume,
+    setVolume,
+    alertNewOrders,
+    enableSound,
+    markAllAsSeen,
+    requestSoundActivation,
+  } = useOrderAlerts();
 
   const fetchOrders = useCallback((silent = false) => {
     // Fetch pedidos ativos (non-completed, non-cancelled)
@@ -70,6 +82,8 @@ export default function KitchenDisplay() {
         }
         if (fresh.size > 0) {
           setNewOrderIds(fresh);
+          // Alerta sonoro para pedidos novos (som contínuo enquanto pendente)
+          alertNewOrders(incoming.map((o) => ({ id: o.id, orderNumber: o.orderNumber, status: o.status })));
           // Clear highlight after 4s
           setTimeout(() => {
             setNewOrderIds((prev) => {
@@ -88,6 +102,14 @@ export default function KitchenDisplay() {
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Na primeira carga, registra pedidos existentes como vistos (sem alerta)
+  useEffect(() => {
+    if (!loading && orders.length > 0) {
+      markAllAsSeen(orders.map((o) => ({ id: o.id, orderNumber: o.orderNumber, status: o.status })));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]);
 
   // Near real-time: silent polling every 5s. No manual refresh button needed —
   // the page stays in sync automatically. Interval is cleared on unmount and
@@ -189,8 +211,29 @@ export default function KitchenDisplay() {
           <span className="text-xs text-kf-muted">
             {orders.length} pedidos ativos · atualizado {lastRefresh.toLocaleTimeString()}
           </span>
+          {/* Controle de volume do alerta */}
+          <div className="flex items-center gap-2" title="Volume do alerta de pedidos">
+            <span aria-hidden="true" className="text-sm">🔊</span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              className="w-24 accent-kf-primary"
+              aria-label="Volume do alerta de pedidos"
+            />
+            <span className="text-xs text-kf-muted w-8">{Math.round(volume * 100)}%</span>
+          </div>
         </div>
       </div>
+
+      {showActivateBanner && (
+        <div className="px-4 pt-4">
+          <SoundActivationBanner onActivate={() => { const ok = enableSound(); if (ok) requestSoundActivation(); }} />
+        </div>
+      )}
 
       {loading ? (
         <div className="flex justify-center py-20">

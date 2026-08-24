@@ -129,6 +129,9 @@ export default function SettingsPrinters() {
 
   // Pairing state
   const [pairingFor, setPairingFor] = useState<string | null>(null);
+  // Restart state
+  const [restartingId, setRestartingId] = useState<string | null>(null);
+  const [restartMsg, setRestartMsg] = useState('');
   const [pairingCode, setPairingCode] = useState('');
   const [pairingMsg, setPairingMsg] = useState('');
 
@@ -193,6 +196,27 @@ export default function SettingsPrinters() {
       void load();
     } catch (e: any) {
       setError(e.message || 'Falha ao excluir impressora.');
+    }
+  }
+
+  /** Reinicia o print-agent da impressora (sinal via API; o agente reinicia sozinho). */
+  async function restartAgent(p: Printer) {
+    if (!window.confirm(`Reiniciar o agente de impressão de "${p.name}"?`)) return;
+    setRestartingId(p.id);
+    setRestartMsg('');
+    try {
+      const res = await fetch(`/api/print/${p.id}/restart`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha ao reiniciar agente');
+      setRestartMsg(`Sinal enviado — o agente de "${p.name}" vai reiniciar em segundos.`);
+      setTimeout(() => void load(), 3000);
+    } catch (e: any) {
+      setRestartMsg(e.message || 'Falha ao reiniciar agente.');
+    } finally {
+      setRestartingId(null);
     }
   }
 
@@ -303,6 +327,10 @@ export default function SettingsPrinters() {
         <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4" role="alert">{error}</div>
       )}
 
+      {restartMsg && (
+        <div className="bg-amber-50 text-amber-800 p-4 rounded-lg mb-4" role="status">{restartMsg}</div>
+      )}
+
       {showForm && (
         <Section title={editingId ? 'Editar impressora' : 'Nova impressora'}>
           <TextInput label="Nome" value={form.name} onChange={(v) => setForm({ ...form, name: v })} placeholder="Ex: Cozinha 80mm" />
@@ -389,6 +417,14 @@ export default function SettingsPrinters() {
                       className="min-h-[44px] px-3 py-2 rounded-lg border border-gray-300 text-gray-700 text-sm font-semibold hover:bg-gray-50"
                     >
                       Parear agent
+                    </button>
+                    <button
+                      onClick={() => void restartAgent(p)}
+                      disabled={restartingId === p.id || !p.deviceId}
+                      title={p.deviceId ? 'Reiniciar o agente de impressão' : 'Impressora sem agent pareado'}
+                      className="min-h-[44px] px-3 py-2 rounded-lg border border-amber-300 text-amber-700 text-sm font-semibold hover:bg-amber-50 disabled:opacity-50"
+                    >
+                      {restartingId === p.id ? 'Reiniciando...' : '🔄 Reiniciar agent'}
                     </button>
                     <button
                       onClick={() => startEdit(p)}

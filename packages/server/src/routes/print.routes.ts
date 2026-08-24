@@ -17,6 +17,8 @@ import {
   agentFetchJobs,
   agentReportStatus,
   agentTicket,
+  requestAgentRestart,
+  agentStatus,
 } from '../controllers/print.controller.js';
 
 const router = Router();
@@ -27,6 +29,8 @@ router.post('/', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), createPrin
 router.put('/:id', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), updatePrinter);
 router.delete('/:id', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), deletePrinter);
 router.post('/:id/pairing', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), generatePairing);
+router.post('/:id/restart', authenticate, requireRole('SUPER_ADMIN', 'MANAGER'), requestAgentRestart);
+router.get('/agent/status', authenticate, requireStaff, agentStatus);
 
 // ── Print jobs — STAFF+ (kitchen can print) ──
 router.post('/jobs', authenticate, requireStaff, createJob);

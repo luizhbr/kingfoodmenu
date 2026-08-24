@@ -81,6 +81,7 @@ model Customer {
   orders                Order[]
   reservations          Reservation[]
   reviews               Review[]
+  passwordResetTokens   PasswordResetToken[]
   loyaltyTransactions   LoyaltyTransaction[]
   cookieConsents        CookieConsent[]
   attribution          Attribution?
@@ -1356,6 +1357,7 @@ model Printer {
   status        String      @default("OFFLINE") // ONLINE | OFFLINE
   enabled       Boolean     @default(true)
   lastSeenAt    DateTime?
+  restartRequestedAt DateTime? // sinal de restart do agente (setado pelo painel)
   deviceId      String?     @unique // print agent device
   pairingCode   String?     @unique
   pairingExpiresAt DateTime?
@@ -1580,4 +1582,18 @@ model WhatsAppMessage {
   @@index([conversationId, createdAt])
   @@index([status])
   @@map("whatsapp_messages")
+}
+
+model PasswordResetToken {
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
 }

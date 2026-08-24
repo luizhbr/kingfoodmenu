@@ -19,12 +19,20 @@ export interface OrderAlert {
   status: string;
 }
 
-/** Intervalo de repetição do alerta (ms) — acompanha o polling de 15s. */
-const ALERT_REPEAT_MS = 15_000;
+/** Intervalo de repetição do alerta (ms) — som contínuo enquanto houver pendente. */
+const ALERT_REPEAT_MS = 3_000;
 
 export function useOrderAlerts() {
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
   const [showActivateBanner, setShowActivateBanner] = useState<boolean>(false);
+  /** Volume do alerta (0–1). Persistido em localStorage. */
+  const [volume, setVolumeState] = useState<number>(() => {
+    try {
+      const v = parseFloat(localStorage.getItem('kf_alert_volume') || '1');
+      return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1;
+    } catch { return 1; }
+  });
+  const volumeRef = useRef(volume);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const seenOrdersRef = useRef<Set<string>>(new Set());
   const lastAlertRef = useRef<string>('');
@@ -93,8 +101,9 @@ export function useOrderAlerts() {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, now + i * 0.18);
+      const vol = volumeRef.current;
       gain.gain.setValueAtTime(0.0001, now + i * 0.18);
-      gain.gain.exponentialRampToValueAtTime(0.28, now + i * 0.18 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.28 * vol, now + i * 0.18 + 0.02);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.18 + 0.55);
       osc.connect(gain).connect(ctx.destination);
       osc.start(now + i * 0.18);
@@ -200,9 +209,19 @@ export function useOrderAlerts() {
     }
   }, [enableSound, soundEnabled]);
 
+  /** Ajusta o volume do alerta (0–1) e persiste. */
+  const setVolume = useCallback((v: number) => {
+    const clamped = Math.min(1, Math.max(0, v));
+    volumeRef.current = clamped;
+    setVolumeState(clamped);
+    try { localStorage.setItem('kf_alert_volume', String(clamped)); } catch { /* ignore */ }
+  }, []);
+
   return {
     soundEnabled,
     showActivateBanner,
+    volume,
+    setVolume,
     detectNewOrders,
     alertNewOrders,
     enableSound,

@@ -80,7 +80,21 @@ export class PrintAgent {
 
   private async heartbeat(): Promise<void> {
     try {
-      await this.api.heartbeat();
+      const res = await this.api.heartbeat();
+      // Sinal de restart vindo do painel: encerra o processo com código 42.
+      // O serviço Windows (recovery) ou o wrapper reinicia o agente.
+      if (res && res.restartRequestedAt) {
+        logger.info('agent', 'restart requested by panel — exiting', { at: res.restartRequestedAt });
+        this.stopped = true;
+        this.running = false;
+        if (this.pollTimer) clearInterval(this.pollTimer);
+        if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+        this.pollTimer = null;
+        this.heartbeatTimer = null;
+        // flush log e sai com código especial
+        setTimeout(() => process.exit(42), 300);
+        return;
+      }
     } catch (e: any) {
       logger.warn('agent', 'heartbeat failed', { error: String(e?.message || e) });
     }

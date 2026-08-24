@@ -161,11 +161,15 @@ export async function agentPair(req: Request, res: Response): Promise<void> {
 
 export async function agentHeartbeat(req: Request, res: Response): Promise<void> {
   const deviceId = (req as any).deviceId;
-  await prisma.printer.updateMany({
-    where: { deviceId },
-    data: { status: 'ONLINE', lastSeenAt: new Date() },
+  const printer = await prisma.printer.findFirst({ where: { deviceId } });
+  if (!printer) { res.status(401).json({ success: false, error: 'Device not paired' }); return; }
+  const restartRequestedAt = printer.restartRequestedAt;
+  // Se havia sinal de restart, limpa após entregar (o agente sai e reinicia)
+  await prisma.printer.update({
+    where: { id: printer.id },
+    data: { status: 'ONLINE', lastSeenAt: new Date(), restartRequestedAt: null },
   });
-  res.json({ success: true });
+  res.json({ success: true, data: { restartRequestedAt: restartRequestedAt?.toISOString() ?? null } });
 }
 
 export async function agentFetchJobs(req: Request, res: Response): Promise<void> {
@@ -258,4 +262,46 @@ export async function agentTicket(req: Request, res: Response): Promise<void> {
   }
 
   res.json({ success: true, data: { ticket, text: renderTicketText(ticket, printer?.paperWidth || 80) } });
+}
+
+// ── Agent restart (MANAGER+) ────────────────────────────────────────────────
+// Sinaliza o print-agent para reiniciar: seta restartRequestedAt no Printer.
+// O agente detecta o sinal no próximo heartbeat e reinicia o processo.
+export async function requestAgentRestart(req: Request, res: Response): Promise<void> {
+  const id = req.params.id as string;
+  const printer = await prisma.printer.findUnique({ where: { id } });
+  if (!printer) { res.status(404).json({ success: false, error: 'Printer not found' }); return; }
+  if (!printer.deviceId) { res.status(400).json({ success: false, error: 'Printer has no paired agent' }); return; }
+  await prisma.printer.update({
+    where: { id },
+    data: { restartRequestedAt: new Date() },
+  });
+  res.json({ success: true, data: { restartRequestedAt: new Date().toISOString() } });
+}
+
+// ── Agent status (STAFF+) ───────────────────────────────────────────────────
+// Retorna status agregado do agente: online/offline + último heartbeat.
+export async function agentStatus(req: Request, res: Response): Promise<void> {
+  const printers = await prisma.printer.findMany({
+    select: {
+      id: true,
+      name: true,
+      status: true,
+      lastSeenAt: true,
+      deviceId: true,
+      restartRequestedAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  const now = Date.now();
+  const data = printers.map((p) => {
+    const lastSeen = p.lastSeenAt ? new Date(p.lastSeenAt).getTime() : null;
+    const online = p.status === 'ONLINE' && lastSeen !== null && now - lastSeen < 60_000;
+    return {
+      ...p,
+      online,
+      lastSeenAgoSec: lastSeen ? Math.floor((now - lastSeen) / 1000) : null,
+    };
+  });
+  res.json({ success: true, data });
 }

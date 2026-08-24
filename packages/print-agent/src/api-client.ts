@@ -69,9 +69,9 @@ export class ApiClient {
     return json?.data ?? { paired: true };
   }
 
-  /** POST /api/print/agent/heartbeat — keep printer ONLINE. */
-  async heartbeat(): Promise<void> {
-    await this.request('POST', '/api/print/agent/heartbeat');
+  /** POST /api/print/agent/heartbeat — keep printer ONLINE. Returns restart signal. */
+  async heartbeat(): Promise<{ restartRequestedAt?: string | null }> {
+    return this.request('POST', '/api/print/agent/heartbeat');
   }
 
   /** GET /api/print/agent/jobs — fetch QUEUED/FAILED jobs for this printer. */
