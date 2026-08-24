@@ -64,9 +64,9 @@ export async function createPrintJob(input: CreatePrintJobInput) {
     if (err?.code === 'P2002') {
       const existing = await prisma.printJob.findUnique({ where: { idempotencyKey } });
       if (!existing) throw err;
-      // REPRINT de job já impresso: volta para a fila para imprimir de novo.
-      // (PRINTED → QUEUED agora é transição válida.)
-      if (existing.status === 'PRINTED' && type === 'REPRINT') {
+      // REPRINT: job já impresso OU falhou volta para a fila para imprimir de novo.
+      // (PRINTED → QUEUED e FAILED → QUEUED são transições válidas.)
+      if (type === 'REPRINT' && (existing.status === 'PRINTED' || existing.status === 'FAILED')) {
         const requeued = await transitionPrintJob(existing.id, 'QUEUED');
         return { job: requeued, created: false, reprinted: true };
       }
