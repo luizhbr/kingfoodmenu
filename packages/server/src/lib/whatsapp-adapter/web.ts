@@ -43,9 +43,16 @@ const QR_TTL_MS = 120_000; // QR válido por 2 minutos
 
 type Socket = any;
 
-/** Deriva chave AES-256 da ENV. Se ausente, usa chave DEV (nunca em produção). */
+/** Deriva chave AES-256 da ENV. Em produção, SEM chave = falha (nunca chave DEV). */
 function deriveKey(secret: string): Buffer {
-  return crypto.createHash('sha256').update(secret || 'king-food-session-dev-only').digest();
+  if (!secret) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('WHATSAPP_SESSION_ENCRYPTION_KEY é OBRIGATÓRIA em produção');
+    }
+    console.warn('[whatsapp-adapter] chave DEV insegura em uso (fora de produção)');
+    return crypto.createHash('sha256').update('king-food-session-dev-only').digest();
+  }
+  return crypto.createHash('sha256').update(secret).digest();
 }
 
 interface SessionSnapshot {
@@ -66,6 +73,8 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   private qrBuffer: { data: string; expiresAt: number } | null = null;
   private selfJids = new Set<string>(); // jids do próprio bot (loop protection)
   private reconnectTimer: NodeJS.Timeout | null = null;
+  private reconnectAttempts = 0;
+  private readonly MAX_RECONNECT_ATTEMPTS = 5;
 
   // ── sessão em memória (creds + keys), espelhada no disco criptografado ──
   private session: SessionSnapshot = {
@@ -143,6 +152,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 
   async disconnect(): Promise<void> {
     this.clearReconnect();
+    this.flushPersist();
     try { this.sock?.end(new Error('disconnect manual')); } catch { /* noop */ }
     this.sock = null;
     this.connecting = false;
@@ -154,6 +164,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   /** Desconecta E apaga a sessão local (deslogar o aparelho). */
   async logout(): Promise<void> {
     this.clearReconnect();
+    this.flushPersist();
     try {
       this.sock?.logout();
       this.sock?.close(new Error('logout'));
@@ -162,7 +173,8 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     this.connecting = false;
     this.qrBuffer = null;
     this.info = { status: 'DISCONNECTED' };
-    this.session = { creds: this.session.creds, keys: {} };
+    this.session = { creds: this.emptyCreds(), keys: {} };
+    this.selfJids.clear();
     try { rmSync(getSessionDir(), { recursive: true, force: true }); } catch { /* noop */ }
     this.emit('connection_lost', 'web adapter logged out (sessão removida)');
   }
@@ -271,23 +283,36 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     }
   }
 
+  private persistTimer: NodeJS.Timeout | null = null;
+
+  /** Persistência com debounce (150ms) — o Baileys chama set() centenas de vezes
+   *  no login; gravar síncrono a cada set() bloquearia o event loop. */
   private persistSession(): void {
-    try {
-      mkdirSync(getSessionDir(), { recursive: true });
-      const { iv, tag, data } = encryptAes(
-        Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
-        deriveKey(getEncryptionKey()),
-      );
-      writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
-    } catch (err) {
-      console.error('[whatsapp-adapter] erro ao salvar sessão criptografada:', String(err));
-    }
+    if (this.persistTimer) clearTimeout(this.persistTimer);
+    this.persistTimer = setTimeout(() => {
+      this.persistTimer = null;
+      try {
+        mkdirSync(getSessionDir(), { recursive: true });
+        const { iv, tag, data } = encryptAes(
+          Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
+          deriveKey(getEncryptionKey()),
+        );
+        writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
+      } catch (err) {
+        console.error('[whatsapp-adapter] erro ao salvar sessão criptografada:', String(err));
+      }
+    }, 150);
   }
 
   private syncFromCreds(): void {
     const me = this.session.creds?.me;
     if (!me?.id) return;
-    this.selfJids.add(String(me.id));
+    // me.id vem como '5511...:22@s.whatsapp.net' — normalizar para o formato
+    // do remoteJid das mensagens ('5511...@s.whatsapp.net') para o loop protection
+    const raw = String(me.id);
+    const jid = raw.includes(':') ? raw.replace(/^([^:]+):\d+(@.*)$/, '$1$2') : raw;
+    this.selfJids.add(jid);
+    this.selfJids.add(raw);
     if (!this.info.phoneNumber && me.id) this.info.phoneNumber = String(me.id).split(':')[0];
     if (!this.info.displayName && me.name) this.info.displayName = me.name;
   }
@@ -299,9 +324,17 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   // ── eventos do socket ─────────────────────────────────────
 
   private bindEvents(socket: any, saveCreds: () => void): void {
-    socket.ev.on('connection.update', (update: any) => void this.onConnectionUpdate(update, saveCreds));
+    socket.ev.on('connection.update', (update: any) => {
+      void this.onConnectionUpdate(update, saveCreds).catch((err) => {
+        console.error('[whatsapp-adapter] erro no connection.update:', String(err));
+      });
+    });
     socket.ev.on('creds.update', saveCreds);
-    socket.ev.on('messages.upsert', (u: any) => void this.onMessagesUpsert(u));
+    socket.ev.on('messages.upsert', (u: any) => {
+      void this.onMessagesUpsert(u).catch((err) => {
+        console.error('[whatsapp-adapter] erro no messages.upsert:', String(err));
+      });
+    });
   }
 
   private async onConnectionUpdate(update: any, saveCreds: () => void): Promise<void> {
@@ -331,7 +364,10 @@ export class WhatsAppWebAdapter implements MessagingChannel {
       this.qrBuffer = null;
       const statusCode = (lastDisconnect?.error as any)?.output?.statusCode;
       if (statusCode === 408 || statusCode === 515) {
-        // logged out — limpar sessão para novo QR
+        // logged out — limpar creds + disco para forçar novo QR limpo
+        this.session.creds = this.emptyCreds();
+        this.session.keys = {};
+        try { rmSync(getSessionDir(), { recursive: true, force: true }); } catch { /* noop */ }
         this.info = { status: 'WAITING_QR' };
         this.emit('connection_lost', 'sessão expirada — novo QR necessário');
       } else if (statusCode === 401) {
@@ -350,6 +386,8 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 
     if (connection === 'open') {
       this.connecting = false;
+      this.reconnectAttempts = 0;
+      this.qrBuffer = null; // QR consumido — nunca mostrar WAITING_QR conectado
       const me = (this.sock as any)?.user;
       this.info = {
         status: 'CONNECTED',
@@ -358,7 +396,12 @@ export class WhatsAppWebAdapter implements MessagingChannel {
         connectedAt: new Date().toISOString(),
         lastActivityAt: new Date().toISOString(),
       };
-      if (me?.id) this.selfJids.add(String(me.id));
+      if (me?.id) {
+        const raw = String(me.id);
+        const jid = raw.includes(':') ? raw.replace(/^([^:]+):\d+(@.*)$/, '$1$2') : raw;
+        this.selfJids.add(jid);
+        this.selfJids.add(raw);
+      }
       this.emit('connection_established', 'whatsapp conectado via QR');
     }
   }
@@ -413,11 +456,36 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 
   private scheduleReconnect(): void {
     this.clearReconnect();
-    this.reconnectTimer = setTimeout(() => void this.connect(), 5_000);
+    this.reconnectAttempts += 1;
+    if (this.reconnectAttempts > this.MAX_RECONNECT_ATTEMPTS) {
+      // Desiste após 5 tentativas — exige ação do admin (evita loop infinito)
+      this.info = { status: 'ERROR', lastError: 'falha ao reconectar após 5 tentativas — verifique a sessão', lastErrorAt: new Date().toISOString() };
+      this.emit('error', 'reconnect esgotado (5 tentativas)');
+      return;
+    }
+    const delay = Math.min(5_000 * this.reconnectAttempts, 30_000); // backoff 5s→10s→15s→20s→30s
+    this.reconnectTimer = setTimeout(() => void this.connect(), delay);
   }
 
   private clearReconnect(): void {
     if (this.reconnectTimer) { clearTimeout(this.reconnectTimer); this.reconnectTimer = null; }
+  }
+
+  private flushPersist(): void {
+    if (this.persistTimer) {
+      clearTimeout(this.persistTimer);
+      this.persistTimer = null;
+      try {
+        mkdirSync(getSessionDir(), { recursive: true });
+        const { iv, tag, data } = encryptAes(
+          Buffer.from(JSON.stringify(this.session, bufferReplacer), 'utf-8'),
+          deriveKey(getEncryptionKey()),
+        );
+        writeFileSync(getAuthFile(), JSON.stringify({ iv: iv.toString('base64'), tag: tag.toString('base64'), data: data.toString('base64') }), { mode: 0o600 });
+      } catch (err) {
+        console.error('[whatsapp-adapter] erro ao salvar sessão criptografada:', String(err));
+      }
+    }
   }
 
   private fail(detail: string): void {
@@ -428,6 +496,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
   private emit(type: ChannelEvent['type'], detail?: string, messageId?: string): void {
     const event: ChannelEvent = { type, at: new Date().toISOString(), detail, messageId };
     this.logs.push(event);
+    if (this.logs.length > 500) this.logs.splice(0, this.logs.length - 500); // cap: 500 eventos
     this.eventHandler?.(event);
   }
 }

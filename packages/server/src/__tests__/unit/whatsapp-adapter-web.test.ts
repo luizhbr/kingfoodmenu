@@ -42,6 +42,7 @@ describe('whatsapp-adapter: sessão criptografada', () => {
       keys: { 'pre-key': { 'p1': { id: 'chave-1' } }, session: { 's1': { x: 1 } } },
     };
     anyA.persistSession();
+    anyA.flushPersist(); // debounce de 150ms — forçar gravação síncrona
 
     // recria o adapter (novo processo) e carrega do disco
     const adapter2 = new WhatsAppWebAdapter();
@@ -66,6 +67,7 @@ describe('whatsapp-adapter: sessão criptografada', () => {
       keys: { 'pre-key': { 'p1': Buffer.from('chave-binaria') } },
     };
     anyA.persistSession();
+    anyA.flushPersist();
 
     const adapter2 = new WhatsAppWebAdapter();
     const any2 = adapter2 as any;
@@ -92,6 +94,7 @@ describe('whatsapp-adapter: sessão criptografada', () => {
     expect(s0.exists).toBe(false);
     const adapter = new WhatsAppWebAdapter();
     (adapter as any).persistSession();
+    (adapter as any).flushPersist();
     const s1 = sessionStatus();
     expect(s1.exists).toBe(true);
     expect(s1.sizeBytes).toBeGreaterThan(0);
