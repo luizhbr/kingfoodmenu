@@ -102,6 +102,27 @@ const MODE_LABEL: Record<string, { label: string; dot: string }> = {
   CLOSED: { label: 'Encerrada', dot: 'bg-gray-400' },
 };
 
+
+function friendlyWebError(raw: string): string {
+  const t = raw.toLowerCase();
+  if (t.includes('enoent') || t.includes('mkdir') || t.includes('/var/task') || t.includes('no such file')) {
+    return 'Não foi possível iniciar a sessão do WhatsApp neste ambiente (o servidor atual não permite salvar arquivos localmente).';
+  }
+  if (t.includes('bloqueada') || t.includes('403')) {
+    return 'A conta do WhatsApp está bloqueada para este tipo de sessão. Verifique o número conectado.';
+  }
+  if (t.includes('sessão inválida') || t.includes('sessao invalida') || t.includes('novo qr') || t.includes('loggedout') || t.includes('401')) {
+    return 'A sessão expirou. Gere um novo QR para reconectar.';
+  }
+  if (t.includes('reconectar') || t.includes('reconnect') || t.includes('5 tentativas') || t.includes('esgotad')) {
+    return 'Não foi possível reconectar após várias tentativas. Gere um novo QR.';
+  }
+  if (t.includes('timeout') || t.includes('timed out') || t.includes('408') || t.includes('428')) {
+    return 'A conexão caiu (tempo esgotado). Tente novamente.';
+  }
+  return 'Não foi possível iniciar a sessão do WhatsApp.';
+}
+
 function maskPhone(p: string): string {
   return p.replace(/^(\d{2})(\d{2})(\d{5})(\d{4})$/, '+$1 ($2) $3-$4');
 }
@@ -275,6 +296,11 @@ export default function SettingsWhatsApp() {
             {WEB_STATUS_LABEL[webStatus?.status || 'DISCONNECTED'] ?? webStatus?.status}
           </span>
         </div>
+        {webStatus?.lastActivityAt && (
+          <p className="mt-1.5 text-[11px] text-gray-400">
+            Última atividade: {new Date(webStatus.lastActivityAt).toLocaleString('pt-BR')}
+          </p>
+        )}
 
         {webStatus?.status === 'WAITING_QR' && webStatus.qr && (
           <div className="mt-4 flex flex-col items-center gap-2 bg-gray-50 rounded-xl p-4">
@@ -308,19 +334,33 @@ export default function SettingsWhatsApp() {
         )}
 
         {webStatus?.lastError && (
-          <p className="mt-3 text-xs text-red-600 bg-red-50 rounded-lg p-2">
-            Erro: {webStatus.lastError}
-          </p>
+          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
+            <p className="text-xs font-medium text-red-700">
+              ⚠️ {friendlyWebError(webStatus.lastError)}
+            </p>
+            <details className="mt-1">
+              <summary className="text-[11px] text-red-500 cursor-pointer select-none hover:text-red-700">
+                Mostrar detalhes técnicos
+              </summary>
+              <p className="mt-1 text-[11px] font-mono text-red-700/80 break-all whitespace-pre-wrap">
+                {webStatus.lastError}
+              </p>
+            </details>
+            <p className="mt-2 text-[11px] text-red-600">
+              {webStatus.lastErrorAt ? `Ocorrido em ${new Date(webStatus.lastErrorAt).toLocaleString('pt-BR')}. ` : ''}
+              Tente novamente abaixo.
+            </p>
+          </div>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
-          {webStatus?.status === 'DISCONNECTED' && (
+          {(webStatus?.status === 'DISCONNECTED' || webStatus?.status === 'ERROR') && (
             <button
               onClick={connectWeb}
               disabled={connectingWeb}
               className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 disabled:opacity-50"
             >
-              {connectingWeb ? 'Conectando…' : 'Conectar WhatsApp'}
+              {connectingWeb ? 'Conectando…' : webStatus?.status === 'ERROR' ? 'Tentar novamente' : 'Conectar WhatsApp'}
             </button>
           )}
           {webStatus?.status === 'WAITING_QR' && (

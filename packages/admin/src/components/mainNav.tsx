@@ -30,6 +30,7 @@ const AREA_BY_PREFIX: { prefix: string; area: string }[] = [
   { prefix: '/settings/printers', area: '/vender' },
   { prefix: '/settings/print', area: '/vender' },
   { prefix: '/settings/payment', area: '/vender' },
+  { prefix: '/settings/whatsapp', area: '/vender' },
   // LOJA — aparência, catálogo, perfil, configurações em geral
   { prefix: '/design', area: '/loja' },
   { prefix: '/menu', area: '/loja' },

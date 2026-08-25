@@ -30,3 +30,6 @@ tmp/
 .whatsapp-session/
 *.enc.json
 auth.enc.json
+
+# páginas admin órfãs (reservas) — backup reversível
+packages/admin/src/pages/.reservation-orphan-backup/
