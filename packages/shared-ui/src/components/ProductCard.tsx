@@ -103,12 +103,23 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             alt={name}
             loading="lazy"
             className={cn(
-              'h-full w-full object-cover transition-transform duration-kf-normal',
+              'h-full w-full min-w-0 object-cover transition-transform duration-kf-normal',
               !parallax && 'group-hover:scale-105'
             )}
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-3xl">🍔</div>
+          <div
+            className="flex h-full w-full items-center justify-center bg-kf-surface-muted"
+            role="img"
+            aria-label={name}
+          >
+            <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 text-kf-muted/60" aria-hidden="true">
+              <path d="M3 8h18a9 9 0 0 0-18 0Z" fill="currentColor" opacity=".35" />
+              <path d="M3 8h18l-1.2 2.4A9 9 0 0 1 4.2 10.4L3 8Z" fill="currentColor" opacity=".55" />
+              <path d="M5 11h14l-.6 1.2a9 9 0 0 1-12.8 0L5 11Z" fill="currentColor" opacity=".75" />
+              <path d="M6.5 13.5h11l-.8 1.6a9 9 0 0 1-9.4 0l-.8-1.6Z" fill="currentColor" />
+            </svg>
+          </div>
         )}
         {badge && (
           <span className="absolute left-2 top-2 rounded-kf-pill bg-kf-primary px-2 py-0.5 text-[10px] font-bold text-kf-primary-fg">
@@ -122,7 +133,9 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <p className="mt-0.5 text-xs text-kf-muted line-clamp-2">{description}</p>
         )}
         <div className="mt-auto flex items-center justify-between pt-3">
-          <Price value={price} size="md" />
+          <span aria-label={`${name}: ${price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
+            <Price value={price} size="md" />
+          </span>
           <Button size="md" data-testid="quick-add" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
             +
           </Button>

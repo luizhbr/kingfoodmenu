@@ -48,13 +48,13 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
           data-cat-id=""
           onClick={() => onSelect?.(null)}
           className={cn(
-            'shrink-0 inline-flex items-center min-h-[44px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
+            'shrink-0 inline-flex items-center min-h-[48px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
             selected === null || selected === undefined
               ? 'border-kf-primary bg-kf-primary text-kf-primary-fg shadow-kf-card'
               : 'border-kf-border bg-kf-surface text-kf-foreground hover:border-kf-primary hover:bg-kf-primary/10'
           )}
           role="tab"
-          aria-selected={selected === null || selected === undefined}
+          aria-selected={selected === null || selected === undefined ? true : false}
         >
           Todos
         </button>
@@ -68,13 +68,13 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
             data-cat-id={cat.id}
             onClick={() => onSelect?.(cat.id)}
             className={cn(
-              'shrink-0 inline-flex items-center min-h-[44px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
+              'shrink-0 inline-flex items-center min-h-[48px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
               selected === cat.id
                 ? 'border-kf-primary bg-kf-primary text-kf-primary-fg shadow-kf-card'
                 : 'border-kf-border bg-kf-surface text-kf-foreground hover:border-kf-primary hover:bg-kf-primary/10'
             )}
             role="tab"
-            aria-selected={selected === cat.id}
+            aria-selected={selected === cat.id ? true : false}
           >
             {cat.name}
           </button>

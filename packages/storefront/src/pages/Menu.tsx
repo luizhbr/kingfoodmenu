@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -11,7 +11,7 @@ import {
 } from '@kitchenasty/shared-ui';
 import CartBar from '../components/CartBar.js';
 import { CategoryPills } from '../components/CategoryPills.js';
-import MenuItemModal from '../components/MenuItemModal.js';
+const MenuItemModal = lazy(() => import('../components/MenuItemModal.js'));
 import { FALLBACK_CATEGORIES, FALLBACK_ITEMS } from '../data/menuFallback.js';
 
 interface Category {
@@ -45,36 +45,31 @@ interface MenuResponse {
 
 /** Altura do header fixo do site (h-16) — a barra de categorias fica sticky abaixo dele. */
 const HEADER_OFFSET = 64;
-/** Altura aproximada da barra sticky de categorias (offset do scroll-margin das seções). */
-const CATEGORY_BAR_OFFSET = 60;
 
-function sectionId(catId: string, page: number): string {
-  return page > 1 ? `menu-section-${catId}-p${page}` : `menu-section-${catId}`;
+function sectionId(catId: string): string {
+  return `menu-section-${catId}`;
 }
 
 export default function Menu() {
   const { t } = useTranslation();
   const { addItem } = useCart();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(searchParams.get('category'));
-  /** Categoria ativa durante o scroll (sincronizada com a seção visível). */
+  /** Categoria ativa (sincronizada com a seção visível via scroll E via clique). */
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
 
   const [items, setItems] = useState<MenuItem[]>([]);
-  const [pagination, setPagination] = useState<MenuResponse['pagination'] | null>(null);
   const [itemsLoading, setItemsLoading] = useState(true);
   const [itemsError, setItemsError] = useState<Error | null>(null);
 
   // Refs das seções (âncoras estáveis para o IntersectionObserver)
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
   const firstSectionRef = useRef<HTMLElement | null>(null);
-  /** Categoria clicada aguardando o carregamento dos itens filtrados para scrollar. */
-  const pendingScrollRef = useRef<{ catId: string } | null>(null);
+  /** Flag para suprimir o IntersectionObserver durante scroll programático (clique em categoria). */
+  const isScrollingRef = useRef(false);
 
   // Fetch categories
   useEffect(() => {
@@ -85,48 +80,40 @@ export default function Menu() {
       .finally(() => setCategoriesLoading(false));
   }, []);
 
-  // Build items URL (busca removida — sem filtro de search)
-  const itemsUrl = useMemo(() => {
-    const params = new URLSearchParams();
-    if (selectedCategory) params.set('categoryId', selectedCategory);
-    if (page > 1) params.set('page', String(page));
-    params.set('limit', '50');
-    const apiBase = import.meta.env.VITE_API_URL || '';
-    return `${apiBase}/api/menu/items?${params}`;
-  }, [selectedCategory, page]);
-
-  // Fetch items
-  useEffect(() => {
-    let mounted = true;
+  // Fetch ALL items (uma única vez — sem filtro de categoria)
+  const loadMenu = useCallback(() => {
     setItemsLoading(true);
     setItemsError(null);
-    fetch(itemsUrl)
+    const apiBase = import.meta.env.VITE_API_URL || '';
+    return fetch(`${apiBase}/api/menu/items?limit=200`)
       .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
       .then((json) => {
-        if (!mounted) return;
         setItems(json.data || []);
-        setPagination(json.pagination || null);
       })
       .catch((err) => {
-        if (!mounted) return;
         console.warn('Menu API unavailable, using fallback:', err.message);
-        const filtered = selectedCategory
-          ? FALLBACK_ITEMS.filter((i: any) => i.category.id === selectedCategory)
-          : FALLBACK_ITEMS;
-        setItems(filtered);
-        setPagination({ page: 1, limit: 100, total: filtered.length, totalPages: 1 });
+        setItems(FALLBACK_ITEMS);
       })
-      .finally(() => { if (mounted) setItemsLoading(false); });
-    return () => { mounted = false; };
-  }, [itemsUrl, selectedCategory]);
+      .finally(() => setItemsLoading(false));
+  }, []);
 
-  // Sync URL params (apenas categoria e página — busca removida)
+  useEffect(() => {
+    let mounted = true;
+    loadMenu().then(() => { /* mounted guard desnecessário — loadMenu é idempotente */ });
+    return () => { mounted = false; };
+  }, [loadMenu]);
+
+  // Sync URL params (apenas categoria ativa para deep-linking)
   useEffect(() => {
     const params: Record<string, string> = {};
-    if (selectedCategory) params.category = selectedCategory;
-    if (page > 1) params.page = String(page);
-    setSearchParams(params, { replace: true });
-  }, [selectedCategory, page, setSearchParams]);
+    if (searchParams.get('category')) {
+      params.category = searchParams.get('category')!;
+    }
+    // Não sobrescreve se já está vazio
+    if (Object.keys(params).length > 0) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const categoryList = useMemo(
     () => (categoriesLoading ? [] : categories.map((c) => ({ id: c.id, name: c.name }))),
@@ -162,14 +149,49 @@ export default function Menu() {
   const gridColumns =
     'grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4';
 
-  // Scroll vertical -> categoria ativa (IntersectionObserver, sem listener por pixel)
+  // Scroll vertical -> categoria ativa
+  // Dual approach: IntersectionObserver (primário) + scroll listener (fallback)
+  // O fallback garante funcionamento mesmo em browsers onde IO não dispara com scrollTo()
   useEffect(() => {
     if (itemsLoading || grouped.length === 0) return;
     const refs = sectionRefs.current;
     const first = firstSectionRef.current;
 
+    /** Calcula qual categoria está visível no topo da área de leitura. */
+    function computeActiveCategory() {
+      if (isScrollingRef.current) return;
+      const refs = sectionRefs.current;
+      const first = firstSectionRef.current;
+      if (!first) return;
+
+      const viewportTop = HEADER_OFFSET;
+      const viewportMid = window.innerHeight * 0.35; // 35% da viewport = zona de leitura
+      let bestId: string | null = null;
+      let bestTop = Infinity;
+
+      refs.forEach((el) => {
+        const r = el.getBoundingClientRect();
+        // Seção cujo topo passou da zona de leitura mas cujo conteúdo ainda está visível
+        if (r.top <= viewportMid && r.bottom > viewportTop) {
+          if (r.top < bestTop) {
+            bestTop = r.top;
+            bestId = el.dataset.categoryId ?? null;
+          }
+        }
+      });
+
+      if (bestId) {
+        setActiveCategory(bestId);
+      } else {
+        const absTop = first.getBoundingClientRect().top + window.scrollY;
+        if (window.scrollY < absTop - 80) setActiveCategory(null);
+      }
+    }
+
+    // IntersectionObserver (primário — mais eficiente)
     const observer = new IntersectionObserver(
       (entries) => {
+        if (isScrollingRef.current) return;
         const visible: { id: string | null; top: number }[] = [];
         for (const entry of entries) {
           if (!entry.isIntersecting) continue;
@@ -177,11 +199,9 @@ export default function Menu() {
           visible.push({ id, top: entry.boundingClientRect.top });
         }
         if (visible.length > 0) {
-          // Seção mais próxima do topo da área de leitura vence
           visible.sort((a, b) => a.top - b.top);
           setActiveCategory(visible[0].id);
         } else if (first) {
-          // Nada na faixa de leitura: acima da primeira seção = topo do cardápio = "Todos"
           const absTop = first.getBoundingClientRect().top + window.scrollY;
           if (window.scrollY < absTop - 80) setActiveCategory(null);
         }
@@ -193,43 +213,62 @@ export default function Menu() {
     refs.forEach((el) => {
       const id = el.dataset.categoryId;
       if (id) {
-        if (seen.has(id)) return; // primeira seção de cada categoria (página atual)
+        if (seen.has(id)) return;
         seen.add(id);
       }
       observer.observe(el);
     });
 
-    return () => observer.disconnect();
+    // Fallback: scroll listener com throttle via requestAnimationFrame
+    let ticking = false;
+    function onScroll() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        computeActiveCategory();
+        ticking = false;
+      });
+    }
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // Chamar uma vez para setar o estado inicial
+    computeActiveCategory();
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [grouped, itemsLoading]);
+
+  // Limpa refs das seções quando os itens mudam (evita refs órfãs)
+  useEffect(() => {
+    if (itemsLoading) return;
+    // Mantém apenas refs de categorias que existem no grouped atual
+    const validIds = new Set(grouped.map((g) => g.category.id));
+    const current = sectionRefs.current;
+    for (const id of [...current.keys()]) {
+      if (!validIds.has(id)) current.delete(id);
+    }
   }, [grouped, itemsLoading]);
 
   function handleCategoryClick(catId: string | null) {
-    setSelectedCategory(catId);
     setActiveCategory(catId);
-    setPage(1);
     if (catId) {
-      // Espera os itens filtrados carregarem: as seções mudam (skeleton -> grid)
-      // e um scroll prematuro seria cancelado no meio do caminho.
-      pendingScrollRef.current = { catId };
+      // Scroll suave até a seção da categoria — sem refetch, sem "página nova"
+      const el = document.getElementById(sectionId(catId));
+      if (el) {
+        isScrollingRef.current = true;
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Reabilita o observer depois que o scroll suave termina
+        setTimeout(() => { isScrollingRef.current = false; }, 800);
+      }
     } else {
       // "Todos" volta ao início do cardápio
+      isScrollingRef.current = true;
       window.scrollTo({ top: 0, behavior: 'smooth' });
+      setTimeout(() => { isScrollingRef.current = false; }, 800);
     }
   }
-
-  // Scroll pós-carregamento do clique em categoria
-  useEffect(() => {
-    if (itemsLoading || !pendingScrollRef.current) return;
-    const { catId } = pendingScrollRef.current;
-    pendingScrollRef.current = null;
-    const el = document.getElementById(sectionId(catId, page));
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else {
-      // Categoria sem produtos: volta ao topo (EmptyState)
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsLoading, grouped, page]);
 
   function handleQuickAdd(item: MenuItem) {
     if (item._count.options > 0) {
@@ -260,13 +299,20 @@ export default function Menu() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header estilizado */}
         <header className="mb-6 text-center pt-4 pb-2">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-kf-foreground tracking-tight">{t('menu.title', 'Nosso Cardápio')}</h1>
-          <p className="text-sm text-kf-muted mt-1">{t('menu.subtitle', 'Escolha seus favoritos')}</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-kf-foreground tracking-tight">
+            {t('menu.title', 'Nosso Cardápio')}
+          </h1>
+          <p className="text-sm text-kf-muted mt-1">
+            {t('menu.subtitle', 'Escolha seus favoritos')}
+            {!itemsLoading && !itemsError && activeItems.length > 0 && (
+              <span className="ml-2 inline-flex items-center rounded-kf-pill bg-kf-primary/10 px-2 py-0.5 text-[11px] font-bold text-kf-primary">
+                {activeItems.length} {t('menu.items', 'itens')}
+              </span>
+            )}
+          </p>
         </header>
 
-        {/* Categorias (barra sticky com scroll horizontal) — somente na listagem.
-            Com o detalhe do produto aberto (MenuItemModal) a barra é removida do DOM
-            para não ficar sobreposta nem reservar espaço. */}
+        {/* Categorias (barra sticky com scroll horizontal) */}
         {!selectedItemId && (
           <CategoryPills
             categories={categoryList}
@@ -277,7 +323,7 @@ export default function Menu() {
           />
         )}
 
-        {/* Produtos agrupados por categoria */}
+        {/* Produtos agrupados por categoria — TODOS numa página só */}
         <div className="mt-4">
           {itemsLoading && (
             <div className={gridColumns} aria-busy="true" aria-label={t('menu.loading', 'Carregando cardápio')}>
@@ -299,37 +345,21 @@ export default function Menu() {
             <ErrorState
               title={t('menu.errorTitle', 'Erro ao carregar cardápio')}
               description={t('menu.errorDesc', 'Tente novamente em instantes.')}
-              retry={() => window.location.reload()}
+              retry={loadMenu}
             />
           )}
 
           {!itemsLoading && !itemsError && activeItems.length === 0 && (
             <EmptyState
-              title={
-                selectedCategory
-                  ? t('menu.noItemsInCategoryTitle', 'Categoria vazia')
-                  : t('menu.noItemsTitle', 'Nenhum produto encontrado')
-              }
-              description={
-                selectedCategory
-                  ? t('menu.noItemsInCategoryDesc', 'Não há produtos nesta categoria ainda.')
-                  : t('menu.noItemsDesc', 'Tente outra categoria.')
-              }
-              action={
-                selectedCategory
-                  ? {
-                      label: t('menu.clearFilters', 'Ver todos os produtos'),
-                      onClick: () => { setSelectedCategory(null); setPage(1); },
-                    }
-                  : undefined
-              }
+              title={t('menu.noItemsTitle', 'Nenhum produto encontrado')}
+              description={t('menu.noItemsDesc', 'Tente novamente em instantes.')}
             />
           )}
 
           {!itemsLoading && !itemsError && activeItems.length > 0 && (
             <>
               {grouped.map((group, gi) => {
-                const id = sectionId(group.category.id, page);
+                const id = sectionId(group.category.id);
                 return (
                   <section
                     key={id}
@@ -367,37 +397,15 @@ export default function Menu() {
                   </section>
                 );
               })}
-
-              {pagination && pagination.totalPages > 1 && (
-                <div className="mt-6 flex items-center justify-center gap-3">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page <= 1}
-                    onClick={() => setPage((p) => p - 1)}
-                  >
-                    {t('common.previous', 'Anterior')}
-                  </Button>
-                  <span className="text-sm text-kf-muted">
-                    {pagination.page} / {pagination.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={page >= pagination.totalPages}
-                    onClick={() => setPage((p) => p + 1)}
-                  >
-                    {t('common.next', 'Próximo')}
-                  </Button>
-                </div>
-              )}
             </>
           )}
         </div>
       </div>
 
       {selectedItemId && (
-        <MenuItemModal itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
+        <Suspense fallback={null}>
+          <MenuItemModal itemId={selectedItemId} onClose={() => setSelectedItemId(null)} />
+        </Suspense>
       )}
       <CartBar />
     </div>
