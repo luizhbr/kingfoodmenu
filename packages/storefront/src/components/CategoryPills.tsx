@@ -37,7 +37,7 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
   return (
     <div
       ref={barRef}
-      className="sticky z-40 -mx-4 px-4 sm:mx-0 sm:px-0 bg-kf-bg/95 backdrop-blur-sm border-b border-kf-border/70"
+      className="sticky z-40 -mx-4 px-4 sm:mx-0 sm:px-0"
       style={{ top: headerOffset }}
       role="tablist"
       aria-label="Categorias"
@@ -48,10 +48,10 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
           data-cat-id=""
           onClick={() => onSelect?.(null)}
           className={cn(
-            'shrink-0 inline-flex items-center min-h-[48px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
+            'kf-tag shrink-0 inline-flex items-center min-h-[48px] px-5 text-sm transition-all duration-kf-fast active:scale-[0.97] !border-transparent',
             selected === null || selected === undefined
-              ? 'border-kf-primary bg-kf-primary text-kf-primary-fg shadow-kf-card'
-              : 'border-kf-border bg-kf-surface text-kf-foreground hover:border-kf-primary hover:bg-kf-primary/10'
+              ? '!bg-kf-ink !text-kf-bg shadow-cta'
+              : 'shadow-soft hover:shadow-kf-card'
           )}
           role="tab"
           aria-selected={selected === null || selected === undefined ? true : false}
@@ -68,10 +68,10 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
             data-cat-id={cat.id}
             onClick={() => onSelect?.(cat.id)}
             className={cn(
-              'shrink-0 inline-flex items-center min-h-[48px] px-4 rounded-kf-pill border text-sm font-semibold transition-all duration-kf-fast active:scale-[0.97]',
+              'kf-tag shrink-0 inline-flex items-center min-h-[48px] px-5 text-sm transition-all duration-kf-fast active:scale-[0.97] !border-transparent',
               selected === cat.id
-                ? 'border-kf-primary bg-kf-primary text-kf-primary-fg shadow-kf-card'
-                : 'border-kf-border bg-kf-surface text-kf-foreground hover:border-kf-primary hover:bg-kf-primary/10'
+                ? '!bg-kf-ink !text-kf-bg shadow-cta'
+                : 'shadow-soft hover:shadow-kf-card'
             )}
             role="tab"
             aria-selected={selected === cat.id ? true : false}

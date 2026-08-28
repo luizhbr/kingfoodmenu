@@ -198,7 +198,7 @@ export class PrintAgent {
         await this.connectDriver();
         if (!this.driverConnected) throw new Error('printer unavailable');
       }
-      const buf = buildEscposBuffer(text, { paperWidth: this.cfg.paperWidth });
+      const buf = buildEscposBuffer(text, { paperWidth: this.cfg.paperWidth, density: this.cfg.printDensity });
       const result = await this.driver.print(buf);
       if (!result.ok) throw new Error(result.error || 'print failed');
 

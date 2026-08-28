@@ -150,17 +150,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     applyColorVars('primary', settings.colorPrimary || '#FFD100');
     applyColorVars('secondary', settings.colorSecondary || '#E31818');
   }, [settings.colorPrimary, settings.colorSecondary]);
-  // Aplica a configuração visual PUBLICADA (Fase 3) — a loja só muda
-  // quando o admin publica explicitamente. Nunca usa o rascunho.
-  useEffect(() => {
-    const v = settings.visualPublished;
+  // === Função reutilizável: aplica config visual ao :root ===
+  const FONT_STACKS: Record<string, string> = {
+    system: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
+    serif: 'Georgia, "Times New Roman", serif',
+    mono: 'ui-monospace, "Cascadia Code", "Courier New", monospace',
+  };
+  function applyVisualConfig(v: any) {
     if (!v) return;
     const root = document.documentElement;
-    const FONT_STACKS: Record<string, string> = {
-      system: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
-      serif: 'Georgia, "Times New Roman", serif',
-      mono: 'ui-monospace, "Cascadia Code", "Courier New", monospace',
-    };
     if (v.colors?.primary) {
       applyColorVars('primary', v.colors.primary);
       root.style.setProperty('--kf-primary', v.colors.primary);
@@ -171,9 +169,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     }
     if (v.colors?.background) root.style.setProperty('--kf-bg', v.colors.background);
     if (v.colors?.surface) root.style.setProperty('--kf-surface', v.colors.surface);
-    if (v.colors?.text) root.style.setProperty('--kf-foreground', v.colors.text);
+    if (v.colors?.text) { root.style.setProperty('--kf-foreground', v.colors.text); root.style.setProperty('--kf-ink', v.colors.text); }
     if (v.colors?.textMuted) root.style.setProperty('--kf-muted', v.colors.textMuted);
     if (v.colors?.border) root.style.setProperty('--kf-border', v.colors.border);
+    if (v.colors?.price) root.style.setProperty('--kf-price', v.colors.price);
+    if (v.colors?.accent) root.style.setProperty('--kf-accent', v.colors.accent);
     if (v.typography?.font) {
       const stack = FONT_STACKS[v.typography.font] || FONT_STACKS.system;
       root.style.setProperty('--kf-font-sans', stack);
@@ -187,7 +187,27 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const r = v.components.buttonStyle === 'pill' ? 9999 : v.components.buttonRadius;
       root.style.setProperty('--kf-radius-pill', `${r}px`);
     }
+  }
+
+  // Aplica a configuração visual PUBLICADA (Fase 3) — a loja só muda
+  // quando o admin publica explicitamente. Nunca usa o rascunho.
+  useEffect(() => {
+    applyVisualConfig(settings.visualPublished);
   }, [settings.visualPublished]);
+
+  // === PREVIEW AO VIVO: recebe rascunho do Construtor Visual via postMessage ===
+  // O admin embute este storefront num iframe e envia o rascunho a cada mudança.
+  // URL deve conter ?preview=1 para ativar o modo preview.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('preview') !== '1') return;
+    function onMessage(e: MessageEvent) {
+      if (!e.data || e.data.type !== 'kf-preview') return;
+      applyVisualConfig(e.data.config);
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, []);
 
   useEffect(() => {
     const { darkMode } = settings;

@@ -13,6 +13,8 @@ export interface EscposOptions {
   /** bytes per line for the configured paper (80mm=48 chars, 58mm=32 chars) */
   columns?: number;
   encoding?: string;
+  /** print density 0-255 (ESC/POS GS ( E fn=4). 0=default, >0 escurece. */
+  density?: number;
 }
 
 export function columnsFor(paperWidth: 58 | 80): number {
@@ -22,6 +24,16 @@ export function columnsFor(paperWidth: 58 | 80): number {
 /** Initialize printer + center + bold on/off helpers. */
 export function initPrinter(): Buffer {
   return Buffer.from([ESC, 0x40]); // ESC @
+}
+
+/**
+ * Print density via GS ( E <pL> <pH> <fn> <n> (fn=4).
+ * n=0 → default; valores maiores escurecem (típico 0-255).
+ * Suportado pela RONGTA 80mm e maioria das térmicas ESC/POS.
+ */
+export function setDensity(n: number): Buffer {
+  const v = Math.max(0, Math.min(255, Math.round(n)));
+  return Buffer.from([GS, 0x28, 0x45, 0x03, 0x00, 0x04, v]);
 }
 
 export function alignCenter(): Buffer {
@@ -66,6 +78,8 @@ export function line(text: string, opts: { bold?: boolean; center?: boolean; enc
 export function buildEscposBuffer(text: string, opts: EscposOptions): Buffer {
   const enc = opts.encoding || 'cp850';
   const parts: Buffer[] = [initPrinter()];
+  // Densidade de impressão (escurecer): aplicada logo após o init.
+  if (opts.density && opts.density > 0) parts.push(setDensity(opts.density));
   const lines = text.split('\n');
   for (const ln of lines) {
     parts.push(iconv.encode(ln + '\n', enc));

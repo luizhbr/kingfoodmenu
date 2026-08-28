@@ -26,8 +26,7 @@ export default function MinimalFooter() {
           <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs">
             <Link to="/menu" className="hover:text-gray-900 transition-colors">{t('nav.menu')}</Link>
             <Link to="/locations" className="hover:text-gray-900 transition-colors">{t('nav.locations')}</Link>
-            <Link to="/reservations" className="hover:text-gray-900 transition-colors">{t('nav.reservations')}</Link>
-            <span className="text-gray-300">|</span>
+<span className="text-gray-300">|</span>
             <Link to="/login" className="hover:text-gray-900 transition-colors">{t('nav.login')}</Link>
             <Link to="/register" className="hover:text-gray-900 transition-colors">{t('footer.createAccount')}</Link>
             <Link to="/account" className="hover:text-gray-900 transition-colors">{t('nav.myAccount')}</Link>

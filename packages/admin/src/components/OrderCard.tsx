@@ -29,6 +29,7 @@ interface OrderSummary {
   customer: { id: string; name: string; email: string } | null;
   location: { id: string; name: string };
   _count: { items: number };
+  payments?: { method: string; status: string; amount: number }[];
 }
 
 interface OrderDetail extends OrderSummary {
@@ -64,6 +65,29 @@ const STATUS_LABELS: Record<string, string> = {
   PICKED_UP: 'Retirado',
   CANCELLED: 'Cancelado',
 };
+
+// Payment badge — the FIRST thing kitchen/driver staff see, because it
+// decides whether they need to carry change.
+function PaymentBadge({ order }: { order: OrderSummary }) {
+  const payment = order.payments?.[0];
+  if (!payment) return null;
+  const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(payment.amount);
+  if (payment.method === 'CASH') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900 ring-1 ring-amber-300">
+        💵 Receber em dinheiro — {amount}
+      </span>
+    );
+  }
+  if (payment.status === 'COMPLETED') {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1 text-xs font-bold text-green-800 ring-1 ring-green-300">
+        ✅ Pago online — {amount}
+      </span>
+    );
+  }
+  return null;
+}
 
 // Ação primária contextual — fluxo operacional em 1 toque (GNOME: reduce effort)
 const NEXT_ACTION: Record<string, { label: string; next: string; tone: string }> = {
@@ -222,6 +246,7 @@ export default function OrderCard({ order, token, onStatusChange, onDelete }: Pr
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${STATUS_COLORS[order.status] || 'bg-gray-100 text-gray-700'}`}>
               {STATUS_LABELS[order.status] || order.status.replace(/_/g, ' ')}
             </span>
+            <PaymentBadge order={order} />
           </div>
           <span className="text-xs text-gray-400 shrink-0">{timeAgo(order.createdAt)}</span>
           {onDelete && (

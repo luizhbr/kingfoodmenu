@@ -22,9 +22,11 @@ describe('GET /api/orders/:id – guest tracking (unit)', () => {
     id: 'order-123',
     orderNumber: 'KA-ABC-123',
     customerId: null,
+    status: 'PREPARING',
+    orderType: 'PICKUP',
   };
 
-  it('should return 200 for guest with existing order', async () => {
+  it('should return 200 for guest with existing order (minimal DTO, no PII)', async () => {
     prisma.order.findUnique.mockResolvedValue(sampleOrder);
 
     const req = { params: { id: 'order-123' }, user: undefined, headers: {} } as Request;
@@ -38,9 +40,21 @@ describe('GET /api/orders/:id – guest tracking (unit)', () => {
 
     expect(next).not.toHaveBeenCalled();
     expect(res.status).not.toHaveBeenCalled();
+    // Contrato de seguranca: guest recebe apenas o DTO minimo (orderNumber,
+    // status, timeline) — sem PII, sem pagamento, sem items.
     expect(res.json).toHaveBeenCalledWith({
       success: true,
-      data: sampleOrder,
+      data: {
+        orderNumber: 'KA-ABC-123',
+        status: 'PREPARING',
+        timeline: [
+          { status: 'PENDING', label: 'Pedido recebido', completed: true },
+          { status: 'CONFIRMED', label: 'Pedido aceito', completed: true },
+          { status: 'PREPARING', label: 'Em preparo', completed: true },
+          { status: 'READY', label: 'Pronto', completed: false },
+          { status: 'PICKED_UP', label: 'Retirado', completed: false },
+        ],
+      },
     });
   });
 

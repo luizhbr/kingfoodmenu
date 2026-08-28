@@ -35,7 +35,8 @@ export default function ElegantFooter() {
             <ul className="space-y-2">
               <li><Link to="/menu" className="hover:text-gray-900 transition-colors">{t('nav.menu')}</Link></li>
               <li><Link to="/locations" className="hover:text-gray-900 transition-colors">{t('nav.locations')}</Link></li>
-              <li><Link to="/reservations" className="hover:text-gray-900 transition-colors">{t('nav.reservations')}</Link></li>
+              <li>
+</li>
             </ul>
           </div>
 

@@ -101,9 +101,9 @@ function AcaiBerry({ className = '' }: { className?: string }) {
       <ellipse cx="18" cy="22" rx="13" ry="10" fill="#4A0E6B" />
       <ellipse cx="18" cy="20" rx="11" ry="8" fill="#6B1B8C" />
       <ellipse cx="13" cy="17" rx="3.2" ry="2" fill="#9B4DCA" opacity="0.85" />
-      <circle cx="12" cy="23" r="1.3" fill="#FFD100" />
+      <circle cx="12" cy="23" r="1.3" fill="var(--kf-primary)" />
       <circle cx="17" cy="25" r="1.1" fill="#E8A317" />
-      <circle cx="22" cy="22" r="1.2" fill="#FFD100" />
+      <circle cx="22" cy="22" r="1.2" fill="var(--kf-primary)" />
     </svg>
   );
 }
@@ -177,11 +177,11 @@ function GoogleReviews() {
     <section className="w-full px-4 py-10 md:py-14" aria-label="Avaliações reais do Google">
       <div className="max-w-3xl mx-auto">
         <div className="text-center mb-8">
-          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#221D25]/45 mb-2">
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-kf-ink/45 mb-2">
             Google Maps · 5,0 ★
           </p>
-          <h2 className="kf-display text-2xl md:text-3xl text-[#221D25] mb-2">Quem prova, recomenda</h2>
-          <p className="text-sm text-[#221D25]/55">
+          <h2 className="kf-display text-2xl md:text-3xl text-kf-ink mb-2">Quem prova, recomenda</h2>
+          <p className="text-sm text-kf-ink/55">
             Avaliações reais de quem já pediu — as que falam de açaí em destaque 🍧
           </p>
         </div>
@@ -201,21 +201,21 @@ function GoogleReviews() {
                   {r.initials}
                 </span>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold text-[#221D25] truncate">{r.name}</p>
-                  <p className="text-[11px] text-[#221D25]/45">{r.count} · {r.time}</p>
+                  <p className="text-sm font-bold text-kf-ink truncate">{r.name}</p>
+                  <p className="text-[11px] text-kf-ink/45">{r.count} · {r.time}</p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1 text-[#FFD100]" aria-label="5 estrelas">
+              <div className="flex items-center gap-1 text-kf-primary" aria-label="5 estrelas">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span key={i} className="text-sm leading-none">★</span>
                 ))}
               </div>
 
-              <p className="text-sm text-[#221D25]/75 leading-relaxed flex-1">{r.text}</p>
+              <p className="text-sm text-kf-ink/75 leading-relaxed flex-1">{r.text}</p>
 
               {r.mentionsAcai && (
-                <span className="self-start inline-flex items-center gap-1 rounded-full bg-[#FFD100]/15 border border-[#FFD100]/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#221D25]/70">
+                <span className="self-start inline-flex items-center gap-1 rounded-full bg-kf-primary/15 border border-kf-primary/40 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-kf-ink/70">
                   🍧 Fala de açaí
                 </span>
               )}
@@ -228,7 +228,7 @@ function GoogleReviews() {
             href={MAPS_URL_DEF}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 kf-chip px-4 py-2.5 text-sm font-bold text-[#221D25]"
+            className="inline-flex items-center gap-2 kf-chip px-4 py-2.5 text-sm font-bold text-kf-ink"
           >
             📍 Ver todas no Google Maps
           </a>
@@ -311,12 +311,12 @@ export default function Home() {
   }, [loading]);
 
   return (
-    <div className="min-h-screen bg-[#E2DDCF] text-[#221D25] relative pb-[var(--kf-nav-h)] md:pb-0 overflow-x-hidden">
+    <div className="min-h-screen bg-kf-bg text-kf-ink relative pb-[var(--kf-nav-h)] md:pb-0 overflow-x-hidden">
       {loading && <SplashScreen exiting={splashExiting} logo={logo} />}
 
       {/* Soft orbs — Yampi-like atmosphere (v3) */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-[#FFD100]/10 blur-3xl" />
+        <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-kf-primary/10 blur-3xl" />
         <div className="absolute top-1/3 -left-20 w-64 h-64 rounded-full bg-white/15 blur-3xl" />
       </div>
 
@@ -325,7 +325,7 @@ export default function Home() {
         href={SORTEIO_IG_POST_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="shrink-0 z-40 block bg-[#221D25] text-[#E2DDCF] text-center text-[11px] sm:text-xs font-extrabold tracking-wide uppercase px-3 py-2.5 hover:bg-[#221D25]/90 active:scale-[0.99] transition"
+        className="shrink-0 z-40 block bg-kf-ink text-kf-bg text-center text-[11px] sm:text-xs font-extrabold tracking-wide uppercase px-3 py-2.5 hover:bg-kf-ink/90 active:scale-[0.99] transition"
       >
         Sorteio no Instagram · comenta AÇAÍ e participa →
       </a>
@@ -333,21 +333,21 @@ export default function Home() {
       {/* Header (v3) */}
       <header
         className={`sticky top-0 z-40 border-b transition-all duration-300 ${
-          scrolled ? 'bg-[#E2DDCF]/90 backdrop-blur-md border-[#221D25]/10' : 'bg-transparent border-transparent'
+          scrolled ? 'bg-kf-bg/90 backdrop-blur-md border-kf-ink/10' : 'bg-transparent border-transparent'
         }`}
       >
         <div className="flex items-center justify-between px-4 py-2 max-w-5xl mx-auto w-full">
           <div className="flex items-center gap-3">
-            <span className="text-sm font-extrabold tracking-tight text-[#221D25]">King Food</span>
+            <span className="text-sm font-extrabold tracking-tight text-kf-ink">King Food</span>
           </div>
 
           <nav className="hidden md:flex items-center gap-1" aria-label="Principal">
-            <Link to="/" className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]">Início</Link>
-            <Link to="/menu" className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]/50 hover:text-[#221D25] hover:bg-[#221D25]/5">Cardápio</Link>
+            <Link to="/" className="px-3 py-2 rounded-lg text-sm font-semibold text-kf-ink">Início</Link>
+            <Link to="/menu" className="px-3 py-2 rounded-lg text-sm font-semibold text-kf-ink/50 hover:text-kf-ink hover:bg-kf-ink/5">Cardápio</Link>
             <button
               type="button"
               onClick={() => setShowHours(true)}
-              className="px-3 py-2 rounded-lg text-sm font-semibold text-[#221D25]/50 hover:text-[#221D25] hover:bg-[#221D25]/5"
+              className="px-3 py-2 rounded-lg text-sm font-semibold text-kf-ink/50 hover:text-kf-ink hover:bg-kf-ink/5"
             >
               Horários
             </button>
@@ -376,7 +376,7 @@ export default function Home() {
             </button>
             <Link
               to="/menu"
-              className="md:hidden text-xs font-extrabold text-[#E2DDCF] bg-[#221D25] px-3.5 py-1.5 rounded-pill active:scale-95 transition"
+              className="md:hidden text-xs font-extrabold text-kf-bg bg-kf-ink px-3.5 py-1.5 rounded-pill active:scale-95 transition"
             >
               Pedir
             </Link>
@@ -392,12 +392,12 @@ export default function Home() {
             <img src={logo} alt="King Food" className="w-20 h-20 md:w-28 md:h-28 object-contain rounded-2xl" />
           </div>
 
-          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#221D25]/45 mb-2">
+          <p className="text-[11px] font-bold tracking-[0.18em] uppercase text-kf-ink/45 mb-2">
             Delivery · Columbus, OH
           </p>
-          <h1 className="kf-display text-3xl md:text-5xl text-[#221D25] mb-2">King Food</h1>
-          <p className="text-sm md:text-base text-[#221D25]/70 font-semibold mb-1">Açaí brasileiro de verdade</p>
-          <p className="text-sm md:text-base text-[#221D25]/55 leading-relaxed mb-7 max-w-md">
+          <h1 className="kf-display text-3xl md:text-5xl text-kf-ink mb-2">King Food</h1>
+          <p className="text-sm md:text-base text-kf-ink/70 font-semibold mb-1">Açaí brasileiro de verdade</p>
+          <p className="text-sm md:text-base text-kf-ink/55 leading-relaxed mb-7 max-w-md">
             Sabor do Brasil pra sua casa. Peça agora.
           </p>
 
@@ -411,16 +411,16 @@ export default function Home() {
 
           {/* Chips 2x2 (v3) */}
           <div className="w-full mt-5 grid grid-cols-2 gap-2">
-            <a href={GROUP_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+            <a href={GROUP_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-kf-ink text-center">
               Grupo WA
             </a>
-            <a href={MAPS_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+            <a href={MAPS_URL_DEF} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-kf-ink text-center">
               Maps · avaliações
             </a>
-            <button type="button" onClick={() => setShowHours(true)} className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25]">
+            <button type="button" onClick={() => setShowHours(true)} className="kf-chip px-3 py-3 text-sm font-bold text-kf-ink">
               Horários
             </button>
-            <a href={myInstagramUrl} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-[#221D25] text-center">
+            <a href={myInstagramUrl} target="_blank" rel="noopener noreferrer" className="kf-chip px-3 py-3 text-sm font-bold text-kf-ink text-center">
               Instagram
             </a>
           </div>
@@ -433,9 +433,9 @@ export default function Home() {
           >
             <img src={FEATURED_IMG} alt="Açaí No Abacaxi" className="shrink-0 w-16 h-16 rounded-2xl object-cover" />
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-bold uppercase tracking-wide text-[#221D25]/40">Destaque</p>
-              <p className="text-sm font-extrabold text-[#221D25] truncate">Açaí No Abacaxi 🍍</p>
-              <p className="mt-0.5 text-xs font-bold text-[#221D25]/55">US$ 27.00 · Ver no cardápio →</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-kf-ink/40">Destaque</p>
+              <p className="text-sm font-extrabold text-kf-ink truncate">Açaí No Abacaxi 🍍</p>
+              <p className="mt-0.5 text-xs font-bold text-kf-ink/55">US$ 27.00 · Ver no cardápio →</p>
             </div>
           </button>
         </div>
@@ -476,12 +476,12 @@ export default function Home() {
               {myHours.map((row) => {
                 const isToday = row.day === today;
                 return (
-                  <li key={row.day} className={`flex justify-between gap-3 px-4 py-3 text-sm ${isToday ? 'bg-[#FFD100]/10' : ''}`}>
-                    <span className={isToday ? 'font-bold text-[#FFD100]' : 'text-white/80'}>
+                  <li key={row.day} className={`flex justify-between gap-3 px-4 py-3 text-sm ${isToday ? 'bg-kf-primary/10' : ''}`}>
+                    <span className={isToday ? 'font-bold text-kf-primary' : 'text-white/80'}>
                       {row.label}
                       {isToday ? ' · hoje' : ''}
                     </span>
-                    <span className={isToday ? 'font-bold text-[#FFD100]' : row.hours === 'Fechado' ? 'text-white/30' : 'text-white/60'}>
+                    <span className={isToday ? 'font-bold text-kf-primary' : row.hours === 'Fechado' ? 'text-white/30' : 'text-white/60'}>
                       {row.hours}
                     </span>
                   </li>
@@ -491,7 +491,7 @@ export default function Home() {
             <Link
               to="/menu"
               onClick={() => setShowHours(false)}
-              className="mt-4 flex min-h-[52px] items-center justify-center rounded-2xl bg-[#FFD100] text-black font-bold"
+              className="mt-4 flex min-h-[52px] items-center justify-center rounded-2xl bg-kf-primary text-black font-bold"
             >
               {openStatus.open ? 'Pedir agora' : 'Ver cardápio'}
             </Link>

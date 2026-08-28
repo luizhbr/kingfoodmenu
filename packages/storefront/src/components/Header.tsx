@@ -29,7 +29,6 @@ function ClassicHeader() {
         { to: '/menu', label: t('nav.menu') },
         { to: '/locations', label: t('nav.locations') },
         { to: '/gallery', label: t('nav.gallery') },
-        { to: '/reservations', label: t('nav.reservations') },
       ];
 
   function isActive(path: string) {

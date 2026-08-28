@@ -6,7 +6,7 @@ import { Request, Response } from 'express';
 import prisma from '../lib/db.js';
 import { sanitizeTemplate, DEFAULT_TEMPLATE, ReceiptTemplate } from '../lib/receipt-template.js';
 import { renderReceipt, buildPreviewOrder } from '../lib/receipt-renderer.js';
-import { processLogo, LogoError, buildLogoEscpos } from '../lib/logo-processor.js';
+import { processLogo, LogoError } from '../lib/logo-processor.js';
 import { auditLog } from '../lib/audit.js';
 
 const TEMPLATE_SELECT = {

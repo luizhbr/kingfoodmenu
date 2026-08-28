@@ -78,7 +78,8 @@ export default function OrderConfirmation() {
 
   useEffect(() => {
     if (!id) return;
-    if (order && order.status === 'CONFIRMED') return;
+    // Paid = no longer awaiting payment (webhook flipped it to PENDING).
+    if (order && order.status !== 'AWAITING_PAYMENT') return;
     if (polls > 12) return;
 
     let cancelled = false;
@@ -102,7 +103,7 @@ export default function OrderConfirmation() {
     };
   }, [id, order, polls]);
 
-  const confirmed = order?.status === 'CONFIRMED';
+  const confirmed = !!order && order.status !== 'AWAITING_PAYMENT';
   const isDelivery = (order?.orderType ?? '').toUpperCase() === 'DELIVERY';
   const orderNumber = order?.orderNumber || id;
 

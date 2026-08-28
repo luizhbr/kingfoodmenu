@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { cn } from '../utils/cn.js';
 
 export interface DrawerProps {
@@ -19,7 +20,7 @@ export const Drawer: React.FC<DrawerProps> = ({
   open, onClose, title, children, position = 'bottom'
 }) => {
   if (!open) return null;
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-kf-drawer"
       role="dialog"
@@ -53,6 +54,7 @@ export const Drawer: React.FC<DrawerProps> = ({
         )}
         <div className="flex-1 overflow-auto p-5">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

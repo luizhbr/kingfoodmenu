@@ -77,6 +77,7 @@ useEffect(() => {
   const [couponLoading, setCouponLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [step, setStep] = useState(1);
 
   // Guest checkout fields
   const [guestName, setGuestName] = useState('');
@@ -285,8 +286,38 @@ useEffect(() => {
     return Object.values(errs).every((v) => !v);
   }
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
+  // Navegação progressiva em 3 passos: 1 Dados → 2 Entrega → 3 Pagamento
+  function goNext() {
+    if (step === 1) {
+      if (!validateGuest()) {
+        document.querySelector('[data-section="contact"]')?.scrollIntoView({ behavior: 'smooth' });
+        return;
+      }
+      setStep(2);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (step === 2) {
+      if (!validateAddress()) {
+        document.querySelector('[data-section="address"]')?.scrollIntoView({ behavior: 'smooth' });
+        setError(t('checkout.addressRequired', 'Preencha o endereço de entrega.'));
+        return;
+      }
+      setStep(3);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+  }
+
+  function goBack() {
+    if (step > 1) {
+      setStep(step - 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
+  async function handleSubmit(e?: FormEvent) {
+    e?.preventDefault();
     setError('');
     if (!validateGuest()) {
       document.querySelector('[data-section="contact"]')?.scrollIntoView({ behavior: 'smooth' });
@@ -491,10 +522,39 @@ function getDefaultScheduleTime(): string {
     ? t('checkout.processing', 'Processando...')
     : t('checkout.placeOrderTotal', 'Finalizar pedido — {{total}}').replace('{{total}}', `$${total.toFixed(2)}`);
 
+  // CTA conforme o passo: Continuar (1-2) ou Finalizar (3)
+  const isLastStep = step === 3;
+  const stepCtaText = isLastStep
+    ? ctaText
+    : t('checkout.continue', 'Continuar') + ' →';
+  const stepCtaAction = isLastStep ? () => handleSubmit() : goNext;
+
   return (
     <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+5.5rem)]">
       <main className="mx-auto max-w-3xl px-4 pt-[72px] pb-6 lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-10">
-        <h1 className="text-2xl font-extrabold text-kf-foreground mb-6">{t('checkout.title', 'Finalizar Pedido')}</h1>
+        <h1 className="text-2xl font-extrabold text-kf-foreground mb-4">{t('checkout.title', 'Finalizar Pedido')}</h1>
+
+        {/* Stepper progressivo */}
+        <div className="mb-6 flex items-center gap-2" aria-label="Progresso do checkout">
+          {[1, 2, 3].map((n) => {
+            const labels = [t('checkout.stepData', 'Dados'), t('checkout.stepDelivery', 'Entrega'), t('checkout.stepPayment', 'Pagamento')];
+            const active = step === n;
+            const done = step > n;
+            return (
+              <div key={n} className="flex items-center gap-2 flex-1">
+                <div className={`flex items-center gap-2 ${active ? 'text-kf-foreground' : done ? 'text-kf-success' : 'text-kf-muted'}`}>
+                  <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+                    active ? 'bg-kf-ink text-kf-bg' : done ? 'bg-kf-success text-white' : 'bg-kf-surface-muted text-kf-muted'
+                  }`}>
+                    {done ? '✓' : n}
+                  </span>
+                  <span className={`text-xs font-semibold ${active ? '' : 'hidden sm:inline'}`}>{labels[n - 1]}</span>
+                </div>
+                {n < 3 && <div className={`h-0.5 flex-1 rounded ${done ? 'bg-kf-success' : 'bg-kf-border'}`} />}
+              </div>
+            );
+          })}
+        </div>
 
         {isBusy && (
           <div className="mb-6 rounded-kf-lg border border-kf-warning/30 bg-kf-warning/10 p-4 text-kf-warning">
@@ -509,9 +569,11 @@ function getDefaultScheduleTime(): string {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col lg:flex-row gap-6">
+        <form onSubmit={(e) => { e.preventDefault(); if (isLastStep) handleSubmit(); else goNext(); }} noValidate className="flex flex-col lg:flex-row gap-6">
           {/* LEFT: progressive form */}
           <div className="flex-1 space-y-5">
+            {step === 1 && (<>
+
             {/* 1. Seus dados */}
             {!user && (
               <Card data-section="contact" className="p-5">
@@ -594,6 +656,15 @@ function getDefaultScheduleTime(): string {
                 </button>
               </div>
             </Card>
+
+            <Button type="button" onClick={goNext} className="w-full min-h-[52px]" data-testid="step1-continue">
+              {t('checkout.continue', 'Continuar')} →
+            </Button>
+            </>)}
+
+
+
+            {step === 2 && (<>
 
             {/* 3. Endereço */}
             {orderType === 'delivery' && (
@@ -726,6 +797,20 @@ function getDefaultScheduleTime(): string {
               />
             </Card>
 
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={goBack} className="min-h-[52px] px-6" data-testid="step2-back">
+                ← {t('checkout.back', 'Voltar')}
+              </Button>
+              <Button type="button" onClick={goNext} className="flex-1 min-h-[52px]" data-testid="step2-continue">
+                {t('checkout.continue', 'Continuar')} →
+              </Button>
+            </div>
+            </>)}
+
+
+
+            {step === 3 && (<>
+
             {/* 6. Cupom */}
             <Card className="p-5">
               <h2 className="text-lg font-bold text-kf-foreground mb-3">{t('checkout.couponCode', 'Cupom')}</h2>
@@ -818,6 +903,8 @@ function getDefaultScheduleTime(): string {
                 </div>
               )}
             </Card>
+            </>)}
+
           </div>
 
           {/* RIGHT / BOTTOM: Order summary + sticky CTA */}
@@ -860,12 +947,13 @@ function getDefaultScheduleTime(): string {
                 </div>
 
                 <Button
-                  type="submit"
+                  type="button"
                   disabled={loading || isBusy}
+                  onClick={stepCtaAction}
                   className="mt-5 w-full min-h-[52px] hidden lg:flex"
                   data-testid="submit-order-desktop"
                 >
-                  {ctaText}
+                  {stepCtaText}
                 </Button>
 
                 <p className="mt-3 text-center text-xs text-kf-muted">
@@ -880,18 +968,20 @@ function getDefaultScheduleTime(): string {
       {/* Sticky CTA mobile */}
       <div className="fixed inset-x-0 bottom-[var(--kf-nav-h)] z-kf-cart-bar border-t border-kf-border bg-kf-surface p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-[0_-4px_16px_rgba(0,0,0,0.08)] lg:hidden">
         <div className="mx-auto max-w-3xl flex items-center justify-between gap-4">
-          <div className="text-left">
-            <p className="text-xs text-kf-muted">{t('checkout.total', 'Total')}</p>
-            <Price value={total} size="lg" />
-          </div>
+          {isLastStep && (
+            <div className="text-left">
+              <p className="text-xs text-kf-muted">{t('checkout.total', 'Total')}</p>
+              <Price value={total} size="lg" />
+            </div>
+          )}
           <Button
             type="button"
             disabled={loading || isBusy}
-            onClick={handleSubmit}
+            onClick={stepCtaAction}
             className="flex-1 min-h-[52px]"
             data-testid="submit-order-mobile"
           >
-            {ctaText}
+            {stepCtaText}
           </Button>
         </div>
       </div>

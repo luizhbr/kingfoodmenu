@@ -209,7 +209,7 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
     return;
   }
 
-  const publicUrl = process.env.PUBLIC_URL || 'https://inka.kitchenasty.com';
+  const publicUrl = process.env.PUBLIC_URL || process.env.STOREFRONT_URL || 'https://king-food-foundation-ui.vercel.app';
   const customerEmail = order.customer?.email ?? order.guestEmail ?? undefined;
 
   try {
@@ -339,10 +339,12 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
           data: { status: 'COMPLETED' },
         });
 
-        // Update order status to confirmed
+        // Payment confirmed — the order becomes visible to the admin
+        // (PENDING). Acceptance (CONFIRMED) is a staff decision, not
+        // something the payment webhook should make.
         await prisma.order.update({
           where: { id: orderId },
-          data: { status: 'CONFIRMED' },
+          data: { status: 'PENDING' },
         });
       }
       break;
@@ -383,7 +385,7 @@ export async function handleWebhook(req: Request, res: Response): Promise<void> 
         });
         await prisma.order.update({
           where: { id: orderId },
-          data: { status: 'CONFIRMED' },
+          data: { status: 'PENDING' },
         });
       }
       break;

@@ -19,8 +19,7 @@ export default function ElegantHeader() {
     { to: '/locations', label: t('nav.locations') },
     { to: '/menu', label: t('nav.menu') },
     { to: '/gallery', label: t('nav.gallery') },
-    { to: '/reservations', label: t('nav.reservations') },
-  ];
+    ];
 
   function isActive(path: string) {
     if (path === '/') return location.pathname === '/';

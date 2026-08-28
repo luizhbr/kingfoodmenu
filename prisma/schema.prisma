@@ -403,6 +403,7 @@ enum OrderType {
 }
 
 enum OrderStatus {
+  AWAITING_PAYMENT
   PENDING
   CONFIRMED
   PREPARING

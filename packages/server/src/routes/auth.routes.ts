@@ -9,6 +9,7 @@ import {
   getCaptchaStatus,
 } from '../controllers/auth.controller.js';
 import { handleSocialCallback } from '../controllers/social-auth.controller.js';
+import { forgotPassword, resetPassword } from '../controllers/password-reset.controller.js';
 import { savePushToken } from '../controllers/push-token.controller.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
 
@@ -24,6 +25,10 @@ router.get('/captcha-status', getCaptchaStatus);
 // Customer auth
 router.post('/customer/register', customerRegister);
 router.post('/customer/login', customerLogin);
+
+// Password reset (customer)
+router.post('/customer/forgot-password', forgotPassword);
+router.post('/customer/reset-password', resetPassword);
 
 // Social login — Google
 if (process.env.GOOGLE_CLIENT_ID) {

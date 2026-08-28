@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { cn } from '../utils/cn.js';
 import { Price } from './Price.js';
 import { Button } from './Button.js';
@@ -13,6 +13,10 @@ export interface ProductCardProps {
   badge?: string;
   onAdd: () => void;
   onClick?: () => void;
+  /** Classes extras (ex.: animação de entrada). */
+  className?: string;
+  /** Estilo inline (ex.: --i para stagger delay). */
+  style?: React.CSSProperties;
   /**
    * Parallax sutil na imagem durante o scroll (UX polish).
    * Move APENAS a camada visual da imagem (translate3d), o card fica estável.
@@ -81,18 +85,29 @@ function useParallax(enabled: boolean | undefined, ref: React.RefObject<HTMLImag
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
-  id, name, description, price, image, badge, onAdd, onClick, parallax, 'data-testid': dataTestId
+  id, name, description, price, image, badge, onAdd, onClick, parallax, className, style, 'data-testid': dataTestId
 }) => {
   const imgRef = useRef<HTMLImageElement | null>(null);
   useParallax(parallax, imgRef);
+  /** Feedback de adição: mostra ✓ no botão por 800ms após onAdd. */
+  const [added, setAdded] = useState(false);
+
+  function handleAdd(e: React.MouseEvent) {
+    e.stopPropagation();
+    onAdd();
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 800);
+  }
 
   return (
     <div
       data-testid={dataTestId || 'product-card'}
       onClick={onClick}
+      style={style}
       className={cn(
         'group flex flex-col rounded-kf-lg bg-kf-surface border border-kf-border shadow-kf-subtle overflow-hidden',
-        onClick && 'cursor-pointer active:scale-[0.99] transition-transform'
+        onClick && 'cursor-pointer active:scale-[0.99] transition-transform',
+        className
       )}
     >
       <div className="relative aspect-[4/3] overflow-hidden bg-kf-surface-muted">
@@ -136,8 +151,19 @@ export const ProductCard: React.FC<ProductCardProps> = ({
           <span aria-label={`${name}: ${price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`}>
             <Price value={price} size="md" />
           </span>
-          <Button size="md" data-testid="quick-add" onClick={(e) => { e.stopPropagation(); onAdd(); }} aria-label={`Adicionar ${name}`}>
-            +
+          <Button
+            size="md"
+            data-testid="quick-add"
+            onClick={handleAdd}
+            aria-label={added ? `Adicionado ${name}` : `Adicionar ${name}`}
+            className={cn(
+              'min-w-[44px] transition-all duration-kf-fast',
+              added && 'bg-emerald-500 hover:bg-emerald-500 shadow-kf-card'
+            )}
+          >
+            <span className={cn('inline-block transition-transform duration-kf-fast', added && 'scale-110')}>
+              {added ? '✓' : '+'}
+            </span>
           </Button>
         </div>
       </div>

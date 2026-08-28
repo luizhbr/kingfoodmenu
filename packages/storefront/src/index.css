@@ -16,6 +16,23 @@
   --color-primary-900: #854d0e;
   --color-primary-950: #713f12;
   --kf-nav-h: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+
+  /* === Visual Experience Builder — design tokens (sobrescritos pelo ThemeContext) === */
+  --kf-primary: #FFD100;
+  --kf-secondary: #E31818;
+  --kf-bg: #E2DDCF;
+  --kf-surface: #FFFFFF;
+  --kf-ink: #221D25;
+  --kf-foreground: #221D25;
+  --kf-muted: #6B6570;
+  --kf-border: #E8E4DC;
+  --kf-price: #221D25;
+  --kf-accent: #B8C438;
+  --kf-font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kf-font-display: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --kf-radius-lg: 16px;
+  --kf-radius-md: 10px;
+  --kf-radius-pill: 9999px;
 }
 
 html.dark {
@@ -242,4 +259,153 @@ html.dark {
 
 .shadow-soft {
   box-shadow: 0 8px 24px -12px rgba(34, 29, 37, 0.25);
+}
+
+/* === Menu mobile: stagger fade-up dos cards === */
+@keyframes kf-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.kf-card-stagger {
+  opacity: 0;
+  animation: kf-card-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  will-change: transform, opacity;
+}
+
+/* Flash sutil na seção ao navegar por categoria */
+@keyframes kf-section-flash {
+  0% {
+    background-color: rgba(255, 209, 0, 0.18);
+  }
+  100% {
+    background-color: transparent;
+  }
+}
+
+.kf-section-flash {
+  animation: kf-section-flash 0.7s ease-out;
+  border-radius: 0.75rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-card-stagger {
+    opacity: 1;
+    animation: none;
+  }
+  .kf-section-flash {
+    animation: none;
+  }
+}
+
+
+/* === Estética Goomer: botões pill, badge sucesso, scroll reveal === */
+
+/* CTA preto full-width pill (estilo "Escolher cardápio") */
+.kf-cta-ink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  background: #221d25;
+  color: #e2ddcf;
+  border-radius: 48px;
+  font-weight: 800;
+  font-size: 0.9375rem;
+  letter-spacing: 0.01em;
+  box-shadow: 0 10px 28px -8px rgba(34, 29, 37, 0.35);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.kf-cta-ink:hover {
+  background: #2e2732;
+  box-shadow: 0 14px 32px -8px rgba(34, 29, 37, 0.4);
+}
+.kf-cta-ink:active {
+  transform: scale(0.98);
+}
+
+/* Badge verde de sucesso (estilo "CUPOM APLICADO!") */
+.kf-badge-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border-radius: 9999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Tag pill pequena (estilo tipos de cupom) */
+.kf-tag {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 0.3125rem 0.875rem;
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid transparent;
+  color: #221d25;
+  box-shadow: 0 2px 8px -2px rgba(34, 29, 37, 0.12), 0 6px 20px -6px rgba(34, 29, 37, 0.1);
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.kf-tag:hover {
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 4px 12px -3px rgba(34, 29, 37, 0.16), 0 10px 28px -8px rgba(34, 29, 37, 0.14);
+}
+.kf-tag:active {
+  transform: scale(0.97);
+}
+
+/* Scroll reveal — fade-up suave ao entrar na viewport */
+@keyframes kf-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.kf-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.kf-reveal.kf-reveal-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Scroll suave global (âncoras de categoria) */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kf-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  html {
+    scroll-behavior: auto;
+  }
 }

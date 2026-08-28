@@ -42,10 +42,7 @@ export default function CozyFooter() {
                 </Link>
               </li>
               <li>
-                <Link to="/reservations" className="hover:text-amber-950 transition-colors bg-amber-100 rounded-full px-3 py-1 inline-block">
-                  {t('nav.reservations')}
-                </Link>
-              </li>
+</li>
             </ul>
           </div>
 

@@ -33,7 +33,8 @@ export default function VibrantFooter() {
             <ul className="space-y-2 text-sm">
               <li><Link to="/menu" className="hover:text-white transition-colors">{t('nav.menu')}</Link></li>
               <li><Link to="/locations" className="hover:text-white transition-colors">{t('nav.locations')}</Link></li>
-              <li><Link to="/reservations" className="hover:text-white transition-colors">{t('nav.reservations')}</Link></li>
+              <li>
+</li>
             </ul>
           </div>
 

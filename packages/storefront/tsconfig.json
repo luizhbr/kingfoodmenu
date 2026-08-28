@@ -10,7 +10,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "jsx": "react-jsx",
-    "types": ["vite/client"],
+    "types": ["vite/client", "google.maps"],
     "allowImportingTsExtensions": true,
     "noEmit": true
   },

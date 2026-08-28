@@ -52,6 +52,7 @@ module.exports = {
         'kf-sticky': 10,
         'kf-header': 40,
         'kf-bottom-nav': 50,
+        'kf-cart-bar': 55,
         'kf-drawer': 60,
         'kf-dropdown': 65,
         'kf-modal': 70,

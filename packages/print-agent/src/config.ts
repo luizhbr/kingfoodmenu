@@ -18,6 +18,8 @@ export interface AgentConfig {
   retryMaxMs: number;
   maxAttempts: number;
   logLevel: string;
+  /** print density 0-255 (0=default). Maior = mais escuro. */
+  printDensity: number;
 }
 
 export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
@@ -38,6 +40,7 @@ export function loadConfig(overrides: Partial<AgentConfig> = {}): AgentConfig {
     retryMaxMs: parseInt(process.env.KING_PRINT_RETRY_MAX_MS || '60000', 10),
     maxAttempts: parseInt(process.env.KING_PRINT_MAX_ATTEMPTS || '5', 10),
     logLevel: process.env.KING_PRINT_LOG_LEVEL || 'info',
+    printDensity: parseInt(process.env.KING_PRINT_DENSITY || '0', 10),
   };
   return { ...cfg, ...overrides };
 }

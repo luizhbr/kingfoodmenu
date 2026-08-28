@@ -57,10 +57,7 @@ export default function ModernFooter() {
           >
             Grupo WA
           </a>
-          <Link to="/reservations" className="min-h-[44px] inline-flex items-center hover:text-[#FFD100] transition-colors font-medium">
-            Reservas
-          </Link>
-        </nav>
+</nav>
 
         {/* Legal compacto */}
         <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-xs text-cream/50 border-t border-cream/10 pt-2.5">

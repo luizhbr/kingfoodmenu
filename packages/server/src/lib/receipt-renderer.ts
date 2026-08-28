@@ -3,7 +3,7 @@
 // No hardware access, no DB access — deterministic and unit-testable.
 // The agent's escpos builder converts this text into printer bytes.
 
-import { ReceiptTemplate, DEFAULT_TEMPLATE, effectiveTemplate } from './receipt-template.js';
+import { ReceiptTemplate, effectiveTemplate } from './receipt-template.js';
 
 export interface RenderLine {
   name: string;

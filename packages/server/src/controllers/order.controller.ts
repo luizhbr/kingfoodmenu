@@ -63,6 +63,7 @@ const orderItemSchema = z.object({
 
 const createOrderSchema = z.object({
   orderType: z.enum(['DELIVERY', 'PICKUP']),
+  paymentMethod: z.enum(['cash', 'stripe', 'paypal']).optional().default('cash'),
   items: z.array(orderItemSchema).min(1),
   comment: z.string().optional(),
   scheduledAt: z.string().optional(),
@@ -155,6 +156,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
 
   const {
     orderType,
+    paymentMethod,
     items,
     comment,
     scheduledAt,
@@ -496,6 +498,14 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         customerId,
         locationId: location.id,
         orderType,
+        // Payment gate: an order only becomes visible to the admin
+        // (PENDING) once payment is confirmed. Stripe orders start
+        // AWAITING_PAYMENT and are flipped to PENDING by the webhook
+        // (payment_intent.succeeded). Cash/pickup orders are PENDING
+        // immediately with an explicit CASH payment record.
+        status: paymentMethod === 'stripe' || paymentMethod === 'paypal'
+          ? 'AWAITING_PAYMENT'
+          : 'PENDING',
         subtotal,
         tax,
         deliveryFee,
@@ -539,6 +549,22 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     console.error('[order] create failed:', err);
     res.status(500).json({ success: false, error: 'Failed to create order' });
     return;
+  }
+
+  // Cash on delivery/pickup: record the explicit payment immediately.
+  // The order is already PENDING (visible to admin) — this row is the
+  // "pago_na_entrega" marker the kitchen/driver sees.
+  if (paymentMethod === 'cash') {
+    await prisma.payment.create({
+      data: {
+        orderId: order.id,
+        method: 'CASH',
+        status: 'COMPLETED',
+        amount: order.total,
+      },
+    }).catch((err) => {
+      console.error('[order] cash payment record failed', order.id, err.message);
+    });
   }
 
   for (const item of items) {
@@ -694,6 +720,11 @@ export async function listOrders(req: Request, res: Response): Promise<void> {
       .map((s) => s.trim())
       .filter(Boolean);
     where.status = statuses.length === 1 ? statuses[0] : { in: statuses };
+  } else {
+    // Unpaid orders (AWAITING_PAYMENT) never surface in the admin list.
+    // They only become visible (PENDING) after the Stripe webhook
+    // confirms payment. An explicit status filter still shows them.
+    where.status = { not: 'AWAITING_PAYMENT' };
   }
   if (orderType) where.orderType = orderType;
 
@@ -707,6 +738,7 @@ export async function listOrders(req: Request, res: Response): Promise<void> {
         customer: { select: { id: true, name: true, email: true } },
         location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
         _count: { select: { items: true } },
+        payments: { orderBy: { createdAt: 'desc' }, take: 1 },
         ...(includeItems ? { items: { include: { options: true } } } : {}),
       },
     }),

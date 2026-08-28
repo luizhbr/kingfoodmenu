@@ -171,7 +171,7 @@ const toggleCategory = (id: string) => {
             </div>
             <Link
               to="/menu/items/new"
-              className="inline-flex items-center gap-1.5 bg-kf-primary text-kf-primary-fg px-4 py-2.5 rounded-kf-lg font-bold text-sm hover:bg-kf-primary-hover active:scale-95 transition-all shadow-kf-card min-h-[44px]"
+              className="kf-cta-ink !w-auto !min-h-[44px] px-6 py-2.5 !text-sm"
             >
               <span className="text-lg leading-none">+</span> Produto
             </Link>
@@ -229,8 +229,8 @@ const toggleCategory = (id: string) => {
                 key={cat.id}
                 data-animate
                 data-id={`cat-${cat.id}`}
-                className={`transition-all duration-500 ease-out ${
-                  visible.has(`cat-${cat.id}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6'
+                className={`transition-all duration-500 [transition-timing-function:cubic-bezier(0.22,1,0.36,1)] ${
+                  visible.has(`cat-${cat.id}`) ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'
                 }`}
               >
                 {/* Cabeçalho da categoria */}
@@ -317,7 +317,7 @@ const toggleCategory = (id: string) => {
                             )}
                             <div className="flex items-center gap-2 mt-1.5">
                               {item._count.options > 0 && (
-                                <span className="bg-kf-primary/10 text-kf-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                <span className="kf-badge-success !normal-case !tracking-normal !text-[10px]">
                                   {item._count.options} {item._count.options === 1 ? 'variante' : 'variantes'}
                                 </span>
                               )}

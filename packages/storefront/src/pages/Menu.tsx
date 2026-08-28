@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -43,8 +43,8 @@ interface MenuResponse {
   pagination: { page: number; limit: number; total: number; totalPages: number };
 }
 
-/** Altura do header fixo do site (h-16) — a barra de categorias fica sticky abaixo dele. */
-const HEADER_OFFSET = 64;
+/** Altura do header sticky da landing (v3) — a barra de categorias fica sticky abaixo dele. */
+const HEADER_OFFSET = 52;
 
 function sectionId(catId: string): string {
   return `menu-section-${catId}`;
@@ -57,6 +57,9 @@ export default function Menu() {
   /** Categoria ativa (sincronizada com a seção visível via scroll E via clique). */
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  /** Categoria cuja seção recebeu flash ao navegar (feedback visual). */
+  const [flashCategory, setFlashCategory] = useState<string | null>(null);
+
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
@@ -259,6 +262,9 @@ export default function Menu() {
       if (el) {
         isScrollingRef.current = true;
         el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Flash sutil na seção alvo (feedback visual da navegação)
+        setFlashCategory(catId);
+        window.setTimeout(() => setFlashCategory(null), 750);
         // Reabilita o observer depois que o scroll suave termina
         setTimeout(() => { isScrollingRef.current = false; }, 800);
       }
@@ -285,16 +291,7 @@ export default function Menu() {
   }
 
   return (
-    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+2.5rem)]">
-      {/* Promo bar — sorteio Instagram */}
-      <a
-        href="https://www.instagram.com/p/DbjecIfC6kS/?igsh=MWF2dnZzZ3RudmF6Yw=="
-        target="_blank"
-        rel="noopener noreferrer"
-        className="shrink-0 z-40 block bg-kf-ink text-kf-bg text-center text-[11px] sm:text-xs font-extrabold tracking-wide uppercase px-3 py-2.5 hover:bg-kf-ink/90 active:scale-[0.99] transition"
-      >
-        Sorteio no Instagram · comenta AÇAÍ e participa →
-      </a>
+    <div className="min-h-screen bg-kf-bg">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         {/* Header estilizado */}
@@ -371,7 +368,7 @@ export default function Menu() {
                       }
                     }}
                     data-category-id={group.category.id}
-                    className="scroll-mt-[calc(4rem+3.75rem)] kf-anim-fade-in"
+                    className={`scroll-mt-[calc(4rem+3.75rem)] ${flashCategory === group.category.id ? 'kf-section-flash' : ''}`}
                     aria-label={group.category.name}
                   >
                     <h2 className="mb-3 flex items-center gap-3 text-base font-extrabold uppercase tracking-wide text-kf-foreground">
@@ -379,7 +376,7 @@ export default function Menu() {
                       <span className="h-px flex-1 bg-kf-border" aria-hidden />
                     </h2>
                     <div className={gridColumns}>
-                      {group.items.map((item) => (
+                      {group.items.map((item, ii) => (
                         <ProductCard
                           key={item.id}
                           id={item.id}
@@ -389,6 +386,8 @@ export default function Menu() {
                           image={item.image || undefined}
                           badge={item._count.options > 0 ? t('menu.options', 'Opções') : undefined}
                           parallax
+                          className="kf-card-stagger"
+                          style={{ '--i': Math.min(ii, 8) } as React.CSSProperties}
                           onClick={() => setSelectedItemId(item.id)}
                           onAdd={() => handleQuickAdd(item)}
                         />

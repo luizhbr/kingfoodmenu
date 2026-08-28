@@ -204,3 +204,26 @@ export function reservationConfirmationEmail(reservation: {
     `,
   };
 }
+
+
+export function passwordResetEmail(link: string): { subject: string; html: string } {
+  return {
+    subject: 'Redefinição de senha — King Food',
+    html: `
+      <div style="max-width:600px;margin:0 auto;font-family:sans-serif">
+        <div style="background:#f97316;color:white;padding:20px;text-align:center;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;font-size:24px">King Food</h1>
+        </div>
+        <div style="padding:24px;background:white;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 8px">Redefinição de senha</h2>
+          <p style="color:#6b7280;margin:0 0 16px">Recebemos uma solicitação para redefinir a senha da sua conta. Se você não fez essa solicitação, pode ignorar este email com segurança.</p>
+          <div style="text-align:center;margin:24px 0">
+            <a href="${link}" style="display:inline-block;background:#f97316;color:white;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:16px">Redefinir minha senha</a>
+          </div>
+          <p style="color:#6b7280;font-size:14px">Este link expira em 60 minutos. Por segurança, o link é de uso único.</p>
+        </div>
+      </div>
+    `,
+  };
+}
+
