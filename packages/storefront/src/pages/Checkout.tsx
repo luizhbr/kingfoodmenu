@@ -405,7 +405,10 @@ useEffect(() => {
         const sessRes = await fetch(`${API_BASE}/api/payments/create-checkout-session`, {
           method: 'POST',
           headers,
-          body: JSON.stringify({ orderId }),
+          // guestEmail proves ownership of the order to the IDOR guard
+          // (isOrderOwner) for guest checkout — without it the server
+          // returns 403 Forbidden.
+          body: JSON.stringify({ orderId, guestEmail: user ? undefined : guestEmail }),
         });
         const sessData = await sessRes.json();
         if (!sessRes.ok || !sessData.data?.url) {
