@@ -37,7 +37,7 @@ export default function Checkout() {
   const { t } = useTranslation();
   const { items, subtotal, clear } = useCart();
   const { user, token } = useAuth();
-  const { getAttributionData, sessionId } = useTracking();
+  const { getAttributionData, sessionId, trackEvent } = useTracking();
   const navigate = useNavigate();
 
   const [orderType, setOrderType] = useState<OrderType>('delivery');
@@ -77,6 +77,24 @@ useEffect(() => {
   const [couponApplied, setCouponApplied] = useState<{ code: string; discount: number; freeDelivery: boolean } | null>(null);
   const [couponError, setCouponError] = useState('');
   const [couponLoading, setCouponLoading] = useState(false);
+  // Feedback pós-login Google (recompensa $3) — não bloqueia o checkout.
+  const [googleReward, setGoogleReward] = useState<{ claimed: boolean; amount: number } | null>(null);
+
+  // Analytics: oferta Google vista (só para visitantes).
+  useEffect(() => {
+    if (!user) trackEvent('CHECKOUT_GOOGLE_OFFER_VIEWED');
+  }, [user, trackEvent]);
+
+  // Retorno do OAuth Google (checkout): mostra o feedback de recompensa $3.
+  useEffect(() => {
+    if (sessionStorage.getItem('kf_google_reward') === '1') {
+      sessionStorage.removeItem('kf_google_reward');
+      setGoogleReward({ claimed: true, amount: 3 });
+      trackEvent('CHECKOUT_GOOGLE_LOGIN_SUCCESS');
+      trackEvent('SIGNUP_REWARD_CREATED');
+    }
+  }, [trackEvent]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
@@ -869,6 +887,51 @@ function getDefaultScheduleTime(): string {
                   {loyaltyRedeem > 0 && <Price value={loyaltyDiscount} size="sm" className="text-kf-success" />}
                 </div>
               </Card>
+            )}
+
+            {/* 7b. Oferta Google (visitantes) — entre Cupom e Pagamento */}
+            {!user && (
+              <Card data-testid="google-offer" className="p-5">
+                <div className="flex items-start gap-3">
+                  <span className="text-2xl" aria-hidden>🎁</span>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-base font-bold text-kf-foreground">{t('checkout.googleOfferTitle', 'Ganhe $3 no próximo pedido')}</h2>
+                    <p className="text-sm text-kf-muted mt-1">
+                      {t('checkout.googleOfferDesc', 'Entre com sua conta Google e receba $3 OFF no seu próximo pedido.')}
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs text-kf-muted">
+                      <li>✓ {t('checkout.googleOffer1', 'Pedidos mais rápidos')}</li>
+                      <li>✓ {t('checkout.googleOffer2', 'Histórico dos seus pedidos')}</li>
+                      <li>✓ {t('checkout.googleOffer3', 'Dados salvos com segurança')}</li>
+                    </ul>
+                    <a
+                      onClick={() => trackEvent('CHECKOUT_GOOGLE_LOGIN_CLICKED')}
+                      href={`/api/auth/google?redirect=${encodeURIComponent('/checkout')}`}
+                      data-testid="google-login-btn"
+                      className="mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-kf-lg border border-kf-border bg-white px-4 text-sm font-semibold text-kf-ink shadow-soft transition hover:shadow-kf-card active:scale-[0.98]"
+                    >
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.27-4.74 3.27-8.1z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.1a6.6 6.6 0 0 1 0-4.2V7.06H2.18a11 11 0 0 0 0 9.88l3.66-2.84z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A11 11 0 0 0 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
+                      </svg>
+                      {t('checkout.googleContinue', 'Continuar com Google')}
+                    </a>
+                    <p className="mt-2 text-center text-[11px] text-kf-muted">
+                      {t('checkout.googleSeconds', 'Leva apenas alguns segundos')}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+            {/* Feedback pós-login Google */}
+            {googleReward && (
+              <div data-testid="google-reward-feedback" className="rounded-kf-lg border border-kf-success/30 bg-kf-success/10 px-4 py-3 text-sm text-kf-foreground">
+                🎉 {t('checkout.googleRewardTitle', 'Conta criada!')}{' '}
+                {t('checkout.googleRewardDesc', 'Você ganhou $3 OFF para seu próximo pedido.')}
+              </div>
             )}
 
             {/* 8. Pagamento */}

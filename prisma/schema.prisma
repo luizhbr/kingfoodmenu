@@ -92,6 +92,7 @@ model Customer {
   cashbackWallet       CashbackWallet?
   cashbackTransactions CashbackTransaction[]
   whatsAppConversations WhatsAppConversation[]
+  rewards              CustomerReward[]
 
   @@map("customers")
 }
@@ -642,6 +643,36 @@ model CouponUsage {
   @@unique([couponId, orderId])
   @@index([customerId])
   @@map("coupon_usages")
+}
+
+// ============================================================
+// CUSTOMER REWARDS (recompensas individuais por cliente)
+// ============================================================
+// Recompensa única por (customerId, type) — idempotente no banco.
+// Ex.: google_signup_bonus = $3 OFF no PRÓXIMO pedido (nunca no atual).
+enum RewardStatus {
+  AVAILABLE
+  REDEEMED
+  EXPIRED
+}
+
+model CustomerReward {
+  id         String       @id @default(cuid())
+  customerId String
+  customer   Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String // ex.: "google_signup_bonus"
+  amount     Float
+  currency   String       @default("USD")
+  status     RewardStatus @default(AVAILABLE)
+  createdAt  DateTime     @default(now())
+  expiresAt  DateTime?
+  redeemedAt DateTime?
+  orderId    String? // pedido em que foi usada
+  metadata   Json?
+
+  @@unique([customerId, type])
+  @@index([customerId, status])
+  @@map("customer_rewards")
 }
 
 

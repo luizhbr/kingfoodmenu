@@ -6,6 +6,7 @@ import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes.js';
+import rewardsRoutes from './routes/rewards.routes.js';
 import printRoutes from './routes/print.routes.js';
 import printTemplateRoutes from './routes/print-template.routes.js';
 import locationRoutes from './routes/location.routes.js';
@@ -204,7 +205,8 @@ export function createApp() {
   });
 
   // ── Routes ────────────────────────────────────────────────────────────
-  app.use('/api/auth', authRoutes);
+  app.use('/api/auth', authRoutes)
+app.use('/api/rewards', rewardsRoutes);
   app.use('/api/locations', locationRoutes);
   app.use('/api/delivery', deliveryRoutes);
   app.use('/api/menu', menuRoutes);

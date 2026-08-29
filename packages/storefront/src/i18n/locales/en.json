@@ -221,7 +221,16 @@
     "addressLine1Required": "Informe seu endereço",
     "cityRequired": "Informe sua cidade",
     "stateRequired": "Informe seu estado",
-    "zipCodeRequired": "Informe seu CEP"
+    "zipCodeRequired": "Informe seu CEP",
+    "googleOfferTitle": "Get $3 off your next order",
+    "googleOfferDesc": "Sign in with Google and get $3 OFF your next order.",
+    "googleOffer1": "Faster ordering",
+    "googleOffer2": "Your order history",
+    "googleOffer3": "Your details, saved securely",
+    "googleContinue": "Continue with Google",
+    "googleSeconds": "Takes just a few seconds",
+    "googleRewardTitle": "Account created!",
+    "googleRewardDesc": "You earned $3 OFF your next order."
   },
   "orderConfirmation": {
     "title": "Order Placed!",

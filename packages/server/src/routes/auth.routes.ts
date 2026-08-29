@@ -32,7 +32,18 @@ router.post('/customer/reset-password', resetPassword);
 
 // Social login — Google
 if (process.env.GOOGLE_CLIENT_ID) {
-  router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+  // state carrega o redirect pós-login (ex.: /checkout) — o callback devolve
+  // o cliente para onde ele estava, sem perder o fluxo.
+  router.get('/google', (req, res, next) => {
+    const redirect = (req.query.redirect as string) || '';
+    const state = new URLSearchParams();
+    if (redirect) state.set('redirect', redirect);
+    passport.authenticate('google', {
+      scope: ['profile', 'email'],
+      session: false,
+      state: state.toString() || undefined,
+    })(req, res, next);
+  });
   router.get('/google/callback',
     passport.authenticate('google', { session: false, failureRedirect: '/login' }),
     handleSocialCallback

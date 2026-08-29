@@ -36,6 +36,11 @@ export function handleSocialCallback(req: Request, res: Response): void {
   if (isMobile && redirectUri) {
     res.redirect(`${redirectUri}?token=${encodeURIComponent(token)}`);
   } else {
-    res.redirect(`${STOREFRONT_URL}/auth/callback?token=${encodeURIComponent(token)}`);
+    // state.redirect (ex.: /checkout) devolve o cliente ao fluxo original.
+    const webRedirect = stateParams.get('redirect') || '';
+    const safeRedirect = webRedirect.startsWith('/') && !webRedirect.startsWith('//')
+      ? webRedirect
+      : '/account';
+    res.redirect(`${STOREFRONT_URL}/auth/callback?token=${encodeURIComponent(token)}&redirect=${encodeURIComponent(safeRedirect)}`);
   }
 }
