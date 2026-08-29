@@ -16,6 +16,8 @@ export interface CartItem {
   quantity: number;
   options: CartItemOption[];
   comment?: string;
+  /** Imagem real do produto (mesma fonte do cardápio). Nunca emoji/fallback genérico. */
+  image?: string;
 }
 
 interface CartContextType {
@@ -81,7 +83,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((item: Omit<CartItem, 'id'>) => {
     setItems((prev) => [...prev, { ...item, id: nextLineId(prev) }]);
-    setIsOpen(true);
+    // UX-V6: o drawer NÃO abre mais automaticamente ao adicionar —
+    // a barra fixa de carrinho (CartBar) mostra contagem/total em tempo real
+    // e o acesso à revisão é sob demanda ("Ver pedido").
   }, []);
 
   const updateQuantity = useCallback((id: string, quantity: number) => {

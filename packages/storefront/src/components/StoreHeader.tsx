@@ -85,7 +85,7 @@ export default function StoreHeader() {
             >
               Horários
             </button>
-            <Link to="/menu" className="ml-2 px-5 py-2 kf-btn-ink text-sm">Pedir agora</Link>
+            <Link to="/menu" className="ml-2 px-5 py-2 kf-btn-ink text-sm">{openStatus.open ? 'Pedir agora' : '📅 Pedir para depois'}</Link>
             <a
               href={myWaUrl}
               target="_blank"
@@ -112,7 +112,7 @@ export default function StoreHeader() {
               to="/menu"
               className="md:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] text-xs font-extrabold text-kf-bg bg-kf-ink px-4 py-2 rounded-pill active:scale-95 transition"
             >
-              Pedir
+              {openStatus.open ? 'Pedir' : '📅 Pedir para depois'}
             </Link>
           </div>
         </div>

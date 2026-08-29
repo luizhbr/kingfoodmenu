@@ -22,7 +22,19 @@ export const CartItem: React.FC<CartItemProps> = ({
       {image ? (
         <img src={image} alt={name} className="h-full w-full object-cover" />
       ) : (
-        <div className="flex h-full items-center justify-center text-2xl">🍔</div>
+        <div
+          className="flex h-full items-center justify-center bg-kf-surface-muted"
+          role="img"
+          aria-label={name}
+          title={name}
+        >
+          {/* Placeholder neutro da marca — nunca um emoji sem relação com o item.
+              A imagem real vem de CartContext.item.image (mesma fonte do cardápio). */}
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-kf-muted/60">
+            <rect x="3" y="3" width="18" height="18" rx="4" stroke="currentColor" strokeWidth="1.5" />
+            <path d="M8 9h8M8 12h8M8 15h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        </div>
       )}
     </div>
     <div className="flex flex-1 flex-col justify-between">

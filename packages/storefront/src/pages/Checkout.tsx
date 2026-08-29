@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, FormEvent } from 'react';
 import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
+import { computeOpenStatus } from '../lib/hours.js';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
+import { useTheme } from '../context/ThemeContext.js';
 import { useAuth } from '../context/AuthContext.js';
 import { withCsrf } from '../lib/csrf.js';
 import { useTracking } from '../hooks/useTracking.js';
@@ -755,6 +757,7 @@ function getDefaultScheduleTime(): string {
             )}
 
             {/* 4. Quando receber */}
+            <ClosedNotice />
             <Card className="p-5">
               <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.whenToReceive', 'Quando receber?')}</h2>
               <div className="space-y-3">
@@ -1025,6 +1028,21 @@ function PaymentOption({
   );
 }
 
+function ClosedNotice() {
+  const { settings } = useTheme();
+  const { t } = useTranslation();
+  const [openStatus] = useState(() => computeOpenStatus(settings?.landingHours?.rows));
+  if (openStatus.open) return null;
+  return (
+    <div className="mb-3 flex items-start gap-2 rounded-kf-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+      <span aria-hidden>🔴</span>
+      <p>
+        {t('checkout.closedNotice', 'A loja está fechada agora. Seu pedido será preparado quando abrirmos — {detail}.', { detail: openStatus.detail })}
+      </p>
+    </div>
+  );
+}
+
 function SummaryRow({
   label,
   value,
@@ -1054,6 +1072,7 @@ function UpsellRow({ item }: { item: MenuItem }) {
       price: item.price,
       quantity: 1,
       options: [],
+      image: item.image ?? undefined,
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 1500);
@@ -1062,7 +1081,7 @@ function UpsellRow({ item }: { item: MenuItem }) {
   return (
     <div className="flex items-center gap-3 rounded-kf-lg border border-kf-border bg-kf-surface p-3">
       <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-kf-md bg-kf-surface-muted text-xl">
-        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover rounded-kf-md" /> : '🍔'}
+        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover rounded-kf-md" /> : <span className="text-lg">🥣</span>}
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-kf-foreground truncate">{item.name}</p>

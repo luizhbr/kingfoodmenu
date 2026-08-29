@@ -180,6 +180,9 @@ export default function MenuItemModal({ itemId, onClose }: Props) {
       quantity,
       options: cartOptions,
       comment,
+      // mesma fonte de imagem do cardápio (resolveGallery) — primeiro a galeria,
+      // senão image; o CartItem nunca recebe fallback de emoji
+      image: resolveGallery(item.image, item.images)[0] ?? item.image ?? undefined,
     });
     onClose();
   }

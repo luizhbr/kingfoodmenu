@@ -37,7 +37,7 @@ export function CategoryPills({ categories, selected, onSelect, loading, headerO
   return (
     <div
       ref={barRef}
-      className="sticky z-40 -mx-4 px-4 sm:mx-0 sm:px-0"
+      className="sticky z-40 -mx-4 px-4 sm:mx-0 sm:px-0 bg-kf-bg/95 backdrop-blur-sm shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
       style={{ top: headerOffset }}
       role="tablist"
       aria-label="Categorias"

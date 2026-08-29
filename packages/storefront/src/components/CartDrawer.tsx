@@ -81,7 +81,7 @@ export default function CartDrawer() {
                       quantity={item.quantity}
                       unitPrice={item.price}
                       options={item.options.map((o) => o.valueName)}
-                      image={undefined}
+                      image={item.image}
                       onQuantityChange={(qty) => updateQuantity(item.id, qty)}
                       onRemove={() => handleRemove(item.id)}
                     />

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { useLocation } from 'react-router-dom';
 
 const DISMISS_KEY = 'kf_install_dismissed';
 
@@ -22,11 +23,16 @@ function isStandalone(): boolean {
   );
 }
 
+const BLACKLIST_PATHS = ['/checkout', '/order'];
+
 export default function PwaInstall() {
+  const location = useLocation();
+  const isCheckoutFlow = BLACKLIST_PATHS.some((p) => location.pathname.startsWith(p));
   const [visible, setVisible] = useState(false);
   const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
 
   useEffect(() => {
+    if (isCheckoutFlow) return;
     if (isStandalone()) return;
     if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
 
@@ -94,7 +100,7 @@ export default function PwaInstall() {
     }
   }, []);
 
-  if (!visible || isStandalone()) return null;
+  if (isCheckoutFlow || !visible || isStandalone()) return null;
 
   return (
     <div
