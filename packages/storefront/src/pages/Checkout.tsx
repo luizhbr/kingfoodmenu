@@ -1037,7 +1037,7 @@ function ClosedNotice() {
     <div className="mb-3 flex items-start gap-2 rounded-kf-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
       <span aria-hidden>🔴</span>
       <p>
-        {t('checkout.closedNotice', 'A loja está fechada agora. Seu pedido será preparado quando abrirmos — {detail}.', { detail: openStatus.detail })}
+        {t('checkout.closedNotice', 'A loja está fechada agora. Seu pedido será preparado quando abrirmos — {{detail}}.', { detail: openStatus.detail })}
       </p>
     </div>
   );
