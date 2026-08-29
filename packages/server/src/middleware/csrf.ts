@@ -98,6 +98,11 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction):
     return next();
   }
 
+  // Skip for rewards API (Bearer-only endpoint, like /api/orders PATCH)
+  if (req.path.startsWith('/api/rewards')) {
+    return next();
+  }
+
   // Skip for password reset endpoints (public POST — same pattern as guest checkout)
   if (req.path === '/api/auth/customer/forgot-password' && req.method === 'POST') {
     return next();
