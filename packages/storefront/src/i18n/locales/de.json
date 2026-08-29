@@ -235,7 +235,8 @@
     "welcomeCreditDesc": "Sie haben {{amount}} Anmeldeguthaben für diese Bestellung.",
     "welcomeCreditCap": "Für diese Bestellung gelten bis zu {{cap}} (Grenze: 20% des Zwischensumme).",
     "useWelcomeCredit": "Mein Guthaben für diese Bestellung verwenden",
-    "welcomeCreditSummary": "Willkommensguthaben"
+    "welcomeCreditSummary": "Willkommensguthaben",
+    "orderFailed": "Ihre Bestellung konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihre Angaben und versuchen Sie es erneut."
   },
   "orderConfirmation": {
     "title": "Bestellung Aufgegeben!",

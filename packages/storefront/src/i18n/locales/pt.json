@@ -235,7 +235,8 @@
     "welcomeCreditDesc": "Você tem {{amount}} de crédito de cadastro para usar neste pedido.",
     "welcomeCreditCap": "Neste pedido, é aplicável até {{cap}} (limite de 20% do subtotal).",
     "useWelcomeCredit": "Usar meu crédito neste pedido",
-    "welcomeCreditSummary": "Crédito de boas-vindas"
+    "welcomeCreditSummary": "Crédito de boas-vindas",
+    "orderFailed": "Não foi possível concluir seu pedido. Revise os dados e tente novamente."
   },
   "orderConfirmation": {
     "title": "Pedido Realizado!",

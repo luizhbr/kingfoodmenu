@@ -462,8 +462,17 @@ useEffect(() => {
       });
       const data = await res.json();
       if (!res.ok) {
-        const msg = data.error || t('common.error', 'Algo deu errado');
-        throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+        // NEVER surface raw validation payloads (Zod issues array, JSON blobs)
+        // to the customer. Only server-provided human-readable strings pass
+        // through; anything else becomes a generic friendly message.
+        const raw: unknown = data.error;
+        let msg: string;
+        if (typeof raw === 'string' && raw.trim() && raw.length < 300 && !raw.startsWith('[') && !raw.startsWith('{')) {
+          msg = raw;
+        } else {
+          msg = t('checkout.orderFailed', 'Não foi possível concluir seu pedido. Revise os dados e tente novamente.');
+        }
+        throw new Error(msg);
       }
 
       const orderId = data.data.id as string;
@@ -488,7 +497,11 @@ useEffect(() => {
       clear();
       navigate(`/order/${orderId}`, { state: { order: data.data } });
     } catch (err: any) {
-      setError(err.message || t('common.error'));
+      let m: string = String(err?.message ?? '');
+      if (!m || m.startsWith('[') || m.startsWith('{') || m.length > 300) {
+        m = t('checkout.orderFailed', 'Não foi possível concluir seu pedido. Revise os dados e tente novamente.');
+      }
+      setError(m);
     } finally {
       setLoading(false);
     }

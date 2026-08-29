@@ -77,10 +77,13 @@ const createOrderSchema = z.object({
       state: z.string().min(1),
       zip: z.string().min(1),
       country: z.string().default('US'),
-      lat: z.number().optional(),
-      lng: z.number().optional(),
-      placeId: z.string().optional(),
-      formattedAddress: z.string().optional(),
+      // Coordinates are OPTIONAL and nullable: geocoding via Places Autocomplete
+      // may not have run (manual address typing). Without coordinates the
+      // server falls back to the flat/polygon-zone delivery fee.
+      lat: z.number().nullable().optional(),
+      lng: z.number().nullable().optional(),
+      placeId: z.string().nullable().optional(),
+      formattedAddress: z.string().nullable().optional(),
     })
     .optional(),
   guestName: z.string().optional(),

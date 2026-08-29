@@ -235,7 +235,8 @@
     "welcomeCreditDesc": "You have {{amount}} in signup credit to use on this order.",
     "welcomeCreditCap": "On this order, up to {{cap}} applies (20% of subtotal limit).",
     "useWelcomeCredit": "Use my credit on this order",
-    "welcomeCreditSummary": "Welcome credit"
+    "welcomeCreditSummary": "Welcome credit",
+    "orderFailed": "We couldn't place your order. Please check your details and try again."
   },
   "orderConfirmation": {
     "title": "Order Placed!",
