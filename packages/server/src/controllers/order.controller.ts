@@ -3,7 +3,7 @@ import { z } from 'zod';
 import prisma from '../lib/db.js';
 import type { AttributionSource } from '@prisma/client';
 import { emitNewOrder, emitOrderStatusUpdate } from '../lib/socket.js';
-import { isPointInPolygon } from '../lib/geo.js';
+import { isPointInPolygon, haversineMiles, deliveryFeeForDistance, DELIVERY_MAX_MILES } from '../lib/geo.js';
 import { sendEmail, orderConfirmationEmail, orderStatusEmail } from '../lib/email.js';
 import { auditLog } from '../lib/audit.js';
 import { notifyOrderWhatsApp } from '../lib/whatsapp.js';
@@ -295,7 +295,23 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       formattedAddress: address!.formattedAddress ?? null,
     };
 
-    if (address?.lat != null && address?.lng != null) {
+    if (address?.lat != null && address?.lng != null && location.lat != null && location.lng != null) {
+      // Distance-based pricing (authoritative): Haversine from the store
+      // coordinates to the delivery address. The client never sends the fee.
+      const distanceMiles =
+        Math.round(haversineMiles(location.lat, location.lng, address.lat, address.lng) * 100) / 100;
+      const tierFee = deliveryFeeForDistance(distanceMiles);
+      if (tierFee == null) {
+        res.status(400).json({
+          success: false,
+          error: `Seu endereço está fora da nossa área de entrega (até ${DELIVERY_MAX_MILES} milhas). Considere a opção de retirada.`,
+          data: { distanceMiles, maxMiles: DELIVERY_MAX_MILES },
+        });
+        return;
+      }
+      deliveryFee = tierFee;
+    } else if (address?.lat != null && address?.lng != null) {
+      // No store origin configured — fall back to polygon zones.
       const zones = await prisma.deliveryZone.findMany({
         where: { locationId: location.id, isActive: true },
       });

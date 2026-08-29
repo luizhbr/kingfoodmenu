@@ -42,7 +42,7 @@ export default function Checkout() {
 
   const [orderType, setOrderType] = useState<OrderType>('delivery');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
-  const [address, setAddress] = useState({ line1: '', line2: '', city: '', state: '', zip: '' });
+  const [address, setAddress] = useState({ line1: '', line2: '', city: '', state: '', zip: '', lat: null as number | null, lng: null as number | null, placeId: null as string | null });
 const [predictions, setPredictions] = useState<google.maps.places.AutocompleteSuggestion[]>([]);
 const [selectedPlace, setSelectedPlace] = useState<google.maps.places.Place | null>(null);
 const [loadingPredictions, setLoadingPredictions] = useState(false);
@@ -115,7 +115,7 @@ useEffect(() => {
         if (draft.guestEmail !== undefined) setGuestEmail(draft.guestEmail);
         if (draft.guestPhone !== undefined) setGuestPhone(draft.guestPhone);
         if (draft.orderType) setOrderType(draft.orderType);
-        if (draft.address) setAddress(draft.address);
+        if (draft.address) setAddress({ lat: null, lng: null, placeId: null, ...draft.address });
         if (draft.comment !== undefined) setComment(draft.comment);
       }
     } catch {}
@@ -264,6 +264,8 @@ useEffect(() => {
             credentials: 'include',
             body: JSON.stringify({
               locationId: locationId || undefined,
+              lat: address.lat ?? undefined,
+              lng: address.lng ?? undefined,
               line1: address.line1,
               city: address.city,
               state: address.state,
@@ -533,7 +535,7 @@ useEffect(() => {
       const place = suggestion.placePrediction?.toPlace();
       if (!place) return;
       const { place: detailed } = await place.fetchFields({
-        fields: ['addressComponents', 'formattedAddress'],
+        fields: ['addressComponents', 'formattedAddress', 'location'],
       });
       setSelectedPlace(detailed);
       // Build address from components — never invent a street number
@@ -554,6 +556,16 @@ useEffect(() => {
       updateAddress('city', city);
       updateAddress('state', state);
       updateAddress('zip', zip);
+      // Coordinates power server-side distance pricing (Haversine from the store).
+      const loc = detailed.location;
+      const latNum = typeof loc?.lat === 'function' ? loc.lat() : loc?.lat;
+      const lngNum = typeof loc?.lng === 'function' ? loc.lng() : loc?.lng;
+      setAddress((p) => ({
+        ...p,
+        lat: typeof latNum === 'number' && Number.isFinite(latNum) ? latNum : null,
+        lng: typeof lngNum === 'number' && Number.isFinite(lngNum) ? lngNum : null,
+        placeId: place.id ?? null,
+      }));
       setPredictions([]);
       line1Ref.current?.blur();
     } catch {
@@ -739,7 +751,22 @@ function getDefaultScheduleTime(): string {
               <Card data-section="address" className="p-5">
                 <h2 className="text-lg font-bold text-kf-foreground mb-4">{t('checkout.deliveryAddress', 'Endereço de Entrega')}</h2>
                 {zoneError && (
-                  <div className="mb-3 rounded-kf-md bg-kf-danger/10 p-3 text-sm text-kf-danger">{zoneError}</div>
+                  <div className="mb-3 rounded-kf-md bg-kf-danger/10 p-3 text-sm text-kf-danger" data-testid="zone-error">
+                    {zoneError}
+                    {/fora da nossa/i.test(zoneError) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOrderType('pickup');
+                          setZoneError('');
+                        }}
+                        className="mt-2 block rounded-kf-full bg-kf-foreground px-4 py-1.5 text-xs font-bold text-kf-bg"
+                        data-testid="zone-error-pickup-btn"
+                      >
+                        🏪 {t('checkout.pickup', 'Retirada')}
+                      </button>
+                    )}
+                  </div>
                 )}
                 <div className="space-y-3">
                   <div ref={line1Ref} className="relative w-full">

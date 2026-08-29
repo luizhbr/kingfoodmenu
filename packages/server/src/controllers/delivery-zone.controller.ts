@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../lib/db.js';
+import { haversineMiles, deliveryFeeForDistance, DELIVERY_MAX_MILES } from '../lib/geo.js';
 import { isPointInPolygon } from '../lib/geo.js';
 
 /**
@@ -207,7 +208,23 @@ export async function checkDeliveryAddress(req: Request, res: Response): Promise
   }
 
   let matchedZone = zones[0];
-  if (lat != null && lng != null) {
+  let distanceMiles: number | null = null;
+  let fee: number | null = matchedZone.charge;
+
+  if (lat != null && lng != null && location.lat != null && location.lng != null) {
+    // Distance-based pricing (authoritative): Haversine from the store.
+    distanceMiles = Math.round(haversineMiles(location.lat, location.lng, lat, lng) * 100) / 100;
+    fee = deliveryFeeForDistance(distanceMiles);
+    if (fee == null) {
+      res.status(404).json({
+        success: false,
+        error: `Seu endereço está fora da nossa área de entrega (até ${DELIVERY_MAX_MILES} milhas). Considere a opção de retirada.`,
+        data: { distanceMiles, maxMiles: DELIVERY_MAX_MILES },
+      });
+      return;
+    }
+  } else if (lat != null && lng != null) {
+    // Coordinates present but the store has no origin — fall back to polygon zones.
     const polygonZones = zones.filter((zone) => zone.boundaries && Array.isArray(zone.boundaries));
     if (polygonZones.length > 0) {
       const polygonMatch = polygonZones.find((zone) =>
@@ -218,6 +235,7 @@ export async function checkDeliveryAddress(req: Request, res: Response): Promise
         return;
       }
       matchedZone = polygonMatch;
+      fee = matchedZone.charge;
     }
   }
 
@@ -225,11 +243,12 @@ export async function checkDeliveryAddress(req: Request, res: Response): Promise
     success: true,
     data: {
       eligible: true,
-      fee: matchedZone.charge,
+      fee,
       minOrder: matchedZone.minOrder,
       zoneId: matchedZone.id,
       zoneName: matchedZone.name,
       locationId: location.id,
+      ...(distanceMiles != null ? { distanceMiles } : {}),
     },
   });
 }
