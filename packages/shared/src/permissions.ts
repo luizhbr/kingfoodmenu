@@ -21,6 +21,7 @@ export type Permission =
   // Pedidos
   | 'orders.view'
   | 'orders.updateStatus'
+  | 'orders.create'
   | 'orders.delete'
   // Cozinha
   | 'kitchen.view'
@@ -81,6 +82,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: 'orders.view', label: 'Ver pedidos' },
       { key: 'orders.updateStatus', label: 'Mudar status' },
+      { key: 'orders.create', label: 'Criar pedido manual' },
       { key: 'orders.delete', label: 'Excluir pedidos' },
     ],
   },

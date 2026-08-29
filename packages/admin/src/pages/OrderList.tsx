@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import ManualOrderModal from '../components/ManualOrderModal.js';
 import OrderCard from '../components/OrderCard.js';
 import SoundActivationBanner from '../components/SoundActivationBanner.js';
 import { useOrderAlerts } from '../lib/useOrderAlerts.js';
@@ -153,7 +154,15 @@ export default function OrderList() {
     } finally {
       setDeleting(false);
     }
-  };
+  }
+
+  const [manualOrderOpen, setManualOrderOpen] = useState(false);
+
+  const handleManualOrderSuccess = useCallback(() => {
+    setManualOrderOpen(false);
+    loadOrders(true);
+  }, [loadOrders]);
+;
 
   const confirmBatchDelete = async () => {
     if (selected.size === 0 || deleting) return;
@@ -367,6 +376,11 @@ export default function OrderList() {
           </div>
         </div>
       )}
-    </div>
+    
+            <ManualOrderModal
+        isOpen={manualOrderOpen}
+        onClose={() => setManualOrderOpen(false)}
+        onSuccess={handleManualOrderSuccess}
+      /></div>
   );
 }

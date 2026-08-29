@@ -22,6 +22,7 @@ export type Permission =
   // Pedidos
   | 'orders.view'
   | 'orders.updateStatus'
+  | 'orders.create'
   | 'orders.delete'
   // Cozinha
   | 'kitchen.view'
@@ -85,6 +86,7 @@ export const PERMISSION_GROUPS: PermissionGroup[] = [
     permissions: [
       { key: 'orders.view', label: 'Ver pedidos' },
       { key: 'orders.updateStatus', label: 'Mudar status' },
+      { key: 'orders.create', label: 'Criar pedido manual' },
       { key: 'orders.delete', label: 'Excluir pedidos' },
     ],
   },
@@ -208,7 +210,7 @@ export const ROLE_DEFAULT_PERMISSIONS: Record<string, Permission[]> = {
   MANAGER: PERMISSION_GROUPS.filter((g) => !['staff', 'settings', 'finance', 'automation'].includes(g.id))
     .flatMap((g) => g.permissions.map((p) => p.key)),
   STAFF: [
-    'orders.view', 'orders.updateStatus',
+    'orders.view', 'orders.updateStatus', 'orders.create',
     'kitchen.view', 'kitchen.updateStatus',
     'menu.view',
     'print.view',
