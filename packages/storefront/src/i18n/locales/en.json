@@ -230,7 +230,12 @@
     "googleContinue": "Continue with Google",
     "googleSeconds": "Takes just a few seconds",
     "googleRewardTitle": "Account created!",
-    "googleRewardDesc": "You earned $3 OFF your next order."
+    "googleRewardDesc": "You earned $3 OFF your next order.",
+    "welcomeCredit": "Welcome credit",
+    "welcomeCreditDesc": "You have {{amount}} in signup credit to use on this order.",
+    "welcomeCreditCap": "On this order, up to {{cap}} applies (20% of subtotal limit).",
+    "useWelcomeCredit": "Use my credit on this order",
+    "welcomeCreditSummary": "Welcome credit"
   },
   "orderConfirmation": {
     "title": "Order Placed!",

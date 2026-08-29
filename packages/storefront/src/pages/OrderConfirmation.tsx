@@ -31,6 +31,7 @@ type Order = {
   status?: string;
   subtotal?: number;
   total?: number;
+  discount?: number;
   deliveryFee?: number;
   deliveryLine1?: string | null;
   deliveryLine2?: string | null;
@@ -186,6 +187,12 @@ export default function OrderConfirmation() {
               <span className="text-kf-muted">{t('checkout.subtotal', 'Subtotal')}</span>
               <Price value={order?.subtotal ?? 0} size="sm" />
             </div>
+            {!!order?.discount && order.discount > 0 && (
+              <div className="flex justify-between" data-testid="order-discount-line">
+                <span className="text-kf-muted">{t('checkout.discount', 'Desconto')}</span>
+                <Price value={-order.discount} size="sm" className="text-kf-success" />
+              </div>
+            )}
             {isDelivery && (
               <div className="flex justify-between">
                 <span className="text-kf-muted">{t('checkout.deliveryFee', 'Taxa de entrega')}</span>

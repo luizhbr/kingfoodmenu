@@ -154,6 +154,9 @@ useEffect(() => {
 
   // Loyalty
   const [loyaltyBalance, setLoyaltyBalance] = useState(0);
+  // Welcome credit (google_signup_bonus) — fetched from the account, never localStorage.
+  const [welcomeCredit, setWelcomeCredit] = useState<{ amount: number; id: string } | null>(null);
+  const [rewardUse, setRewardUse] = useState(false);
   const [loyaltyRedeem, setLoyaltyRedeem] = useState(0);
   const loyaltyDiscount = loyaltyRedeem / 100;
 
@@ -163,7 +166,19 @@ useEffect(() => {
 
   const tax = subtotal * TAX_RATE;
   const currentDeliveryFee = orderType === 'delivery' ? (couponApplied?.freeDelivery ? 0 : deliveryFee) : 0;
-  const total = Math.max(0, subtotal + tax + currentDeliveryFee - loyaltyDiscount);
+  // Welcome credit actually applicable to THIS order: server enforces the
+  // benefit cap (20% do subtotal, menos cupom/pontos já usados). Mirrors the
+  // server formula so the UI communicates the real value upfront.
+  const capPercent = 0.2; // benefitCapPercent (matches server default/production)
+  const alreadyDiscounted = (couponApplied?.discount || 0) + loyaltyDiscount;
+  const welcomeCap = Math.max(0, subtotal * capPercent - alreadyDiscounted);
+  const welcomeCreditApplied = rewardUse && welcomeCredit
+    ? Math.round(Math.min(welcomeCredit.amount, welcomeCap) * 100) / 100
+    : 0;
+  const total = Math.max(
+    0,
+    subtotal + tax + currentDeliveryFee - loyaltyDiscount - welcomeCreditApplied
+  );
 
   useEffect(() => {
     fetch(`${API_BASE}/api/locations`)
@@ -189,6 +204,33 @@ useEffect(() => {
           if (data.success) setLoyaltyBalance(data.data.points);
         })
         .catch(() => {});
+    }
+  }, [token]);
+
+  // Welcome credit available on the account (server is the source of truth).
+  useEffect(() => {
+    if (token) {
+      fetch(`${API_BASE}/api/rewards/mine`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && Array.isArray(data.data)) {
+            const now = Date.now();
+            const avail = data.data.find(
+              (r: any) =>
+                r.status === 'AVAILABLE' &&
+                r.type === 'google_signup_bonus' &&
+                (!r.expiresAt || new Date(r.expiresAt).getTime() > now)
+            );
+            setWelcomeCredit(avail ? { amount: avail.amount, id: avail.id } : null);
+          } else {
+            setWelcomeCredit(null);
+          }
+        })
+        .catch(() => setWelcomeCredit(null));
+    } else {
+      setWelcomeCredit(null);
     }
   }, [token]);
 
@@ -402,6 +444,9 @@ useEffect(() => {
 
       if (loyaltyRedeem > 0) {
         body.loyaltyPointsRedeem = loyaltyRedeem;
+      }
+      if (rewardUse && welcomeCredit) {
+        body.rewardUse = true;
       }
 
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -889,6 +934,40 @@ function getDefaultScheduleTime(): string {
               </Card>
             )}
 
+            {/* 7a. Crédito de boas-vindas (conta logada) */}
+            {user && welcomeCredit && (
+              <Card data-testid="welcome-credit-section" className="p-5">
+                <h2 className="text-lg font-bold text-kf-foreground mb-1">🎁 {t('checkout.welcomeCredit', 'Crédito de boas-vindas')}</h2>
+                <p className="text-sm text-kf-muted mb-3">
+                  {t(
+                    'checkout.welcomeCreditDesc',
+                    'Você tem {{amount}} de crédito de cadastro para usar neste pedido.'
+                  ).replace('{{amount}}', `$${welcomeCredit.amount.toFixed(2)}`)}
+                  {welcomeCap < welcomeCredit.amount && (
+                    <span className="block mt-1 text-kf-muted">
+                      {t(
+                        'checkout.welcomeCreditCap',
+                        'Neste pedido, é aplicável até {{cap}} (limite de 20% do subtotal).'
+                      ).replace('{{cap}}', `$${welcomeCap.toFixed(2)}`)}
+                    </span>
+                  )}
+                </p>
+                <label className="flex items-center gap-2 text-sm font-semibold text-kf-foreground cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rewardUse}
+                    onChange={(e) => setRewardUse(e.target.checked)}
+                    data-testid="welcome-credit-toggle"
+                    className="h-4 w-4 accent-kf-primary"
+                  />
+                  {t('checkout.useWelcomeCredit', 'Usar meu crédito neste pedido')}
+                  {welcomeCreditApplied > 0 && (
+                    <Price value={-welcomeCreditApplied} size="sm" className="text-kf-success" />
+                  )}
+                </label>
+              </Card>
+            )}
+
             {/* 7b. Oferta Google (visitantes) — entre Cupom e Pagamento */}
             {!user && (
               <Card data-testid="google-offer" className="p-5">
@@ -1008,6 +1087,9 @@ function getDefaultScheduleTime(): string {
                   )}
                   {loyaltyDiscount > 0 && (
                     <SummaryRow label={t('checkout.loyalty', 'Fidelidade')} value={-loyaltyDiscount} className="text-kf-success" />
+                  )}
+                  {welcomeCreditApplied > 0 && (
+                    <SummaryRow label={t('checkout.welcomeCreditSummary', 'Crédito de boas-vindas')} value={-welcomeCreditApplied} className="text-kf-success" />
                   )}
                   <div className="flex items-center justify-between border-t border-kf-border pt-2 text-base font-bold">
                     <span className="text-kf-foreground">{t('checkout.total', 'Total')}</span>

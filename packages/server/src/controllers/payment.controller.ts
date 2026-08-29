@@ -237,6 +237,10 @@ export async function createCheckoutSession(req: Request, res: Response): Promis
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
+      // Only payment rails confirmed for this account's payouts.
+      // Other methods (Klarna/Cash App/Amazon Pay/ACH) must be enabled
+      // explicitly in the Stripe Dashboard AND here before being offered.
+      payment_method_types: ['card', 'link'],
       line_items: lineItems,
       success_url: `${publicUrl}/order/${order.id}?paid=true`,
       cancel_url: `${publicUrl}/checkout`,

@@ -230,7 +230,12 @@
     "googleContinue": "Continuar com Google",
     "googleSeconds": "Leva apenas alguns segundos",
     "googleRewardTitle": "Conta criada!",
-    "googleRewardDesc": "Você ganhou $3 OFF para seu próximo pedido."
+    "googleRewardDesc": "Você ganhou $3 OFF para seu próximo pedido.",
+    "welcomeCredit": "Credito di benvenuto",
+    "welcomeCreditDesc": "Hai {{amount}} di credito di registrazione da usare su questo ordine.",
+    "welcomeCreditCap": "Su questo ordine si applicano fino a {{cap}} (limite del 20% del subtotal).",
+    "useWelcomeCredit": "Usa il mio credito su questo ordine",
+    "welcomeCreditSummary": "Credito di benvenuto"
   },
   "orderConfirmation": {
     "title": "Ordine Effettuato!",

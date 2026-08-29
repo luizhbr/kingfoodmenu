@@ -87,6 +87,9 @@ const createOrderSchema = z.object({
   guestEmail: z.string().email().optional(),
   guestPhone: z.string().optional(),
   loyaltyPointsRedeem: z.number().int().min(0).optional(),
+  // Welcome-credit toggle: apply the customer's AVAILABLE welcome reward
+  // (e.g. google_signup_bonus $3) to this order. Server owns the amount.
+  rewardUse: z.boolean().optional(),
   // Client-generated key so a retried/double-submitted request returns the
   // SAME order instead of creating a duplicate (idempotency).
   idempotencyKey: z.string().min(8).max(128).optional(),
@@ -165,6 +168,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     guestEmail,
     guestPhone,
     loyaltyPointsRedeem,
+    rewardUse,
     couponCode,
     cashbackUse,
     idempotencyKey,
@@ -460,6 +464,32 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
+  // ── Welcome reward credit (server-side) ─────────────────────────────────────
+  // If the authenticated customer opts in (rewardUse), apply their AVAILABLE
+  // welcome reward (google_signup_bonus). The SERVER owns the amount — capped
+  // by the benefit cap (same pool as coupon + points + cashback) and never
+  // below $0. The reward is debited (status REDEEMED) only AFTER the order is
+  // created, linked to the real orderId.
+  let rewardUsed = 0;
+  let rewardRecord: { id: string; amount: number } | null = null;
+  if (rewardUse && customerId) {
+    const reward = await prisma.customerReward.findFirst({
+      where: {
+        customerId,
+        type: 'google_signup_bonus',
+        status: 'AVAILABLE',
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (reward) {
+      const cfg = await getLoyaltySettingsValue();
+      const capRemaining = Math.max(0, subtotal * cfg.benefitCapPercent - (loyaltyDiscount + couponDiscount));
+      rewardUsed = Math.round(Math.min(reward.amount, capRemaining) * 100) / 100;
+      if (rewardUsed > 0) rewardRecord = { id: reward.id, amount: reward.amount };
+    }
+  }
+
   // ── Cashback (server-side) ──────────────────────────────────────────────────
   // The client only sends the amount they want to use. The server caps it at
   // the eligible subtotal (subtotal - coupon discount), and the actual DEBIT
@@ -469,7 +499,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   if (cashbackUse && cashbackUse > 0 && customerId) {
     const benefitCap = await getLoyaltySettingsValue().then((v) => v.benefitCapPercent);
     // Teto de benefício: cupom + pontos + cashback juntos não passam de X% do subtotal.
-    const alreadyUsed = loyaltyDiscount + couponDiscount;
+    const alreadyUsed = loyaltyDiscount + couponDiscount + rewardUsed;
     const capRemaining = Math.max(0, subtotal * benefitCap - alreadyUsed);
     const eligibleBase = Math.min(Math.max(0, subtotal - couponDiscount), capRemaining);
     cashbackUsed = Math.min(cashbackUse, eligibleBase);
@@ -487,7 +517,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   const TAX_RATE = 0.08;
   const tax = subtotal * TAX_RATE;
   // tax base stays on full subtotal (existing rule); discounts subtract from total
-  const total = Math.max(0, subtotal + tax + deliveryFee - loyaltyDiscount - couponDiscount - cashbackUsed);
+  const total = Math.max(0, subtotal + tax + deliveryFee - loyaltyDiscount - couponDiscount - cashbackUsed - rewardUsed);
 
   let order;
   try {
@@ -509,7 +539,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         subtotal,
         tax,
         deliveryFee,
-        discount: loyaltyDiscount + couponDiscount,
+        discount: loyaltyDiscount + couponDiscount + rewardUsed,
         couponId,
         total,
         comment,
@@ -594,6 +624,23 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
       await linkDebitToOrder(customerId, `ck-${idempotencyKey}`, order.id);
     } catch (err: any) {
       console.error('[cashback] link failed', order.id, err.message);
+    }
+  }
+
+  // Debit the welcome reward ONLY after the order exists (links the real orderId).
+  if (rewardRecord && rewardUsed > 0) {
+    try {
+      await prisma.customerReward.update({
+        where: { id: rewardRecord.id },
+        data: {
+          status: 'REDEEMED',
+          redeemedAt: new Date(),
+          orderId: order.id,
+        },
+      });
+    } catch (err: any) {
+      // Não deve falhar o pedido por isso — o total já foi calculado com o crédito.
+      console.error('[rewards] redeem failed', order.id, err.message);
     }
   }
 
@@ -701,7 +748,12 @@ if (customerId) {
     }
   }
 
-  res.status(201).json({ success: true, data: order });
+  res.status(201).json({
+    success: true,
+    data: order,
+    // Info for the storefront confirmation screen.
+    rewardApplied: rewardUsed > 0 ? { amount: rewardUsed } : null,
+  });
 }
 
 export async function listOrders(req: Request, res: Response): Promise<void> {

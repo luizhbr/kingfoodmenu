@@ -230,7 +230,12 @@
     "googleContinue": "Continuar com Google",
     "googleSeconds": "Leva apenas alguns segundos",
     "googleRewardTitle": "Conta criada!",
-    "googleRewardDesc": "Você ganhou $3 OFF para seu próximo pedido."
+    "googleRewardDesc": "Você ganhou $3 OFF para seu próximo pedido.",
+    "welcomeCredit": "Willkommensguthaben",
+    "welcomeCreditDesc": "Sie haben {{amount}} Anmeldeguthaben für diese Bestellung.",
+    "welcomeCreditCap": "Für diese Bestellung gelten bis zu {{cap}} (Grenze: 20% des Zwischensumme).",
+    "useWelcomeCredit": "Mein Guthaben für diese Bestellung verwenden",
+    "welcomeCreditSummary": "Willkommensguthaben"
   },
   "orderConfirmation": {
     "title": "Bestellung Aufgegeben!",
