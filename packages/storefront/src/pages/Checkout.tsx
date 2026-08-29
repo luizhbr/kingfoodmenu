@@ -508,7 +508,7 @@ function getDefaultScheduleTime(): string {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-kf-bg px-4 py-16 text-center">
+      <div className="bg-kf-bg px-4 py-16 text-center">
         <div className="mx-auto max-w-md">
           <div className="mb-4 text-6xl">🛒</div>
           <h1 className="text-xl font-bold text-kf-foreground mb-2">{t('checkout.emptyCart', 'Seu carrinho está vazio')}</h1>
@@ -535,7 +535,7 @@ function getDefaultScheduleTime(): string {
   const stepCtaAction = isLastStep ? () => handleSubmit() : goNext;
 
   return (
-    <div className="min-h-screen bg-kf-bg pb-[calc(var(--kf-nav-h)+5.5rem)]">
+    <div className="bg-kf-bg pb-[calc(var(--kf-nav-h)+5.5rem)]">
       <main className="mx-auto max-w-3xl px-4 pt-[72px] pb-6 lg:max-w-6xl lg:px-8 lg:pt-8 lg:pb-10">
         <h1 className="text-2xl font-extrabold text-kf-foreground mb-4">{t('checkout.title', 'Finalizar Pedido')}</h1>
 
