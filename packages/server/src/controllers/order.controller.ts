@@ -64,6 +64,10 @@ const orderItemSchema = z.object({
 const createOrderSchema = z.object({
   orderType: z.enum(['DELIVERY', 'PICKUP']),
   paymentMethod: z.enum(['cash', 'stripe', 'paypal']).optional().default('cash'),
+  // PDV/admin only: payment already collected at the counter (cash or card
+  // machine) — order is born PENDING with a COMPLETED payment record,
+  // skipping the Stripe AWAITING_PAYMENT gate (no online charge).
+  paymentCollected: z.boolean().optional().default(false),
   items: z.array(orderItemSchema).min(1),
   comment: z.string().optional(),
   scheduledAt: z.string().optional(),
@@ -166,6 +170,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   const {
     orderType,
     paymentMethod,
+    paymentCollected,
     items,
     comment,
     scheduledAt,
@@ -568,7 +573,10 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
         // AWAITING_PAYMENT and are flipped to PENDING by the webhook
         // (payment_intent.succeeded). Cash/pickup orders are PENDING
         // immediately with an explicit CASH payment record.
-        status: paymentMethod === 'stripe' || paymentMethod === 'paypal'
+        // Online gate only when the payment was NOT already collected at the counter.
+        // PDV: cartão coletado na loja → pedido nasce PENDING (visível ao admin)
+        // e ganha registro STRIPE COMPLETED abaixo, igual ao fluxo cash.
+        status: (paymentMethod === 'stripe' || paymentMethod === 'paypal') && !paymentCollected
           ? 'AWAITING_PAYMENT'
           : 'PENDING',
         subtotal,
@@ -619,11 +627,15 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
   // Cash on delivery/pickup: record the explicit payment immediately.
   // The order is already PENDING (visible to admin) — this row is the
   // "pago_na_entrega" marker the kitchen/driver sees.
-  if (paymentMethod === 'cash') {
+  // Cash on delivery/pickup OR card collected at the counter (PDV):
+  // explicit COMPLETED payment record — the "pago" marker the kitchen sees.
+  const collectedAtCounter = paymentMethod === 'cash' ||
+    ((paymentMethod === 'stripe' || paymentMethod === 'paypal') && paymentCollected);
+  if (collectedAtCounter) {
     await prisma.payment.create({
       data: {
         orderId: order.id,
-        method: 'CASH',
+        method: paymentMethod === 'stripe' ? 'STRIPE' : paymentMethod === 'paypal' ? 'PAYPAL' : 'CASH',
         status: 'COMPLETED',
         amount: order.total,
       },

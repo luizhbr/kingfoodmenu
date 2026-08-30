@@ -159,6 +159,9 @@ export default function ManualOrderModal({ isOpen, onClose, onSuccess }: Props) 
       const body: Record<string, any> = {
         orderType,
         paymentMethod,
+        // PDV: o pagamento é coletado na loja (dinheiro ou maquininha de cartão).
+        // O pedido nasce PENDING (visível no admin) — sem gate de Stripe online.
+        paymentCollected: true,
         items: orderLines.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })),
       };
 
