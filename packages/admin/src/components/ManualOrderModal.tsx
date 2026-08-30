@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api } from '../lib/api.js';
 
 interface CustomerOption {
@@ -6,22 +6,26 @@ interface CustomerOption {
   name: string;
   email: string;
   phone: string | null;
+  isGuest: boolean;
+  loyaltyPoints: number;
+  _count: { orders: number };
 }
 
 interface MenuItemOption {
   id: string;
   name: string;
   price: number;
-  category: string;
+  image: string | null;
+  description: string | null;
+  category: { id: string; name: string };
 }
 
-interface ManualOrderItem {
+interface OrderLine {
   menuItemId: string;
   name: string;
   quantity: number;
   unitPrice: number;
-  options: { name: string; value: string; priceModifier: number }[];
-  comment: string;
+  image: string | null;
 }
 
 interface DeliveryAddress {
@@ -43,148 +47,133 @@ interface Props {
 }
 
 export default function ManualOrderModal({ isOpen, onClose, onSuccess }: Props) {
-  
-  const [step, setStep] = useState<'customer' | 'items' | 'delivery' | 'payment' | 'review'>('customer');
+  const [orderType, setOrderType] = useState<'DELIVERY' | 'PICKUP'>('PICKUP');
+
+  const [customerQuery, setCustomerQuery] = useState('');
+  const [customerResults, setCustomerResults] = useState<CustomerOption[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerOption | null>(null);
+  const [customerOpen, setCustomerOpen] = useState(false);
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const customerTimer = useRef<number | null>(null);
+
+  const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
+  const [productQuery, setProductQuery] = useState('');
+  const [orderLines, setOrderLines] = useState<OrderLine[]>([]);
+
+  const [address, setAddress] = useState<DeliveryAddress>({
+    line1: '', line2: '', city: '', state: '', zip: '', country: 'US', lat: null, lng: null, placeId: null,
+  });
+  const [deliveryFee, setDeliveryFee] = useState(0);
+  const [zoneError, setZoneError] = useState('');
+
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'stripe'>('cash');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Customer
-  const [customers, setCustomers] = useState<CustomerOption[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
-
-  // Items
-  const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
-  const [orderItems, setOrderItems] = useState<ManualOrderItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // Delivery
-  const [orderType, setOrderType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY');
-  const [address, setAddress] = useState<DeliveryAddress>({
-    line1: '', line2: '', city: '', state: '', zip: '', country: 'US', lat: null, lng: null, placeId: null
-  });
-  const [zoneError, setZoneError] = useState('');
-  const [deliveryFee, setDeliveryFee] = useState(0);
-
-  // Payment
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'stripe'>('cash');
-
-  // Fetch customers on open
   useEffect(() => {
-    if (isOpen) {
-      api.get<{ success: boolean; data: CustomerOption[] }>('/customers?limit=200')
-        .then((res) => setCustomers(res.data))
-        .catch(() => setCustomers([]));
-      // Fetch menu items for selection
-      api.get<{ success: boolean; data: { categories: { name: string; menuItems: MenuItemOption[] }[] } }>('/menu')
-        .then((res) => {
-          const allItems: MenuItemOption[] = [];
-          res.data.categories?.forEach((cat) => {
-            cat.menuItems?.forEach((item) => allItems.push({ ...item, category: cat.name }));
-          });
-          setMenuItems(allItems);
-        })
-        .catch(() => setMenuItems([]));
-    }
+    if (!isOpen) return;
+    api.get<{ success: boolean; data: MenuItemOption[] }>('/menu/items?limit=100')
+      .then((res) => setMenuItems(res.data))
+      .catch(() => setMenuItems([]));
   }, [isOpen]);
 
-  // Zone check when address changes (delivery)
   useEffect(() => {
-    if (orderType === 'DELIVERY' && address.line1 && address.city && address.zip) {
-      const timeout = setTimeout(() => {
-        api.post<{ success: boolean; data: { fee: number; minOrder: number } }>('/delivery/zones/check', {
-          line1: address.line1, city: address.city, state: address.state, zip: address.zip,
-          lat: address.lat ?? undefined, lng: address.lng ?? undefined,
+    if (customerTimer.current) window.clearTimeout(customerTimer.current);
+    if (!customerQuery.trim()) {
+      setCustomerResults([]);
+      setCustomerOpen(false);
+      return;
+    }
+    customerTimer.current = window.setTimeout(() => {
+      setSearchingCustomer(true);
+      api.get<{ success: boolean; data: CustomerOption[] }>(`/customers?q=${encodeURIComponent(customerQuery.trim())}&limit=20`)
+        .then((res) => {
+          setCustomerResults(res.data);
+          setCustomerOpen(true);
         })
-          .then((res) => {
-            setDeliveryFee(res.data.fee);
-            setZoneError('');
-          })
-          .catch((err) => {
-            setDeliveryFee(0);
-            setZoneError(err.message || 'Endereço fora da área de entrega.');
-          });
-      }, 500);
-      return () => clearTimeout(timeout);
-    } else {
+        .catch(() => setCustomerResults([]))
+        .finally(() => setSearchingCustomer(false));
+    }, 300);
+    return () => {
+      if (customerTimer.current) window.clearTimeout(customerTimer.current);
+    };
+  }, [customerQuery]);
+
+  useEffect(() => {
+    if (orderType !== 'DELIVERY' || !address.line1 || !address.city || !address.zip) {
       setDeliveryFee(0);
       setZoneError('');
+      return;
     }
+    const timeout = window.setTimeout(() => {
+      api.post<{ success: boolean; data: { fee: number; minOrder: number } }>('/delivery/zones/check', {
+        line1: address.line1, city: address.city, state: address.state, zip: address.zip,
+        lat: address.lat ?? undefined, lng: address.lng ?? undefined,
+      })
+        .then((res) => { setDeliveryFee(res.data.fee); setZoneError(''); })
+        .catch((err: any) => { setDeliveryFee(0); setZoneError(err.message || 'Endereço fora da área de entrega.'); });
+    }, 500);
+    return () => window.clearTimeout(timeout);
   }, [address.line1, address.city, address.zip, orderType]);
 
-  const subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const subtotal = orderLines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0);
   const total = subtotal + deliveryFee;
 
-  const canProceedCustomer = selectedCustomerId || (guestName && guestEmail && guestPhone);
-  const canProceedItems = orderItems.length > 0;
-  const canProceedDelivery = orderType === 'PICKUP' || (address.line1 && address.city && address.zip && !zoneError);
-
-  const handleNext = () => {
-    if (step === 'customer' && !canProceedCustomer) return;
-    if (step === 'items' && !canProceedItems) return;
-    if (step === 'delivery' && !canProceedDelivery) return;
-    const steps = ['customer', 'items', 'delivery', 'payment', 'review'] as const;
-    const idx = steps.indexOf(step);
-    if (idx < steps.length - 1) setStep(steps[idx + 1]);
-  };
-
-  const handleBack = () => {
-    const steps = ['customer', 'items', 'delivery', 'payment', 'review'] as const;
-    const idx = steps.indexOf(step);
-    if (idx > 0) setStep(steps[idx - 1]);
-  };
-
-  const addItem = (item: MenuItemOption) => {
-    setOrderItems((prev) => {
-      const existing = prev.find((i) => i.menuItemId === item.id && i.options.length === 0 && !i.comment);
+  const addProduct = (item: MenuItemOption) => {
+    setOrderLines((prev) => {
+      const existing = prev.find((l) => l.menuItemId === item.id);
       if (existing) {
-        return prev.map((i) => i === existing ? { ...i, quantity: i.quantity + 1 } : i);
+        return prev.map((l) => (l.menuItemId === item.id ? { ...l, quantity: l.quantity + 1 } : l));
       }
-      return [...prev, {
-        menuItemId: item.id,
-        name: item.name,
-        quantity: 1,
-        unitPrice: item.price,
-        options: [],
-        comment: '',
-      }];
+      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, unitPrice: item.price, image: item.image }];
     });
-    setSearchQuery('');
   };
 
-  const updateItemQty = (id: string, qty: number) => {
-    if (qty <= 0) {
-      setOrderItems((prev) => prev.filter((i) => i.menuItemId !== id));
-    } else {
-      setOrderItems((prev) => prev.map((i) => i.menuItemId === id ? { ...i, quantity: qty } : i));
-    }
+  const changeQty = (menuItemId: string, delta: number) => {
+    setOrderLines((prev) =>
+      prev
+        .map((l) => (l.menuItemId === menuItemId ? { ...l, quantity: l.quantity + delta } : l))
+        .filter((l) => l.quantity > 0)
+    );
   };
+
+  const selectCustomer = (c: CustomerOption) => {
+    setSelectedCustomer(c);
+    setCustomerQuery(c.name);
+    setCustomerOpen(false);
+  };
+
+  const clearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerQuery('');
+    setCustomerResults([]);
+  };
+
+  const canSubmit = orderLines.length > 0 && (orderType === 'PICKUP' || (address.line1 && address.city && address.zip && !zoneError));
 
   const submitOrder = async () => {
+    if (!canSubmit) return;
     setLoading(true);
     setError(null);
     try {
       const body: Record<string, any> = {
         orderType,
         paymentMethod,
-        items: orderItems.map((i) => ({
-          menuItemId: i.menuItemId,
-          quantity: i.quantity,
-          comment: i.comment || undefined,
-          options: i.options,
-        })),
+        items: orderLines.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })),
       };
 
-      if (selectedCustomerId) {
-        // customerId will be resolved server-side from token? createOrder expects customerId from auth
-        // We don't send customerId; the server uses req.user.id if staff creates for authenticated customer
-        // For guest, we send guest fields
+      if (selectedCustomer) {
+        body.customerId = selectedCustomer.id;
       } else {
-        body.guestName = guestName;
-        body.guestEmail = guestEmail;
-        body.guestPhone = guestPhone;
+        const name = customerQuery.trim();
+        if (!name) {
+          setError('Informe o nome do cliente.');
+          setLoading(false);
+          return;
+        }
+        body.guestName = name;
+        body.guestEmail = `manual-${Date.now()}@kingfood.local`;
+        body.guestPhone = '';
       }
 
       if (orderType === 'DELIVERY') {
@@ -203,233 +192,203 @@ export default function ManualOrderModal({ isOpen, onClose, onSuccess }: Props) 
 
   if (!isOpen) return null;
 
+  const filteredProducts = menuItems.filter((m) =>
+    m.name.toLowerCase().includes(productQuery.toLowerCase())
+  );
+
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/50 p-4" onClick={onClose} role="dialog" aria-modal="true" aria-label={'Novo Pedido Manual'}>
-      <div className="bg-white rounded-2xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-kf-border sticky top-0 bg-white z-10">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-kf-primary/10 flex items-center justify-center">
-              <span className="text-xl">📝</span>
-            </div>
-            <h2 className="text-lg font-bold text-kf-foreground">{'Novo Pedido Manual'}</h2>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-kf-muted">
-            {['customer', 'items', 'delivery', 'payment', 'review'].map((s, i) => (
-              <span key={s} className={`px-2 py-1 rounded ${step === s ? 'bg-kf-primary text-white' : 'bg-kf-muted/20'}`}>
-                {i + 1}
-              </span>
-            ))}
-          </div>
+    <div className="fixed inset-0 z-[80] bg-kf-bg flex flex-col" role="dialog" aria-modal="true" aria-label="Novo pedido">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-kf-border bg-kf-surface sticky top-0 z-10">
+        <div className="flex items-center gap-2">
+          <button onClick={onClose} className="p-2 -ml-2 text-kf-muted hover:text-kf-foreground" aria-label="Fechar">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+          <h2 className="text-lg font-bold text-kf-foreground">Novo pedido</h2>
         </div>
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => setOrderType('PICKUP')}
+            className={`px-3 py-1.5 rounded-kf-full text-sm font-bold transition ${orderType === 'PICKUP' ? 'bg-kf-foreground text-kf-bg' : 'bg-kf-surface text-kf-muted border border-kf-border'}`}
+          >
+            Retirada
+          </button>
+          <button
+            onClick={() => setOrderType('DELIVERY')}
+            className={`px-3 py-1.5 rounded-kf-full text-sm font-bold transition ${orderType === 'DELIVERY' ? 'bg-kf-foreground text-kf-bg' : 'bg-kf-surface text-kf-muted border border-kf-border'}`}
+          >
+            Delivery
+          </button>
+        </div>
+      </div>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
-          {error && (
-            <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-700 text-sm" role="alert">{error}</div>
-          )}
-
-          {/* Step 1: Customer */}
-          {step === 'customer' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-kf-foreground">{'Cliente'}</h3>
-              <p className="text-sm text-kf-muted">{'Selecione um cliente existente ou preencha os dados do cliente avulso.'}</p>
-
-              {customers.length > 0 && (
-                <div className="space-y-2 max-h-60 overflow-y-auto">
-                  <label className="flex items-center gap-3 p-3 rounded-lg border border-kf-border hover:bg-kf-muted/30 cursor-pointer">
-                    <input type="radio" name="customer" checked={!selectedCustomerId} onChange={() => setSelectedCustomerId(null)} className="accent-kf-primary" />
-                    <div>
-                      <p className="font-medium text-kf-foreground">{'Cliente avulso'}</p>
-                      <p className="text-xs text-kf-muted">{'Preencha os dados abaixo'}</p>
-                    </div>
-                  </label>
-                  {customers.map((c) => (
-                    <label key={c.id} className="flex items-center gap-3 p-3 rounded-lg border border-kf-border hover:bg-kf-muted/30 cursor-pointer">
-                      <input type="radio" name="customer" checked={selectedCustomerId === c.id} onChange={() => setSelectedCustomerId(c.id)} className="accent-kf-primary" />
-                      <div>
-                        <p className="font-medium text-kf-foreground">{c.name}</p>
-                        <p className="text-xs text-kf-muted">{c.email} · {c.phone || 'sem telefone'}</p>
-                      </div>
-                    </label>
-                  ))}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-3xl mx-auto p-4 space-y-4">
+          <div className="relative">
+            <label className="block text-xs font-bold text-kf-muted mb-1">Cliente</label>
+            {selectedCustomer ? (
+              <div className="flex items-center gap-3 p-3 rounded-kf-lg border border-kf-primary bg-kf-primary/10">
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-kf-foreground truncate">{selectedCustomer.name}</p>
+                  <p className="text-xs text-kf-muted truncate">
+                    {selectedCustomer.phone || 'sem telefone'} · {selectedCustomer.email} · {selectedCustomer._count.orders} pedido(s)
+                  </p>
                 </div>
-              )}
-
-              {!selectedCustomerId && (
-                <div className="space-y-3 p-3 rounded-lg bg-kf-muted/30">
-                  <div className="grid grid-cols-2 gap-3">
-                    <input type="text" placeholder={'Nome'} value={guestName} onChange={(e) => setGuestName(e.target.value)} className="px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                    <input type="tel" placeholder={'Telefone'} value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} className="px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                  </div>
-                  <input type="email" placeholder={'E-mail'} value={guestEmail} onChange={(e) => setGuestEmail(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Items */}
-          {step === 'items' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-kf-foreground">{'Itens do Pedido'}</h3>
-                <span className="text-sm text-kf-muted">{orderItems.length} {'item(s)'}</span>
+                <button onClick={clearCustomer} className="text-xs font-bold text-kf-danger px-2 py-1">Trocar</button>
               </div>
-
-              <input type="text" placeholder={'Buscar item no cardápio...'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-
-              {orderItems.length === 0 ? (
-                <div className="py-8 text-center text-kf-muted">
-                  <p className="text-lg mb-2">🛒</p>
-                  <p>{'Nenhum item adicionado. Busque e clique para adicionar.'}</p>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {orderItems.map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3 p-3 rounded-lg border border-kf-border bg-white">
-                      <div className="flex-1">
-                        <p className="font-medium text-kf-foreground">{item.name}</p>
-                        <p className="text-sm text-kf-muted">{'Preço'}: ${item.unitPrice.toFixed(2)}</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => updateItemQty(item.menuItemId, item.quantity - 1)} className="w-8 h-8 rounded-lg border border-kf-border text-kf-foreground flex items-center justify-center">−</button>
-                        <span className="w-10 text-center font-bold">{item.quantity}</span>
-                        <button onClick={() => updateItemQty(item.menuItemId, item.quantity + 1)} className="w-8 h-8 rounded-lg border border-kf-border text-kf-foreground flex items-center justify-center">+</button>
-                        <span className="font-bold text-kf-foreground w-16 text-right">${(item.unitPrice * item.quantity).toFixed(2)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {menuItems.filter((m) => m.name.toLowerCase().includes(searchQuery.toLowerCase())).slice(0, 8).map((item) => (
-                <button key={item.id} onClick={() => addItem(item)} className="w-full text-left p-3 rounded-lg border border-kf-border hover:bg-kf-muted/30 transition-colors flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-kf-foreground">{item.name}</p>
-                    <p className="text-xs text-kf-muted">{item.category} · ${item.price.toFixed(2)}</p>
-                  </div>
-                  <span className="text-kf-primary">+</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Step 3: Delivery */}
-          {step === 'delivery' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-kf-foreground">{'Entrega / Retirada'}</h3>
-
-              <div className="flex gap-3">
-                <button onClick={() => setOrderType('PICKUP')} className={`flex-1 py-3 rounded-xl border-2 text-center font-bold transition ${orderType === 'PICKUP' ? 'border-kf-primary bg-kf-primary/10 text-kf-primary' : 'border-kf-border text-kf-muted hover:border-kf-primary'}`}>
-                  🏪 {'Retirada'}
-                </button>
-                <button onClick={() => setOrderType('DELIVERY')} className={`flex-1 py-3 rounded-xl border-2 text-center font-bold transition ${orderType === 'DELIVERY' ? 'border-kf-primary bg-kf-primary/10 text-kf-primary' : 'border-kf-border text-kf-muted hover:border-kf-primary'}`}>
-                  🚗 {'Entrega'}
-                </button>
-              </div>
-
-              {orderType === 'DELIVERY' && (
-                <div className="space-y-3">
-                  <input type="text" placeholder={'Endereço'} value={address.line1} onChange={(e) => setAddress({ ...address, line1: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                  <input type="text" placeholder={'Complemento (opcional)'} value={address.line2} onChange={(e) => setAddress({ ...address, line2: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                  <div className="grid grid-cols-3 gap-3">
-                    <input type="text" placeholder={'Cidade'} value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} className="px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                    <input type="text" placeholder={'Estado'} value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} className="px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                    <input type="text" placeholder={'CEP'} value={address.zip} onChange={(e) => setAddress({ ...address, zip: e.target.value })} className="px-3 py-2 rounded-lg border border-kf-border text-kf-foreground bg-white" />
-                  </div>
-                  {zoneError && (
-                    <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm" role="alert">{zoneError}</div>
-                  )}
-                  {deliveryFee > 0 && (
-                    <div className="p-3 rounded-lg bg-kf-success/10 text-kf-success text-sm font-medium">
-                      {'Taxa de entrega'}: ${deliveryFee.toFixed(2)}
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 4: Payment */}
-          {step === 'payment' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-kf-foreground">{'Pagamento'}</h3>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-kf-border cursor-pointer hover:bg-kf-muted/30">
-                  <input type="radio" name="payment" checked={paymentMethod === 'cash'} onChange={() => setPaymentMethod('cash')} className="accent-kf-primary" />
-                  <span className="font-medium text-kf-foreground">💵 {'Dinheiro'}</span>
-                </label>
-                <label className="flex items-center gap-3 p-3 rounded-lg border border-kf-border cursor-pointer hover:bg-kf-muted/30">
-                  <input type="radio" name="payment" checked={paymentMethod === 'stripe'} onChange={() => setPaymentMethod('stripe')} className="accent-kf-primary" />
-                  <span className="font-medium text-kf-foreground">💳 {'Cartão (link Stripe)'}</span>
-                </label>
-              </div>
-            </div>
-          )}
-
-          {/* Step 5: Review */}
-          {step === 'review' && (
-            <div className="space-y-4">
-              <h3 className="font-semibold text-kf-foreground">{'Revisar Pedido'}</h3>
-
-              <div className="p-3 rounded-lg bg-kf-muted/30">
-                <p className="font-medium">{'Cliente'}: {selectedCustomerId ? customers.find(c => c.id === selectedCustomerId)?.name || 'Cliente' : `${guestName} (${guestEmail}, ${guestPhone})`}</p>
-                <p className="font-medium">{'Tipo'}: {orderType === 'DELIVERY' ? 'Entrega' : 'Retirada'}</p>
-                {orderType === 'DELIVERY' && address.line1 && <p className="font-medium">{'Endereço'}: {address.line1}, {address.city} - {address.state} {address.zip}</p>}
-                <p className="font-medium">{'Pagamento'}: {paymentMethod === 'cash' ? 'Dinheiro' : 'Cartão'}</p>
-              </div>
-
-              <div className="space-y-2 border-t border-kf-border pt-3">
-                {orderItems.map((item, idx) => (
-                  <div key={idx} className="flex justify-between text-sm">
-                    <span>{item.quantity}x {item.name}</span>
-                    <span>${(item.unitPrice * item.quantity).toFixed(2)}</span>
-                  </div>
-                ))}
-                <div className="flex justify-between text-sm">
-                  <span>{'Subtotal'}</span>
-                  <span>${subtotal.toFixed(2)}</span>
-                </div>
-                {deliveryFee > 0 && (
-                  <div className="flex justify-between text-sm text-kf-muted">
-                    <span>{'Taxa de entrega'}</span>
-                    <span>${deliveryFee.toFixed(2)}</span>
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={customerQuery}
+                  onChange={(e) => setCustomerQuery(e.target.value)}
+                  onFocus={() => customerResults.length > 0 && setCustomerOpen(true)}
+                  placeholder="Buscar cliente por nome ou telefone..."
+                  className="w-full px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted"
+                />
+                {searchingCustomer && <span className="absolute right-3 top-9 text-xs text-kf-muted">buscando...</span>}
+                {customerOpen && customerResults.length > 0 && (
+                  <div className="absolute left-0 right-0 mt-1 rounded-kf-lg border border-kf-border bg-kf-surface shadow-kf-modal overflow-hidden z-20 max-h-64 overflow-y-auto">
+                    {customerResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => selectCustomer(c)}
+                        className="w-full text-left px-3 py-2.5 hover:bg-kf-muted/20 flex items-center justify-between gap-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="font-semibold text-kf-foreground truncate">{c.name}</p>
+                          <p className="text-xs text-kf-muted truncate">{c.phone || 'sem telefone'} · {c.email}</p>
+                        </div>
+                        <span className="text-xs text-kf-muted shrink-0">{c._count.orders} ped.</span>
+                      </button>
+                    ))}
                   </div>
                 )}
-                <div className="flex justify-between text-lg font-bold text-kf-foreground border-t border-kf-border pt-2">
-                  <span>{'Total'}</span>
-                  <span>${total.toFixed(2)}</span>
-                </div>
+              </>
+            )}
+          </div>
+
+          {orderType === 'DELIVERY' && (
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-kf-muted">Endereço de entrega</label>
+              <input
+                type="text"
+                value={address.line1}
+                onChange={(e) => setAddress({ ...address, line1: e.target.value })}
+                placeholder="Endereço"
+                className="w-full px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <input type="text" value={address.city} onChange={(e) => setAddress({ ...address, city: e.target.value })} placeholder="Cidade" className="px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted" />
+                <input type="text" value={address.state} onChange={(e) => setAddress({ ...address, state: e.target.value })} placeholder="Estado" className="px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted" />
+                <input type="text" value={address.zip} onChange={(e) => setAddress({ ...address, zip: e.target.value })} placeholder="CEP" className="px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted" />
               </div>
+              {zoneError && <p className="text-xs text-kf-danger">{zoneError}</p>}
+              {deliveryFee > 0 && <p className="text-xs font-bold text-kf-success">Taxa de entrega: ${deliveryFee.toFixed(2)}</p>}
             </div>
           )}
+
+          <div>
+            <label className="block text-xs font-bold text-kf-muted mb-1">Produtos</label>
+            <input
+              type="text"
+              value={productQuery}
+              onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Procurar produto"
+              className="w-full px-3 py-2.5 rounded-kf-lg border border-kf-border bg-kf-surface text-kf-foreground placeholder:text-kf-muted"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {filteredProducts.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => addProduct(item)}
+                className="text-left rounded-kf-lg border border-kf-border bg-kf-surface overflow-hidden hover:border-kf-primary transition"
+              >
+                <div className="aspect-square bg-kf-surface-muted overflow-hidden">
+                  {item.image ? (
+                    <img src={item.image} alt={item.name} loading="lazy" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-kf-muted text-3xl">🍧</div>
+                  )}
+                </div>
+                <div className="p-2">
+                  <p className="text-sm font-semibold text-kf-foreground leading-tight line-clamp-2">{item.name}</p>
+                  <p className="text-sm font-bold text-kf-foreground mt-1">${item.price.toFixed(2)}</p>
+                </div>
+              </button>
+            ))}
+            {filteredProducts.length === 0 && (
+              <p className="col-span-2 text-center text-kf-muted py-8">Nenhum produto encontrado.</p>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-kf-border bg-kf-surface px-4 py-3 sticky bottom-0 z-10">
+        {error && <p className="text-xs text-kf-danger mb-2">{error}</p>}
+
+        {orderLines.length > 0 && (
+          <div className="space-y-1.5 mb-3 max-h-40 overflow-y-auto">
+            {orderLines.map((l) => (
+              <div key={l.menuItemId} className="flex items-center gap-2 text-sm">
+                <span className="flex-1 text-kf-foreground truncate">{l.name}</span>
+                <div className="flex items-center gap-1.5">
+                  <button onClick={() => changeQty(l.menuItemId, -1)} className="w-7 h-7 rounded-kf-md border border-kf-border text-kf-foreground flex items-center justify-center">−</button>
+                  <span className="w-6 text-center font-bold text-kf-foreground">{l.quantity}</span>
+                  <button onClick={() => changeQty(l.menuItemId, 1)} className="w-7 h-7 rounded-kf-md border border-kf-border text-kf-foreground flex items-center justify-center">+</button>
+                </div>
+                <span className="w-16 text-right font-bold text-kf-foreground">${(l.unitPrice * l.quantity).toFixed(2)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-1 text-sm mb-3">
+          <div className="flex justify-between text-kf-muted">
+            <span>Subtotal Produtos ({orderLines.reduce((s, l) => s + l.quantity, 0)})</span>
+            <span>${subtotal.toFixed(2)}</span>
+          </div>
+          {deliveryFee > 0 && (
+            <div className="flex justify-between text-kf-muted">
+              <span>Entrega</span>
+              <span>${deliveryFee.toFixed(2)}</span>
+            </div>
+          )}
+          <div className="flex justify-between font-bold text-kf-foreground text-base pt-1 border-t border-kf-border">
+            <span>Total</span>
+            <span>${total.toFixed(2)}</span>
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-3 p-4 border-t border-kf-border bg-white sticky bottom-0">
-          {step !== 'customer' && (
-            <button onClick={handleBack} disabled={loading} className="flex-1 py-2.5 rounded-lg border border-kf-border text-kf-foreground font-semibold hover:bg-kf-muted/30 disabled:opacity-50">
-              {'Voltar'}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1.5">
+            <button
+              onClick={() => setPaymentMethod('cash')}
+              className={`px-3 py-2 rounded-kf-md text-xs font-bold transition ${paymentMethod === 'cash' ? 'bg-kf-foreground text-kf-bg' : 'bg-kf-surface text-kf-muted border border-kf-border'}`}
+            >
+              Dinheiro
             </button>
-          )}
-          {step === 'review' ? (
-            <button onClick={submitOrder} disabled={loading || !canProceedItems} className="flex-1 py-2.5 rounded-lg bg-kf-primary text-white font-bold hover:bg-kf-primary/90 disabled:opacity-50 flex items-center justify-center gap-2">
-              {loading ? (
-                <>
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  {'Criando...'}
-                </>
-              ) : (
-                'Criar Pedido'
-              )}
+            <button
+              onClick={() => setPaymentMethod('stripe')}
+              className={`px-3 py-2 rounded-kf-md text-xs font-bold transition ${paymentMethod === 'stripe' ? 'bg-kf-foreground text-kf-bg' : 'bg-kf-surface text-kf-muted border border-kf-border'}`}
+            >
+              Cartão
             </button>
-          ) : (
-            <button onClick={handleNext} disabled={loading || (step === 'customer' && !canProceedCustomer) || (step === 'items' && !canProceedItems) || (step === 'delivery' && !canProceedDelivery)} className="flex-1 py-2.5 rounded-lg bg-kf-primary text-white font-bold hover:bg-kf-primary/90 disabled:opacity-50">
-              {'Próximo'}
-            </button>
-          )}
-          <button onClick={onClose} disabled={loading} className="flex-1 py-2.5 rounded-lg border border-kf-border text-kf-foreground font-semibold hover:bg-kf-muted/30 disabled:opacity-50">
-            {'Cancelar'}
+          </div>
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="px-4 py-2.5 rounded-kf-md border border-kf-border text-kf-foreground font-bold text-sm disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={submitOrder}
+            disabled={loading || !canSubmit}
+            className="flex-1 px-4 py-2.5 rounded-kf-md bg-kf-foreground text-kf-bg font-bold text-sm disabled:opacity-50"
+          >
+            {loading ? 'Criando...' : 'Aceitar pedido'}
           </button>
         </div>
       </div>

@@ -104,3 +104,39 @@ export async function getCustomerOrders(req: Request, res: Response): Promise<vo
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 }
+
+
+// ── Staff: search customers (manual/phone order) ─────────────────────────────
+// Staff-only. Searches by name, phone or email (case-insensitive) so the
+// admin can confirm 100% that an order belongs to an existing customer.
+export async function searchCustomers(req: Request, res: Response): Promise<void> {
+  const q = (req.query.q as string || '').trim();
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+
+  const where = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' as const } },
+          { phone: { contains: q, mode: 'insensitive' as const } },
+          { email: { contains: q, mode: 'insensitive' as const } },
+        ],
+      }
+    : {};
+
+  const customers = await prisma.customer.findMany({
+    where,
+    take: limit,
+    orderBy: { name: 'asc' },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      isGuest: true,
+      loyaltyPoints: true,
+      _count: { select: { orders: true } },
+    },
+  });
+
+  res.json({ success: true, data: customers });
+}

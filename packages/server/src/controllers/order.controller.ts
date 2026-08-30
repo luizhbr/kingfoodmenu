@@ -89,6 +89,9 @@ const createOrderSchema = z.object({
   guestName: z.string().optional(),
   guestEmail: z.string().email().optional(),
   guestPhone: z.string().optional(),
+  // Staff-only: link this order to an existing customer (manual/phone order).
+  // Ignored for customer-authenticated requests (identity comes from the JWT).
+  customerId: z.string().optional(),
   loyaltyPointsRedeem: z.number().int().min(0).optional(),
   // Welcome-credit toggle: apply the customer's AVAILABLE welcome reward
   // (e.g. google_signup_bonus $3) to this order. Server owns the amount.
@@ -170,6 +173,7 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     guestName,
     guestEmail,
     guestPhone,
+    customerId: staffCustomerId,
     loyaltyPointsRedeem,
     rewardUse,
     couponCode,
@@ -196,7 +200,19 @@ export async function createOrder(req: Request, res: Response): Promise<void> {
     }
   }
 
-  const customerId = (req as any).user?.type === 'customer' ? (req as any).user.id : null;
+  const userType = (req as any).user?.type;
+  // Customer-authenticated: identity ALWAYS comes from the JWT (IDOR-safe).
+  // Staff: may link to an existing customer via staffCustomerId (manual order).
+  let customerId: string | null = userType === 'customer' ? (req as any).user.id : null;
+
+  if (userType === 'staff' && staffCustomerId) {
+    const target = await prisma.customer.findUnique({ where: { id: staffCustomerId } });
+    if (!target) {
+      res.status(400).json({ success: false, error: 'Customer not found' });
+      return;
+    }
+    customerId = target.id;
+  }
 
   if (!customerId) {
     if (!guestName || !guestEmail) {
