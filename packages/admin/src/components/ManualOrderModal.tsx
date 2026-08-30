@@ -86,7 +86,7 @@ export default function ManualOrderModal({ isOpen, onClose, onSuccess }: Props) 
     }
     customerTimer.current = window.setTimeout(() => {
       setSearchingCustomer(true);
-      api.get<{ success: boolean; data: CustomerOption[] }>(`/customers?q=${encodeURIComponent(customerQuery.trim())}&limit=20`)
+      api.get<{ success: boolean; data: CustomerOption[] }>(`/customer?q=${encodeURIComponent(customerQuery.trim())}&limit=20`)
         .then((res) => {
           setCustomerResults(res.data);
           setCustomerOpen(true);
