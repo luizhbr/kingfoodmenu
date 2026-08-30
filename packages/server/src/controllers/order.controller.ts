@@ -1049,6 +1049,104 @@ async function deleteOrderRelations(orderId: string) {
   ]);
 }
 
+
+// ── Staff: edit order items (manual/phone order) ────────────────────────────
+// Replaces the order's items and recalculates subtotal/tax/total SERVER-SIDE
+// (prices always come from the DB, never the client). Only allowed while the
+// order is still editable (not DELIVERED / PICKED_UP / CANCELLED).
+const updateOrderItemsSchema = z.object({
+  items: z.array(orderItemSchema).min(1),
+});
+
+export async function updateOrderItems(req: Request<{ id: string }>, res: Response): Promise<void> {
+  const { id } = req.params;
+  const parsed = updateOrderItemsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ success: false, error: parsed.error.errors });
+    return;
+  }
+
+  const order = await prisma.order.findUnique({ where: { id } });
+  if (!order) {
+    res.status(404).json({ success: false, error: 'Order not found' });
+    return;
+  }
+
+  const terminal = ['DELIVERED', 'PICKED_UP', 'CANCELLED'];
+  if (terminal.includes(order.status)) {
+    res.status(400).json({ success: false, error: 'Pedido finalizado não pode ser editado' });
+    return;
+  }
+
+  const items = parsed.data.items;
+  const menuItemIds = items.map((i) => i.menuItemId);
+  const menuItems = await prisma.menuItem.findMany({
+    where: { id: { in: menuItemIds } },
+    include: { options: { include: { values: true } } },
+  });
+  const menuItemMap = new Map(menuItems.map((m) => [m.id, m]));
+
+  let subtotal = 0;
+  const orderItemsData = items.map((item) => {
+    const menuItem = menuItemMap.get(item.menuItemId);
+    if (!menuItem) {
+      throw new Error(`Menu item not found: ${item.menuItemId}`);
+    }
+    let unitPrice = menuItem.price;
+    const optionsData = (item.options || []).map((opt) => {
+      unitPrice += opt.priceModifier;
+      return {
+        menuOptionValueId: opt.menuOptionValueId,
+        name: opt.name,
+        value: opt.value,
+        priceModifier: opt.priceModifier,
+      };
+    });
+    const itemSubtotal = unitPrice * item.quantity;
+    subtotal += itemSubtotal;
+    return {
+      menuItemId: item.menuItemId,
+      name: menuItem.name,
+      quantity: item.quantity,
+      unitPrice,
+      subtotal: itemSubtotal,
+      comment: item.comment,
+      options: { create: optionsData },
+    };
+  });
+
+  const TAX_RATE = 0.08;
+  const tax = subtotal * TAX_RATE;
+  const total = Math.max(0, subtotal + tax + order.deliveryFee - (order.discount || 0));
+
+  // Replace items atomically: delete existing, create new, update totals.
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.orderItem.deleteMany({ where: { orderId: id } });
+    return tx.order.update({
+      where: { id },
+      data: {
+        subtotal,
+        tax,
+        total,
+        items: { create: orderItemsData },
+      },
+      include: {
+        items: { include: { options: true, menuItem: { select: { id: true, name: true, slug: true } } } },
+        customer: { select: { email: true, name: true } },
+      },
+    });
+  });
+
+  auditLog(req, {
+    action: 'update',
+    entity: 'Order',
+    entityId: id,
+    details: { editedItems: true, previousSubtotal: order.subtotal, newSubtotal: subtotal },
+  });
+
+  res.json({ success: true, data: updated });
+}
+
 export async function deleteOrder(req: Request<{ id: string }>, res: Response): Promise<void> {
   const { id } = req.params;
 

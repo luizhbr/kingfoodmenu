@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate, optionalAuth, requireStaff, requirePermission } from '../middleware/auth.js';
 import { requireOwnership } from '../middleware/idor.js';
-import { createOrder, listOrders, listCustomerOrders, getOrder, updateOrderStatus, deleteOrder, deleteOrdersBatch } from '../controllers/order.controller.js';
+import { createOrder, listOrders, listCustomerOrders, getOrder, updateOrderStatus, updateOrderItems, deleteOrder, deleteOrdersBatch } from '../controllers/order.controller.js';
 
 const router = Router();
 
@@ -23,5 +23,8 @@ router.get('/:id', optionalAuth, getOrder);
 
 // Only staff can update order status
 router.patch('/:id/status', authenticate, requireStaff, requirePermission('orders.updateStatus'), updateOrderStatus);
+
+// Staff: edit order items (manual/phone order)
+router.patch('/:id/items', authenticate, requireStaff, requirePermission('orders.updateStatus'), updateOrderItems);
 
 export default router;

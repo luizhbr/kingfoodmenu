@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { usePrintOrder } from '../lib/usePrintOrder.js';
 import OrderActionModal from '../components/OrderActionModal.js';
 import { useOrderActions, isActionable, actionLabelFor } from '../lib/useOrderActions.js';
+import { api } from '../lib/api.js';
 
 interface OrderItem {
   id: string;
@@ -11,6 +12,7 @@ interface OrderItem {
   unitPrice: number;
   subtotal: number;
   comment: string | null;
+  menuItem: { id: string; name: string; slug: string };
   options: { id: string; name: string; value: string; priceModifier: number }[];
 }
 
@@ -30,6 +32,14 @@ interface OrderDetail {
   customer: { id: string; name: string; email: string; phone: string | null } | null;
   location: { id: string; name: string };
   items: OrderItem[];
+}
+
+interface MenuItemOption {
+  id: string;
+  name: string;
+  price: number;
+  image: string | null;
+  category: { id: string; name: string };
 }
 
 const STATUSES = [
@@ -57,6 +67,17 @@ export default function OrderDetailPage() {
   const { printState, printOrder } = usePrintOrder();
   const { actionState, runOrderAction, resetState } = useOrderActions();
   const [actionModal, setActionModal] = useState<'reject' | 'cancel' | null>(null);
+
+  // ── Status drawer (gaveta) ────────────────────────────────────────────────
+  const [statusDrawerOpen, setStatusDrawerOpen] = useState(false);
+
+  // ── Edit items ────────────────────────────────────────────────────────────
+  const [editOpen, setEditOpen] = useState(false);
+  const [menuItems, setMenuItems] = useState<MenuItemOption[]>([]);
+  const [productQuery, setProductQuery] = useState('');
+  const [editLines, setEditLines] = useState<{ menuItemId: string; name: string; quantity: number; unitPrice: number }[]>([]);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState('');
 
   const token = localStorage.getItem('token') || '';
 
@@ -87,10 +108,65 @@ export default function OrderDetailPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setOrder((prev) => prev ? { ...prev, status: newStatus } : prev);
+      setStatusDrawerOpen(false);
     } catch (err: any) {
       setError(err.message);
     } finally {
       setUpdating(false);
+    }
+  }
+
+  // ── Edit items ────────────────────────────────────────────────────────────
+  function openEdit() {
+    if (!order) return;
+    setEditLines(order.items.map((i) => ({ menuItemId: i.menuItem.id, name: i.name, quantity: i.quantity, unitPrice: i.unitPrice })));
+    setEditOpen(true);
+    setEditError('');
+    setProductQuery('');
+    api.get<{ success: boolean; data: MenuItemOption[] }>('/menu/items?limit=100')
+      .then((res) => setMenuItems(res.data))
+      .catch(() => setMenuItems([]));
+  }
+
+  function addEditProduct(item: MenuItemOption) {
+    setEditLines((prev) => {
+      const existing = prev.find((l) => l.name === item.name);
+      if (existing) {
+        return prev.map((l) => (l.name === item.name ? { ...l, quantity: l.quantity + 1 } : l));
+      }
+      return [...prev, { menuItemId: item.id, name: item.name, quantity: 1, unitPrice: item.price }];
+    });
+  }
+
+  function changeEditQty(name: string, delta: number) {
+    setEditLines((prev) =>
+      prev.map((l) => (l.name === name ? { ...l, quantity: l.quantity + delta } : l)).filter((l) => l.quantity > 0)
+    );
+  }
+
+  async function saveEdit() {
+    if (!order || editLines.length === 0) return;
+    setSavingEdit(true);
+    setEditError('');
+    try {
+      const res = await fetch(`/api/orders/${id}/items`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: editLines.map((l) => ({ menuItemId: l.menuItemId, quantity: l.quantity })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Falha ao salvar');
+      setOrder(data.data);
+      setEditOpen(false);
+    } catch (err: any) {
+      setEditError(err.message);
+    } finally {
+      setSavingEdit(false);
     }
   }
 
@@ -241,24 +317,26 @@ export default function OrderDetailPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Status update */}
+          {/* Status + edit actions */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Atualizar Status</h2>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Ações</h2>
             <div className="space-y-2">
-              {STATUSES.map((status) => (
+              <button
+                onClick={() => setStatusDrawerOpen(true)}
+                className="w-full min-h-[44px] px-4 py-2.5 rounded-lg bg-ink text-cream text-sm font-bold hover:bg-ink/90 transition inline-flex items-center justify-center gap-2"
+              >
+                <span aria-hidden>🔄</span>
+                Atualizar Status
+              </button>
+              {!['DELIVERED', 'PICKED_UP', 'CANCELLED'].includes(order.status) && (
                 <button
-                  key={status}
-                  disabled={updating || order.status === status}
-                  onClick={() => updateStatus(status)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${order.status === status
-                      ? STATUS_COLORS[status] + ' cursor-default'
-                      : 'text-gray-600 hover:bg-gray-100 disabled:opacity-40'
-                    }`}
-                  aria-label={`Definir status para ${status.replace(/_/g, ' ')}`}
+                  onClick={openEdit}
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 text-sm font-bold hover:bg-gray-50 transition inline-flex items-center justify-center gap-2"
                 >
-                  {status.replace(/_/g, ' ')}
+                  <span aria-hidden>✏️</span>
+                  Editar itens
                 </button>
-              ))}
+              )}
             </div>
           </div>
 
@@ -323,6 +401,98 @@ export default function OrderDetailPage() {
             resetState();
           }}
         />
+      )}
+
+      {/* ── Status drawer (gaveta) ─────────────────────────────────────────── */}
+      {statusDrawerOpen && (
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-end justify-center" onClick={() => setStatusDrawerOpen(false)} role="dialog" aria-modal="true" aria-label="Atualizar status">
+          <div className="bg-white w-full max-w-md rounded-t-2xl p-4 pb-8 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900">Atualizar Status</h3>
+              <button onClick={() => setStatusDrawerOpen(false)} className="p-2 text-gray-400 hover:text-gray-600" aria-label="Fechar">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mb-3">O status é o mesmo que o cliente vê no acompanhamento do pedido.</p>
+            <div className="space-y-2">
+              {STATUSES.map((status) => (
+                <button
+                  key={status}
+                  disabled={updating || order.status === status}
+                  onClick={() => updateStatus(status)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${order.status === status
+                      ? STATUS_COLORS[status] + ' cursor-default'
+                      : 'text-gray-600 hover:bg-gray-100 disabled:opacity-40'
+                    }`}
+                  aria-label={`Definir status para ${status.replace(/_/g, ' ')}`}
+                >
+                  {status.replace(/_/g, ' ')}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit items modal ───────────────────────────────────────────────── */}
+      {editOpen && (
+        <div className="fixed inset-0 z-[80] bg-black/50 flex items-end justify-center" onClick={() => setEditOpen(false)} role="dialog" aria-modal="true" aria-label="Editar itens">
+          <div className="bg-white w-full max-w-md rounded-t-2xl p-4 pb-8 max-h-[85vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-bold text-gray-900">Editar itens</h3>
+              <button onClick={() => setEditOpen(false)} className="p-2 text-gray-400 hover:text-gray-600" aria-label="Fechar">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            {editError && <p className="text-xs text-red-600 mb-2">{editError}</p>}
+
+            {/* Current lines */}
+            <div className="space-y-1.5 mb-3 max-h-48 overflow-y-auto">
+              {editLines.map((l) => (
+                <div key={l.name} className="flex items-center gap-2 text-sm">
+                  <span className="flex-1 text-gray-800 truncate">{l.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    <button onClick={() => changeEditQty(l.name, -1)} className="w-7 h-7 rounded-md border border-gray-300 text-gray-700 flex items-center justify-center">−</button>
+                    <span className="w-6 text-center font-bold">{l.quantity}</span>
+                    <button onClick={() => changeEditQty(l.name, 1)} className="w-7 h-7 rounded-md border border-gray-300 text-gray-700 flex items-center justify-center">+</button>
+                  </div>
+                  <span className="w-16 text-right font-bold">${(l.unitPrice * l.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Add product */}
+            <input
+              type="text"
+              value={productQuery}
+              onChange={(e) => setProductQuery(e.target.value)}
+              placeholder="Adicionar produto..."
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 text-gray-800 mb-2"
+            />
+            <div className="flex-1 overflow-y-auto space-y-1.5">
+              {menuItems.filter((m) => m.name.toLowerCase().includes(productQuery.toLowerCase())).slice(0, 20).map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => addEditProduct(item)}
+                  className="w-full text-left px-3 py-2 rounded-lg border border-gray-200 hover:bg-gray-50 flex items-center justify-between"
+                >
+                  <span className="text-sm text-gray-800 truncate">{item.name}</span>
+                  <span className="text-sm font-bold text-gray-700">${item.price.toFixed(2)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-3 pt-3 border-t border-gray-200">
+              <button onClick={() => setEditOpen(false)} disabled={savingEdit} className="flex-1 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-bold text-sm disabled:opacity-50">
+                Cancelar
+              </button>
+              <button onClick={saveEdit} disabled={savingEdit || editLines.length === 0} className="flex-1 py-2.5 rounded-lg bg-ink text-cream font-bold text-sm disabled:opacity-50">
+                {savingEdit ? 'Salvando...' : 'Salvar alterações'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
