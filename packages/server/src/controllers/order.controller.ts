@@ -1131,8 +1131,15 @@ export async function updateOrderItems(req: Request<{ id: string }>, res: Respon
         items: { create: orderItemsData },
       },
       include: {
-        items: { include: { options: true, menuItem: { select: { id: true, name: true, slug: true } } } },
-        customer: { select: { email: true, name: true } },
+        customer: { select: { id: true, name: true, email: true, phone: true } },
+        location: { select: { id: true, name: true, address: true, city: true, state: true, postalCode: true } },
+        items: {
+          include: {
+            menuItem: { select: { id: true, name: true, slug: true } },
+            options: true,
+          }
+        },
+        payments: { orderBy: { createdAt: 'desc' }, take: 1 }
       },
     });
   });

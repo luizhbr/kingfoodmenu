@@ -123,7 +123,7 @@ export default function OrderDetailPage() {
     setEditOpen(true);
     setEditError('');
     setProductQuery('');
-    api.get<{ success: boolean; data: MenuItemOption[] }>('/menu/items?limit=100')
+    api.get<{ success: boolean; data: MenuItemOption[] }>('/menu/items?limit=100&noImages=true')
       .then((res) => setMenuItems(res.data))
       .catch(() => setMenuItems([]));
   }

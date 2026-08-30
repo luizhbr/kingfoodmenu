@@ -52,6 +52,10 @@ export async function listMenuItems(req: Request, res: Response): Promise<void> 
   // Public storefront sees only active items. The admin passes
   // includeInactive=true to manage disabled products.
   const includeInactive = req.query.includeInactive === 'true';
+  // Admin listagens leves (PDV / edição de pedido) não precisam das imagens
+  // base64 (40-114KB cada). Sem elas o payload cai de ~8MB para <100KB,
+  // evitando travamento/tela branca no celular.
+  const noImages = req.query.noImages === 'true';
 
   const where: Record<string, unknown> = {};
   if (categoryId) where.categoryId = categoryId;
@@ -74,7 +78,7 @@ export async function listMenuItems(req: Request, res: Response): Promise<void> 
 
   res.json({
     success: true,
-    data: items,
+    data: noImages ? items.map((i) => ({ ...i, image: null, images: null })) : items,
     pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
   });
 }
