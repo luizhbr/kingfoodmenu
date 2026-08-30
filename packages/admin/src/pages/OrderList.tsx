@@ -3,6 +3,7 @@ import ManualOrderModal from '../components/ManualOrderModal.js';
 import OrderCard from '../components/OrderCard.js';
 import SoundActivationBanner from '../components/SoundActivationBanner.js';
 import { useOrderAlerts } from '../lib/useOrderAlerts.js';
+import { usePermissions } from '../lib/usePermissions.js';
 
 interface Order {
   id: string;
@@ -51,6 +52,8 @@ export default function OrderList() {
     markAllAsSeen,
     requestSoundActivation,
   } = useOrderAlerts();
+
+  const { has } = usePermissions();
 
   const loadOrders = useCallback(
     (silent = false) => {
@@ -208,7 +211,15 @@ export default function OrderList() {
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-3 mb-6">
+      <div className="flex flex-wrap gap-3 mb-6 items-center">
+        {has('orders.create') && (
+          <button
+            onClick={() => setManualOrderOpen(true)}
+            className="ml-auto px-4 py-2 rounded-lg bg-kf-primary text-white font-semibold hover:bg-kf-primary/90 transition min-h-[44px]"
+          >
+            + Novo Pedido
+          </button>
+        )}
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
