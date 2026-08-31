@@ -3,7 +3,6 @@ import Header from './Header.js';
 import Footer from './Footer.js';
 import CartDrawer from './CartDrawer.js';
 import CookieBanner from './CookieBanner.js';
-import PwaInstall from './PwaInstall.js';
 import BottomDock from './BottomDock.js';
 import StoreHeader from './StoreHeader.js';
 
@@ -17,7 +16,6 @@ export default function Layout() {
       <div className="bg-black text-white">
         <Outlet />
         <CartDrawer />
-        <PwaInstall />
         <BottomDock />
       </div>
     );
@@ -49,7 +47,6 @@ export default function Layout() {
       <Footer />
       <CartDrawer />
       <CookieBanner />
-      <PwaInstall />
       <BottomDock />
     </div>
   );
