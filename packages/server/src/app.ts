@@ -166,7 +166,9 @@ export function createApp() {
   app.use('/api/automation-rules/webhook', verifyWebhookSignature);
 
   // WhatsApp Cloud API webhook — raw body REQUIRED for HMAC signature verification
-  app.use('/api/whatsapp/webhook', express.raw({ type: 'application/json' }));
+  // Disabled: WhatsApp integration is deactivated (migration 2026-09-01).
+  // Re-enable by setting WHATSAPP_ENABLED=true and restoring the route below.
+  // app.use('/api/whatsapp/webhook', express.raw({ type: 'application/json' }));
 
   // ── Body parsing ──────────────────────────────────────────────────────
   app.use(express.json());
@@ -234,7 +236,10 @@ app.use('/api/reports', reportsRoutes);
   app.use('/api/campaigns', campaignRoutes);
   app.use('/api/qrcodes', qrcodeRoutes);
   app.use('/api/print', printRoutes);
-  app.use('/api/whatsapp', whatsappRoutes);
+  // WhatsApp routes — DISABLED (migration 2026-09-01). Re-enable with WHATSAPP_ENABLED=true.
+  if (process.env.WHATSAPP_ENABLED === 'true') {
+    app.use('/api/whatsapp', whatsappRoutes);
+  }
 app.use('/api/admin/print/templates', printTemplateRoutes);
 
   // ── 404 handler ───────────────────────────────────────────────────────
