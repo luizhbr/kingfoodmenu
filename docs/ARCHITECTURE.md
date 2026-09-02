@@ -24,7 +24,7 @@ Vercel (CDN + routing)      Vercel (CDN + routing)
         Prisma Client
               │
               ▼
-        Neon PostgreSQL
+        Supabase PostgreSQL
 ```
 
 ## Por que Express dentro do serverless?

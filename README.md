@@ -25,8 +25,8 @@ Storefront/Admin (React/Vite)
    → Express (packages/server/dist)
    → Controllers
    → Prisma
-   → Neon PostgreSQL
-```
+   → Supabase PostgreSQL
+   ```
 
 Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
@@ -37,7 +37,7 @@ Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 | Backend | Express + TypeScript |
 | Frontend | React + Vite |
 | ORM | Prisma 5.22 |
-| Banco | Neon PostgreSQL |
+| Banco | Supabase PostgreSQL |
 | Deploy | Vercel serverless |
 
 ## Development

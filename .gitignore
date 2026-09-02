@@ -17,7 +17,6 @@ uploads/
 .intlayer/
 
 .env.deploy
-.neon-secret.json
 test-db.js
 .vercel
 

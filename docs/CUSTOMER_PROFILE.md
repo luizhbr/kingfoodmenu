@@ -34,7 +34,7 @@ CUSTOMER ──► login/register ──► JWT ──► /api/customer/*
 
 - **Guest checkout preservado** (sem login obrigatório)
 - Autenticado: customerId vem do token e é persistido
-- Verificado: 201 + customerId no Neon
+- Verificado: 201 + customerId no Supabase
 
 ## Testes (produção)
 
@@ -46,7 +46,7 @@ CUSTOMER ──► login/register ──► JWT ──► /api/customer/*
 | P3-PROD-004 IDOR attempt | ✅ isolado |
 | P3-PROD-005 anonymous checkout | ✅ 201 |
 | P3-PROD-006 authenticated checkout | ✅ 201 + customerId |
-| P3-PROD-007 Neon relation | ✅ customer↔order |
+| P3-PROD-007 Supabase relation | ✅ customer↔order |
 
 ## Base para futuras fases
 

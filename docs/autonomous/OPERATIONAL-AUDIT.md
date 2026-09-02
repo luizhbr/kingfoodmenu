@@ -3,7 +3,7 @@
 ## 1. Arquitetura encontrada
 
 ### Backend (packages/server)
-- Express + Prisma + Neon PostgreSQL.
+- Express + Prisma + Supabase PostgreSQL.
 - Auth JWT separado para staff (`/api/auth/staff/login`) e customers (`/api/auth/customer/login`).
 - CSRF double-submit para requisições sem Bearer; Bearer bypassa CSRF.
 - EventEmitter central (`lib/events.ts`) dispara `order.created` e `order.statusChanged`.
