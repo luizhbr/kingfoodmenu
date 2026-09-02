@@ -14,12 +14,6 @@ export default function SettingsPayments() {
   const [stripeSecretKey, setStripeSecretKey] = useState('');
   const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
 
-  // PayPal
-  const [paypalEnabled, setPaypalEnabled] = useState(false);
-  const [paypalClientId, setPaypalClientId] = useState('');
-  const [paypalClientSecret, setPaypalClientSecret] = useState('');
-  const [paypalSandbox, setPaypalSandbox] = useState(true);
-
   // Cash
   const [cashEnabled, setCashEnabled] = useState(true);
 
@@ -33,10 +27,6 @@ export default function SettingsPayments() {
           if (d.stripePublishableKey) setStripePublishableKey(d.stripePublishableKey);
           if (d.stripeSecretKey) setStripeSecretKey(d.stripeSecretKey);
           if (d.stripeWebhookSecret) setStripeWebhookSecret(d.stripeWebhookSecret);
-          if (d.paypalEnabled !== undefined) setPaypalEnabled(d.paypalEnabled);
-          if (d.paypalClientId) setPaypalClientId(d.paypalClientId);
-          if (d.paypalClientSecret) setPaypalClientSecret(d.paypalClientSecret);
-          if (d.paypalSandbox !== undefined) setPaypalSandbox(d.paypalSandbox);
           if (d.cashEnabled !== undefined) setCashEnabled(d.cashEnabled);
         }
       })
@@ -54,7 +44,6 @@ export default function SettingsPayments() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           stripeEnabled, stripePublishableKey, stripeSecretKey, stripeWebhookSecret,
-          paypalEnabled, paypalClientId, paypalClientSecret, paypalSandbox,
           cashEnabled,
         }),
       });
@@ -63,7 +52,6 @@ export default function SettingsPayments() {
         if (data.data) {
           if (data.data.stripeSecretKey) setStripeSecretKey(data.data.stripeSecretKey);
           if (data.data.stripeWebhookSecret) setStripeWebhookSecret(data.data.stripeWebhookSecret);
-          if (data.data.paypalClientSecret) setPaypalClientSecret(data.data.paypalClientSecret);
         }
         setSuccess('Payment settings updated');
         setTimeout(() => setSuccess(''), 3000);
@@ -116,31 +104,6 @@ export default function SettingsPayments() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Webhook Secret</label>
             <input type="password" value={stripeWebhookSecret} onChange={(e) => setStripeWebhookSecret(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" placeholder="whsec_..." />
           </div>
-        </div>
-      </div>
-
-      {/* PayPal */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">PayPal</h2>
-          <label className="flex items-center gap-2">
-            <input type="checkbox" checked={paypalEnabled} onChange={(e) => setPaypalEnabled(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
-            <span className="text-sm text-gray-700">Habilitado</span>
-          </label>
-        </div>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
-            <input type="text" value={paypalClientId} onChange={(e) => setPaypalClientId(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Client Secret</label>
-            <input type="password" value={paypalClientSecret} onChange={(e) => setPaypalClientSecret(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500" />
-          </div>
-          <label className="flex items-center gap-3">
-            <input type="checkbox" checked={paypalSandbox} onChange={(e) => setPaypalSandbox(e.target.checked)} className="w-4 h-4 text-primary-600 rounded" />
-            <span className="text-sm font-medium text-gray-700">Sandbox mode</span>
-          </label>
         </div>
       </div>
 

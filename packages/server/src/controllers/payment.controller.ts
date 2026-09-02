@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { getStripe } from '../lib/stripe.js';
 import prisma from '../lib/db.js';
-import { createPayPalOrder, capturePayPalOrder } from '../lib/paypal.js';
 
 // ── Validation schemas ────────────────────────────────────────────────
 const createPaymentIntentSchema = z.object({
@@ -14,15 +13,6 @@ const createCheckoutSessionSchema = z.object({
 });
 
 const markCashPaymentSchema = z.object({
-  orderId: z.string().min(1),
-});
-
-const createPayPalPaymentSchema = z.object({
-  orderId: z.string().min(1),
-});
-
-const capturePayPalPaymentSchema = z.object({
-  paypalOrderId: z.string().min(1),
   orderId: z.string().min(1),
 });
 
@@ -429,92 +419,6 @@ export async function markCashPayment(req: Request, res: Response): Promise<void
 
   res.status(201).json({ success: true, data: payment });
 }
-
-export async function createPayPalPayment(req: Request, res: Response): Promise<void> {
-  const parsed = createPayPalPaymentSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ success: false, error: parsed.error.errors });
-    return;
-  }
-  const { orderId } = parsed.data;
-
-  if (!orderId) {
-    res.status(400).json({ success: false, error: 'orderId is required' });
-    return;
-  }
-
-  const order = await prisma.order.findUnique({ where: { id: orderId } });
-  if (!order) {
-    res.status(404).json({ success: false, error: 'Order not found' });
-    return;
-  }
-
-  const existingPayment = await prisma.payment.findFirst({
-    where: { orderId, status: 'COMPLETED' },
-  });
-  if (existingPayment) {
-    res.status(409).json({ success: false, error: 'Order already paid' });
-    return;
-  }
-
-  try {
-    const paypalOrder = await createPayPalOrder(order.total, order.orderNumber);
-
-    await prisma.payment.create({
-      data: {
-        orderId: order.id,
-        method: 'PAYPAL',
-        status: 'PENDING',
-        amount: order.total,
-        transactionId: paypalOrder.id,
-      },
-    });
-
-    res.json({
-      success: true,
-      data: { paypalOrderId: paypalOrder.id, approvalUrl: paypalOrder.approvalUrl },
-    });
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message || 'PayPal order creation failed' });
-  }
-}
-
-export async function capturePayPalPayment(req: Request, res: Response): Promise<void> {
-  const parsed = capturePayPalPaymentSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ success: false, error: parsed.error.errors });
-    return;
-  }
-  const { paypalOrderId, orderId } = parsed.data;
-
-  if (!paypalOrderId || !orderId) {
-    res.status(400).json({ success: false, error: 'paypalOrderId and orderId are required' });
-    return;
-  }
-
-  try {
-    const result = await capturePayPalOrder(paypalOrderId);
-
-    if (result.status === 'COMPLETED') {
-      await prisma.payment.updateMany({
-        where: { transactionId: paypalOrderId },
-        data: { status: 'COMPLETED' },
-      });
-
-      await prisma.order.update({
-        where: { id: orderId },
-        data: { status: 'CONFIRMED' },
-      });
-
-      res.json({ success: true, data: { status: 'COMPLETED' } });
-    } else {
-      res.status(400).json({ success: false, error: 'PayPal capture failed', data: result });
-    }
-  } catch (err: any) {
-    res.status(500).json({ success: false, error: err.message || 'PayPal capture failed' });
-  }
-}
-
 
 // ── Refund (MANAGER+) — P15.6 ───────────────────────────────────────────────
 
