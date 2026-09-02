@@ -121,6 +121,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
     this.connecting = true;
     this.emit('connection_started', 'web adapter connect');
     try {
+      // @ts-ignore — baileys removido (WhatsApp desativado 2026-09-01); reinstalar p/ reativar
       const mod = await import('@whiskeysockets/baileys');
       this.baileys = mod;
       if (!this.session.creds?.noiseKey || !this.session.creds?.signedIdentityKey) {
@@ -355,6 +356,7 @@ export class WhatsAppWebAdapter implements MessagingChannel {
 
     if (qr) {
       try {
+        // @ts-ignore — qrcode removido (WhatsApp desativado 2026-09-01); reinstalar p/ reativar
         const Qr = await import('qrcode');
         const dataUrl = await Qr.toDataURL(qr, { width: 256, margin: 1 });
         this.qrBuffer = { data: dataUrl, expiresAt: Date.now() + QR_TTL_MS };
