@@ -1,7 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
 
-const DISMISS_KEY = 'kf_install_dismissed';
+// Só mostra UMA vez por navegador (primeira visita ao site)
+const SEEN_KEY = 'kf_install_modal_seen';
+// Cupom real existente no banco (coupons: WELCOME10, 10% off, min $20, max $15)
+const INSTALL_COUPON = 'WELCOME10';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -34,7 +37,8 @@ export default function PwaInstall() {
   useEffect(() => {
     if (isCheckoutFlow) return;
     if (isStandalone()) return;
-    if (sessionStorage.getItem(DISMISS_KEY) === '1') return;
+    // Já viu o modal nesta visita permanente (localStorage) → não mostra de novo
+    if (localStorage.getItem(SEEN_KEY) === '1') return;
 
     const adopt = (evt: BeforeInstallPromptEvent | null | undefined) => {
       if (!evt) return;
@@ -55,11 +59,12 @@ export default function PwaInstall() {
     window.addEventListener('kf-beforeinstallprompt', onKf);
     window.addEventListener('beforeinstallprompt', onBip);
 
+    // Aparece logo no primeiro acesso (3s) — decisão rápida de instalar ou não
     const t = window.setTimeout(() => {
-      if (!isStandalone() && sessionStorage.getItem(DISMISS_KEY) !== '1') {
+      if (!isStandalone() && localStorage.getItem(SEEN_KEY) !== '1') {
         setVisible(true);
       }
-    }, 12000);
+    }, 3000);
 
     return () => {
       window.removeEventListener('kf-beforeinstallprompt', onKf);
@@ -69,7 +74,7 @@ export default function PwaInstall() {
   }, []);
 
   const dismiss = useCallback(() => {
-    sessionStorage.setItem(DISMISS_KEY, '1');
+    localStorage.setItem(SEEN_KEY, '1');
     setVisible(false);
   }, []);
 
@@ -103,32 +108,44 @@ export default function PwaInstall() {
   if (isCheckoutFlow || !visible || isStandalone()) return null;
 
   return (
-    <div
-      className="fixed left-0 right-0 z-kf-bottom-nav px-4 pointer-events-none md:bottom-4"
-      style={{
-        bottom: 'calc(4.5rem + env(safe-area-inset-bottom))',
-      }}
-    >
-      <div className="pointer-events-auto mx-auto max-w-sm rounded-2xl border border-gray-200 bg-white shadow-xl p-3 flex items-center gap-3">
-        <img src="/logo-kingfood.png.png" alt="King Food" className="shrink-0 w-10 h-10 object-contain rounded-lg" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-bold text-gray-900">Instale o King Food</p>
-          <p className="text-xs text-gray-500">Peça mais rápido da tela inicial</p>
+    <div className="fixed inset-0 z-kf-drawer flex items-center justify-center px-6">
+      {/* Overlay escuro */}
+      <div className="absolute inset-0 bg-black/50" onClick={dismiss} />
+      {/* Modal central — não cobre o botão do carrinho */}
+      <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl text-center">
+        <button
+          type="button"
+          onClick={dismiss}
+          className="absolute right-3 top-3 w-8 h-8 rounded-full text-gray-400 hover:text-gray-600"
+          aria-label="Fechar"
+        >
+          ✕
+        </button>
+        <img src="/logo-kingfood.png.png" alt="King Food" className="mx-auto w-16 h-16 object-contain rounded-xl mb-3" />
+        <h2 className="text-lg font-bold text-gray-900">Instale o King Food</h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Peça mais rápido direto da tela inicial do seu celular.
+        </p>
+        <div className="mt-4 rounded-xl bg-[#FFF8DC] border border-[#FFD100] p-3">
+          <p className="text-xs font-semibold text-gray-700">🎁 Bônus de instalação</p>
+          <p className="text-sm font-bold text-gray-900 mt-0.5">
+            Use o cupom <span className="text-[#B8860B]">{INSTALL_COUPON}</span> e ganhe <span className="text-[#B8860B]">10% OFF</span>
+          </p>
+          <p className="text-xs text-gray-500 mt-0.5">em pedidos acima de $20</p>
         </div>
         <button
           type="button"
           onClick={install}
-          className="shrink-0 rounded-xl bg-[#FFD100] px-3 py-2 text-xs font-bold text-black"
+          className="mt-5 w-full rounded-xl bg-[#FFD100] py-3 text-sm font-bold text-black active:scale-[0.98]"
         >
-          Instalar
+          Instalar agora
         </button>
         <button
           type="button"
           onClick={dismiss}
-          className="shrink-0 w-8 h-8 rounded-full text-gray-400 hover:text-gray-600"
-          aria-label="Fechar"
+          className="mt-2 w-full rounded-xl py-2 text-xs font-semibold text-gray-500 hover:text-gray-700"
         >
-          ✕
+          Agora não
         </button>
       </div>
     </div>
