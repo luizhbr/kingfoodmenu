@@ -144,7 +144,8 @@
     "clear": "Esvaziar carrinho",
     "removed": "Produto removido",
     "undo": "Desfazer",
-    "open": "Ver carrinho"
+    "open": "Ver carrinho",
+    "continueShopping": "Continuar comprando"
   },
   "checkout": {
     "title": "Finalizar Pedido",

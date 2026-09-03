@@ -144,7 +144,8 @@
     "clear": "Empty cart",
     "removed": "Item removed",
     "undo": "Undo",
-    "open": "View cart"
+    "open": "View cart",
+    "continueShopping": "Weiter einkaufen"
   },
   "checkout": {
     "title": "Kasse",

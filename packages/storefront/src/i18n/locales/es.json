@@ -144,7 +144,8 @@
     "clear": "Vaciar carrito",
     "removed": "Artículo eliminado",
     "undo": "Deshacer",
-    "open": "Ver carrito"
+    "open": "Ver carrito",
+    "continueShopping": "Seguir comprando"
   },
   "checkout": {
     "title": "Pagar",

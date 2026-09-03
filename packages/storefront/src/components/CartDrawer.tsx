@@ -114,8 +114,14 @@ export default function CartDrawer() {
               <Button className="w-full min-h-[52px]">{t('cart.checkout', 'Continuar para o checkout')}</Button>
             </Link>
             <button
+              onClick={() => { setIsOpen(false); navigate('/menu'); }}
+              className="mt-3 block w-full text-center text-sm font-medium text-kf-ink hover:text-kf-ink/70"
+            >
+              {t('cart.continueShopping', 'Continuar comprando')}
+            </button>
+            <button
               onClick={clear}
-              className="mt-3 block w-full text-center text-sm text-kf-danger hover:text-kf-danger-hover"
+              className="mt-2 block w-full text-center text-sm text-kf-danger hover:text-kf-danger-hover"
             >
               {t('cart.clear', 'Esvaziar carrinho')}
             </button>
