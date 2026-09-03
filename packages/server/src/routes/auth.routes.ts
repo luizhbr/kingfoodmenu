@@ -48,6 +48,16 @@ if (process.env.GOOGLE_CLIENT_ID) {
     passport.authenticate('google', { session: false, failureRedirect: '/login' }),
     handleSocialCallback
   );
+} else {
+  // Google OAuth não configurado — redireciona para o login com mensagem
+  // amigável em vez de 404 JSON (evita tela preta no navegador).
+  router.get('/google', (req, res) => {
+    const redirect = (req.query.redirect as string) || '';
+    const target = redirect
+      ? `/login?error=google_unavailable&redirect=${encodeURIComponent(redirect)}`
+      : '/login?error=google_unavailable';
+    res.redirect(target);
+  });
 }
 
 // Social login — Facebook
