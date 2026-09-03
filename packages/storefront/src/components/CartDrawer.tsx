@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCart } from '../context/CartContext.js';
@@ -8,24 +8,22 @@ import {
   Drawer,
   EmptyState,
   Price,
-  IconButton,
 } from '@kitchenasty/shared-ui';
-
-interface UpsellItem {
-  id: string;
-  name: string;
-  price: number;
-  image?: string | null;
-  isActive?: boolean;
-}
+import {
+  getUpsellRecommendations,
+  getUpsellTitle,
+  getUpsellSubtitle,
+  groupOfCategory,
+  type UpsellMenuItem,
+} from '../lib/upsell.js';
 
 export default function CartDrawer() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, clear, subtotal, addItem } = useCart();
   const [removedItem, setRemovedItem] = useState<{ id: string; snapshot: typeof items } | null>(null);
-  const [upsellItems, setUpsellItems] = useState<UpsellItem[]>([]);
-  const [upsellLoading, setUpsellLoading] = useState(false);
+  const [menuItems, setMenuItems] = useState<UpsellMenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
   const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
   const handleKeyDown = useCallback(
@@ -46,27 +44,49 @@ export default function CartDrawer() {
     };
   }, [isOpen, handleKeyDown]);
 
-  // Fetch upsell products when drawer opens (exclude items already in cart)
+  // Busca o cardápio UMA vez (com categoria embutida). O cálculo de
+  // recomendação é local (lib/upsell.ts) — sem requisição por mudança.
   useEffect(() => {
-    if (!isOpen || items.length === 0) return;
-    setUpsellLoading(true);
-    const cartIds = new Set(items.map((i) => i.menuItemId).filter(Boolean));
-    fetch('/api/menu/items?limit=8')
+    if (!isOpen || menuItems.length > 0) return;
+    setMenuLoading(true);
+    fetch('/api/menu/items?limit=200')
       .then((res) => res.json())
       .then((data) => {
-        const list = (data.data || [])
-          .filter((p: UpsellItem) => p.isActive !== false && !cartIds.has(p.id))
-          .slice(0, 6);
-        setUpsellItems(list);
+        const list = (data.data || []).map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          image: p.image ?? null,
+          isActive: p.isActive,
+          categoryId: p.categoryId ?? null,
+          categoryName: p.category?.name ?? null,
+        }));
+        setMenuItems(list);
       })
-      .catch(() => setUpsellItems([]))
-      .finally(() => setUpsellLoading(false));
-  }, [isOpen, items]);
+      .catch(() => setMenuItems([]))
+      .finally(() => setMenuLoading(false));
+  }, [isOpen, menuItems.length]);
+
+  // Recomendações recalculadas localmente a cada mudança do carrinho
+  const recommendations = useMemo(() => {
+    const cartForUpsell = items.map((i) => ({
+      menuItemId: i.menuItemId,
+      name: i.name,
+      price: i.price,
+      quantity: i.quantity,
+      categoryName: menuItems.find((m) => m.id === i.menuItemId)?.categoryName ?? null,
+    }));
+    return getUpsellRecommendations(cartForUpsell, menuItems);
+  }, [items, menuItems]);
+
+  const cartGroups = useMemo(
+    () => Array.from(new Set(items.map((i) => groupOfCategory(menuItems.find((m) => m.id === i.menuItemId)?.categoryName ?? null)))),
+    [items, menuItems]
+  );
 
   function handleRemove(id: string) {
     if (removedItem) removeItem(removedItem.id);
     setRemovedItem({ id, snapshot: items });
-    // Auto-dismiss undo after 4s
     setTimeout(() => {
       setRemovedItem((current) => {
         if (current?.id === id) {
@@ -84,7 +104,7 @@ export default function CartDrawer() {
     }
   }
 
-  function handleAddUpsell(item: UpsellItem) {
+  function handleAddUpsell(item: UpsellMenuItem) {
     addItem({
       menuItemId: item.id,
       name: item.name,
@@ -137,18 +157,19 @@ export default function CartDrawer() {
                 </div>
               )}
 
-              {/* Upsell em grade */}
-              {upsellItems.length > 0 && (
+              {/* Upsell dinâmico e contextual */}
+              {recommendations.length > 0 && (
                 <div className="pt-2">
-                  <h3 className="text-sm font-bold text-kf-foreground mb-3">{t('cart.upsellTitle', 'Quer adicionar mais alguma coisa?')}</h3>
-                  {upsellLoading ? (
+                  <h3 className="text-sm font-bold text-kf-foreground">{getUpsellTitle(cartGroups)}</h3>
+                  <p className="text-xs text-kf-muted mb-3">{getUpsellSubtitle(cartGroups)}</p>
+                  {menuLoading ? (
                     <div className="grid grid-cols-2 gap-3">
                       <div className="h-28 rounded-kf-lg bg-kf-surface-muted animate-pulse" />
                       <div className="h-28 rounded-kf-lg bg-kf-surface-muted animate-pulse" />
                     </div>
                   ) : (
                     <div className="grid grid-cols-2 gap-3">
-                      {upsellItems.map((item) => (
+                      {recommendations.map((item) => (
                         <div key={item.id} className="flex flex-col rounded-kf-lg border border-kf-border bg-kf-surface p-2.5">
                           <div className="flex h-16 w-full items-center justify-center overflow-hidden rounded-kf-md bg-kf-surface-muted mb-2">
                             {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <span className="text-2xl">🥣</span>}
