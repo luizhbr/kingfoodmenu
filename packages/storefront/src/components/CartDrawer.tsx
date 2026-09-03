@@ -120,7 +120,7 @@ export default function CartDrawer() {
   return (
     <Drawer open={isOpen} onClose={() => setIsOpen(false)} title={t('cart.title', 'Seu carrinho')} position="bottom" headerClassName="px-4 py-2.5">
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto p-4 pb-[calc(11rem+env(safe-area-inset-bottom))]">
+        <div className="flex-1 overflow-y-auto p-4 pb-[calc(17rem+env(safe-area-inset-bottom))]">
           {items.length === 0 ? (
             <EmptyState
               icon="🛒"
@@ -203,12 +203,12 @@ export default function CartDrawer() {
               to="/checkout"
               onClick={() => setIsOpen(false)}
             >
-              <Button className="w-full min-h-[52px]">{t('cart.checkout', 'Continuar para o checkout')}</Button>
+              <Button className="w-full min-h-[44px]">{t('cart.checkout', 'Continuar para o checkout')}</Button>
             </Link>
             <Button
               variant="outline"
               fullWidth
-              className="mt-3 min-h-[52px]"
+              className="mt-2 min-h-[44px]"
               onClick={() => { setIsOpen(false); navigate('/menu'); }}
             >
               {t('cart.continueShopping', 'Continuar comprando')}
@@ -216,7 +216,7 @@ export default function CartDrawer() {
             <Button
               variant="outline"
               fullWidth
-              className="mt-2 min-h-[52px] text-kf-danger hover:text-kf-danger-hover"
+              className="mt-2 min-h-[44px] text-kf-danger hover:text-kf-danger-hover"
               onClick={clear}
             >
               {t('cart.clear', 'Esvaziar carrinho')}
