@@ -1084,7 +1084,7 @@ function getDefaultScheduleTime(): string {
                   <Skeleton className="h-16 rounded-kf-lg" />
                 </div>
               ) : upsellItems.length === 0 ? null : (
-                <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
                   {upsellItems.map((item) => (
                     <UpsellRow key={item.id} item={item} />
                   ))}
@@ -1264,17 +1264,17 @@ function UpsellRow({ item }: { item: MenuItem }) {
   }
 
   return (
-    <div className="flex items-center gap-3 rounded-kf-lg border border-kf-border bg-kf-surface p-3">
-      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-kf-md bg-kf-surface-muted text-xl">
-        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover rounded-kf-md" /> : <span className="text-lg">🥣</span>}
+    <div className="flex flex-col rounded-kf-lg border border-kf-border bg-kf-surface p-2.5">
+      <div className="flex h-16 w-full items-center justify-center overflow-hidden rounded-kf-md bg-kf-surface-muted mb-2">
+        {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <span className="text-2xl">🥣</span>}
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-kf-foreground truncate">{item.name}</p>
+      <p className="text-sm font-semibold text-kf-foreground truncate">{item.name}</p>
+      <div className="mt-1 flex items-center justify-between gap-2">
         <Price value={item.price} size="sm" />
+        <Button type="button" size="sm" onClick={handleAdd} disabled={added} className="shrink-0">
+          {added ? '✓' : t('common.add', 'Adicionar')}
+        </Button>
       </div>
-      <Button type="button" size="sm" onClick={handleAdd} disabled={added}>
-        {added ? '✓' : t('common.add', 'Adicionar')}
-      </Button>
     </div>
   );
 }

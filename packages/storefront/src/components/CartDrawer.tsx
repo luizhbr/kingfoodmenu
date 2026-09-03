@@ -57,9 +57,9 @@ export default function CartDrawer() {
   }
 
   return (
-    <Drawer open={isOpen} onClose={() => setIsOpen(false)} title={t('cart.title', 'Seu carrinho')} position="bottom">
+    <Drawer open={isOpen} onClose={() => setIsOpen(false)} title={t('cart.title', 'Seu carrinho')} position="bottom" headerClassName="px-4 py-2.5">
       <div className="flex flex-col h-full">
-        <div className="flex-1 overflow-y-auto p-5 pb-[calc(11rem+env(safe-area-inset-bottom))]">
+        <div className="flex-1 overflow-y-auto p-4 pb-[calc(11rem+env(safe-area-inset-bottom))]">
           {items.length === 0 ? (
             <EmptyState
               icon="🛒"

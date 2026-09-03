@@ -8,6 +8,7 @@ export interface DrawerProps {
   title?: string;
   children: React.ReactNode;
   position?: 'bottom' | 'right' | 'left';
+  headerClassName?: string;
 }
 
 const positions = {
@@ -17,7 +18,7 @@ const positions = {
 };
 
 export const Drawer: React.FC<DrawerProps> = ({
-  open, onClose, title, children, position = 'bottom'
+  open, onClose, title, children, position = 'bottom', headerClassName
 }) => {
   if (!open) return null;
   return createPortal(
@@ -41,7 +42,7 @@ export const Drawer: React.FC<DrawerProps> = ({
           <div className="w-12 h-1.5 bg-kf-border rounded-full mx-auto mt-3 mb-2" />
         )}
         {title && (
-          <div className="px-5 py-4 border-b border-kf-border flex items-center justify-between">
+          <div className={cn('px-5 py-4 border-b border-kf-border flex items-center justify-between', headerClassName)}>
             <h2 className="text-lg font-semibold text-kf-foreground">{title}</h2>
             <button
               onClick={onClose}
