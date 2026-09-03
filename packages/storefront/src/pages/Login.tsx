@@ -14,6 +14,14 @@ export default function Login() {
   const [captchaStatus, setCaptchaStatus] = useState<{ enabled: boolean; siteKey: string | null; required: boolean }>({ enabled: false, siteKey: null, required: false });
   const [captchaToken, setCaptchaToken] = useState('');
 
+  // Google OAuth indisponível (chaves não configuradas) — mostra aviso amigável.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('error') === 'google_unavailable') {
+      setError(t('login.googleUnavailable', 'Login com Google indisponível no momento. Use e-mail e senha.'));
+    }
+  }, [t]);
+
   // Adaptive CAPTCHA: query the server for whether this login needs a challenge.
   useEffect(() => {
     let active = true;
