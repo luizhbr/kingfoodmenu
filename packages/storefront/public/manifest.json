@@ -14,19 +14,19 @@
   "categories": ["food", "shopping"],
   "icons": [
     {
-      "src": "https://kingfood.online/icons/launchericon-192x192.png",
+      "src": "/icons/launchericon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://kingfood.online/icons/launchericon-512x512.png",
+      "src": "/icons/launchericon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://kingfood.online/icons/launchericon-512x512-maskable.png",
+      "src": "/icons/launchericon-512x512-maskable.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

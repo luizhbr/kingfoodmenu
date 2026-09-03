@@ -12,7 +12,7 @@ const GROUP_URL_DEF = 'https://chat.whatsapp.com/LtoVNE9AJ2u2nlrlruTxhd';
 const MAPS_URL_DEF = 'https://maps.app.goo.gl/GR2gpipSMqZdH9Xy5';
 const INSTAGRAM_URL_DEF = 'https://instagram.com/king.food_delivery';
 const SORTEIO_IG_POST_URL = 'https://www.instagram.com/p/DbjecIfC6kS/?igsh=MWF2dnZzZ3RudmF6Yw==';
-const BG_DEF = 'https://kingfood.online/bg-acai.jpg';
+const BG_DEF = '/bg-acai.jpg';
 const LOGO_DEF = '/logo-kingfood.png.png';
 const FEATURED_IMG = '/featured-abacaxi.png';
 const FEATURED_PRODUCT_URL = 'https://kingfood.fe-v2.ola.click/acai-do-king/acai-tropical-no-abacaxi';
