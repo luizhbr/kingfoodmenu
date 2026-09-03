@@ -6,13 +6,12 @@
  * (categorias e itens existentes) + estado do carrinho.
  *
  * Categorias reais (2026-09-03, via /api/menu/categories):
- *   Açaí do King | Açaí Premium | Açaí Tropical | Açaí Combos | Hambúrgueres | Bebidas
+ *   Açaí do King | Açaí Premium | Açaí Tropical | Açaí Combos
+ *   (Hambúrgueres e Bebidas foram REMOVIDAS do cardápio em 03/09)
  *
  * Classificação em grupos (camada de conceito, SEM alterar schema):
  *   AÇAI   → Açaí do King, Açaí Premium, Açaí Tropical
  *   COMBO  → Açaí Combos
- *   LANCHE → Hambúrgueres
- *   BEBIDA → Bebidas
  */
 
 export interface UpsellMenuItem {
@@ -40,8 +39,6 @@ const CATEGORY_GROUP_MAP: Record<string, CategoryGroup> = {
   'Açaí Premium': 'AÇAI',
   'Açaí Tropical': 'AÇAI',
   'Açaí Combos': 'COMBO',
-  'Hambúrgueres': 'LANCHE',
-  'Bebidas': 'BEBIDA',
 };
 
 export function groupOfCategory(categoryName: string | null | undefined): CategoryGroup {
@@ -79,26 +76,22 @@ export function getUpsellSubtitle(groups: CategoryGroup[]): string {
   if (has('AÇAI')) {
     return 'Algumas opções que combinam com seu pedido';
   }
-  if (has('LANCHE')) {
-    return 'Complete sua refeição';
-  }
   if (has('COMBO')) {
     return 'Que tal deixar seu pedido ainda melhor?';
-  }
-  if (has('BEBIDA')) {
-    return 'Que tal um açaí para acompanhar?';
   }
   return 'Escolhemos opções que combinam com seu pedido';
 }
 
 // ── Compatibilidade entre grupos (PRIORIDADE 1 — complementaridade) ────
 // [grupo no carrinho] → grupos que complementam (em ordem de relevância)
+// Cardápio atual (03/09): só AÇAI e COMBO — açaí complementa com combo
+// (compartilhável) e outro açaí diverso; combo complementa com açaí.
 const COMPLEMENT_MAP: Record<CategoryGroup, CategoryGroup[]> = {
-  AÇAI: ['BEBIDA', 'COMBO', 'AÇAI'],   // bebida combina; combo compartilhável; outro açaí só se diverso
-  LANCHE: ['BEBIDA', 'AÇAI', 'COMBO'], // bebida + açaí de sobremesa
-  COMBO: ['BEBIDA', 'AÇAI'],           // complemento fora do combo
-  BEBIDA: ['AÇAI', 'LANCHE', 'COMBO'], // produto principal
-  OUTRO: ['AÇAI', 'BEBIDA', 'LANCHE'],
+  AÇAI: ['COMBO', 'AÇAI'],   // combo compartilhável; outro açaí só se diverso
+  COMBO: ['AÇAI'],           // açaí individual para completar
+  LANCHE: ['AÇAI', 'COMBO'], // legado (categoria removida — mantido p/ segurança)
+  BEBIDA: ['AÇAI', 'COMBO'], // legado (categoria removida — mantido p/ segurança)
+  OUTRO: ['AÇAI', 'COMBO'],
 };
 
 // ── Função central de recomendação ─────────────────────────────────────
