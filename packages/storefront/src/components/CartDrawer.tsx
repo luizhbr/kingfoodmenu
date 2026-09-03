@@ -11,11 +11,22 @@ import {
   IconButton,
 } from '@kitchenasty/shared-ui';
 
+interface UpsellItem {
+  id: string;
+  name: string;
+  price: number;
+  image?: string | null;
+  isActive?: boolean;
+}
+
 export default function CartDrawer() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clear, subtotal } = useCart();
+  const { items, isOpen, setIsOpen, updateQuantity, removeItem, clear, subtotal, addItem } = useCart();
   const [removedItem, setRemovedItem] = useState<{ id: string; snapshot: typeof items } | null>(null);
+  const [upsellItems, setUpsellItems] = useState<UpsellItem[]>([]);
+  const [upsellLoading, setUpsellLoading] = useState(false);
+  const [addedIds, setAddedIds] = useState<Record<string, boolean>>({});
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -34,6 +45,23 @@ export default function CartDrawer() {
       document.body.style.overflow = '';
     };
   }, [isOpen, handleKeyDown]);
+
+  // Fetch upsell products when drawer opens (exclude items already in cart)
+  useEffect(() => {
+    if (!isOpen || items.length === 0) return;
+    setUpsellLoading(true);
+    const cartIds = new Set(items.map((i) => i.menuItemId).filter(Boolean));
+    fetch('/api/menu/items?limit=8')
+      .then((res) => res.json())
+      .then((data) => {
+        const list = (data.data || [])
+          .filter((p: UpsellItem) => p.isActive !== false && !cartIds.has(p.id))
+          .slice(0, 6);
+        setUpsellItems(list);
+      })
+      .catch(() => setUpsellItems([]))
+      .finally(() => setUpsellLoading(false));
+  }, [isOpen, items]);
 
   function handleRemove(id: string) {
     if (removedItem) removeItem(removedItem.id);
@@ -54,6 +82,19 @@ export default function CartDrawer() {
     if (removedItem) {
       setRemovedItem(null);
     }
+  }
+
+  function handleAddUpsell(item: UpsellItem) {
+    addItem({
+      menuItemId: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: 1,
+      options: [],
+      image: item.image ?? undefined,
+    });
+    setAddedIds((p) => ({ ...p, [item.id]: true }));
+    setTimeout(() => setAddedIds((p) => ({ ...p, [item.id]: false })), 1500);
   }
 
   return (
@@ -93,6 +134,36 @@ export default function CartDrawer() {
                 <div className="flex items-center justify-between rounded-kf-lg bg-kf-ink/5 px-3 py-2">
                   <span className="text-sm text-kf-foreground">{t('cart.removed', 'Produto removido')}</span>
                   <Button variant="ghost" size="sm" onClick={handleUndo}>{t('cart.undo', 'Desfazer')}</Button>
+                </div>
+              )}
+
+              {/* Upsell em grade */}
+              {upsellItems.length > 0 && (
+                <div className="pt-2">
+                  <h3 className="text-sm font-bold text-kf-foreground mb-3">{t('cart.upsellTitle', 'Quer adicionar mais alguma coisa?')}</h3>
+                  {upsellLoading ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="h-28 rounded-kf-lg bg-kf-surface-muted animate-pulse" />
+                      <div className="h-28 rounded-kf-lg bg-kf-surface-muted animate-pulse" />
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {upsellItems.map((item) => (
+                        <div key={item.id} className="flex flex-col rounded-kf-lg border border-kf-border bg-kf-surface p-2.5">
+                          <div className="flex h-16 w-full items-center justify-center overflow-hidden rounded-kf-md bg-kf-surface-muted mb-2">
+                            {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <span className="text-2xl">🥣</span>}
+                          </div>
+                          <p className="text-sm font-semibold text-kf-foreground truncate">{item.name}</p>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <Price value={item.price} size="sm" />
+                            <Button type="button" size="sm" onClick={() => handleAddUpsell(item)} disabled={addedIds[item.id]} className="shrink-0">
+                              {addedIds[item.id] ? '✓' : t('common.add', 'Adicionar')}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
