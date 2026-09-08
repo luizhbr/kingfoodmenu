@@ -29,23 +29,23 @@ export default function AuthCallback() {
     if (token) {
       loginWithToken(token);
 
-      // Recompensa de cadastro via Google (checkout) — idempotente no servidor.
-      if (redirect === '/checkout') {
-        fetch(`${API_BASE}/api/rewards/google-signup`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
+      // Recompensa de cadastro via Google — idempotente no servidor.
+      // Dispara em QUALQUER login Google: o card de crédito de boas-vindas
+      // aparece no checkout para o PRÓXIMO pedido.
+      fetch(`${API_BASE}/api/rewards/google-signup`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.success) {
+            // Sinaliza o checkout para exibir o feedback de recompensa.
+            sessionStorage.setItem('kf_google_reward', '1');
+          }
         })
-          .then((res) => res.json())
-          .then((data) => {
-            if (data?.success) {
-              // Sinaliza o checkout para exibir o feedback de recompensa.
-              sessionStorage.setItem('kf_google_reward', '1');
-            }
-          })
-          .catch(() => {
-            // Não bloqueia o retorno ao checkout em caso de falha.
-          });
-      }
+        .catch(() => {
+          // Não bloqueia o retorno ao checkout em caso de falha.
+        });
 
       navigate(redirect, { replace: true });
     } else {
